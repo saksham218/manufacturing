@@ -1,4 +1,8 @@
 client/node_modules
 server/node_modules
 server/.env
+proprietor/.env
+proprietor/node_modules
+manager/.env
+manager/node_modules
 ```
