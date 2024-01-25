@@ -9,7 +9,7 @@ import Manager from './manager/Manager'
 import Item from './Item'
 
 
-const Proprietor = ({ }) => {
+const Proprietor = ({ proprietor }) => {
 
     const params = useParams()
     // const { url, path } = useRouteMatch()
@@ -18,7 +18,7 @@ const Proprietor = ({ }) => {
     console.log(params)
     return (
         <div>
-            <Header />
+            <Header proprietor={proprietor} />
 
             <Navbar match={match} />
             <Routes>

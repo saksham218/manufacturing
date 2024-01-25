@@ -1,6 +1,7 @@
 import React from 'react'
 
-const ViewManager = () => {
+const ViewManager = ({ manager }) => {
+    console.log(manager)
     return (
         <div>ViewManager</div>
     )

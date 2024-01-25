@@ -2,7 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Drawer, List, ListItem, ListItemText } from '@mui/material'
 
-const Sidebar = ({ match }) => {
+const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
     console.log(match)
     return (
         <div >
@@ -19,19 +19,19 @@ const Sidebar = ({ match }) => {
                 }}
             >
                 <List>
-                    <ListItem button component={Link} to={`${match.pathnameBase}/viewmanager`}>
+                    <ListItem component={Link} to={`${match.pathnameBase}/viewmanager`} onClick={() => { setIsAddManager(false) }}>
                         <ListItemText primary="View Manager" />
                     </ListItem>
-                    <ListItem button component={Link} to={`${match.pathnameBase}/issue`}>
+                    <ListItem component={Link} to={`${match.pathnameBase}/issue`} onClick={() => { setIsAddManager(false) }}>
                         <ListItemText primary="Issue" />
                     </ListItem>
-                    <ListItem button component={Link} to={`${match.pathnameBase}/worker`}>
+                    <ListItem component={Link} to={`${match.pathnameBase}/worker`} onClick={() => { setIsAddManager(false) }}>
                         <ListItemText primary="Worker" />
                     </ListItem>
-                    <ListItem button component={Link} to={`${match.pathnameBase}/payment`}>
+                    <ListItem component={Link} to={`${match.pathnameBase}/payment`} onClick={() => { setIsAddManager(false) }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
-                    <ListItem button component={Link} to={`${match.pathnameBase}/addmanager`}>
+                    <ListItem component={Link} to={`${match.pathnameBase}/addmanager`} onClick={() => { setIsAddManager(true) }}>
                         <ListItemText primary="Add Manager" />
                     </ListItem>
                 </List>

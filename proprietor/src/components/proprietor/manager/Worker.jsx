@@ -1,6 +1,7 @@
 import React from 'react'
 
-const Worker = () => {
+const Worker = ({ manager }) => {
+    console.log(manager)
     return (
         <div>Worker</div>
     )
