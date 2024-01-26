@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import proprietorRoutes from './routes/proprietor.js';
+import itemRoutes from './routes/item.js';
 
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors())
 
 app.use('/proprietor', proprietorRoutes);
+app.use('/item', itemRoutes);
 
 const CONNECTION_URL = process.env.MONGODB_URL
 const PORT = process.env.PORT || 5000;

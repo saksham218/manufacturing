@@ -1,5 +1,6 @@
 import Proprietor from "../models/proprietor.js";
 
+
 export const newProprietor = async (req, res) => {
 
     console.log(req.body);
@@ -57,3 +58,4 @@ export const loginProprietor = async (req, res) => {
         console.log(error);
     }
 };
+

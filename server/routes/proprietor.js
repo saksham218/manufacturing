@@ -7,4 +7,5 @@ const router = express.Router();
 router.post('/newproprietor', newProprietor);
 router.post('/login', loginProprietor);
 
+
 export default router;

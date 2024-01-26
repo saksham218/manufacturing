@@ -24,7 +24,7 @@ const Proprietor = ({ proprietor }) => {
             <Routes>
                 <Route path="/" element={<Navigate to={`${match.pathnameBase}/manager`} />} />
                 <Route path={`/manager/*`} element={<Manager />} />
-                <Route path={`/item`} element={<Item />} />
+                <Route path={`/item`} element={<Item proprietor={proprietor} />} />
             </Routes>
 
 
