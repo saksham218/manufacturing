@@ -7,9 +7,9 @@ export const newProprietor = async (req, res) => {
     const { name, proprietor_id, password } = req.body;
 
     try {
-        // const oldProprietor = await Proprietor.findOne({ id });
+        const oldProprietor = await Proprietor.findOne({ proprietor_id });
 
-        // if (oldProprietor) return res.status(400).json({ message: "Proprietor already exists" });
+        if (oldProprietor) return res.status(400).json({ message: "Proprietor already exists" });
 
         // const hashedPassword = await bcrypt.hash(password, 12);
 

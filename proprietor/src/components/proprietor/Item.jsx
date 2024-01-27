@@ -30,13 +30,13 @@ const Item = ({ proprietor }) => {
     }
 
     const getItemsData = async () => {
-        const res = await getItems({ proprietor_id: proprietor.proprietor_id })
+        const res = await getItems(proprietor.proprietor_id)
         console.log(res.data)
         setItems(res.data)
     }
 
     useEffect(() => {
-        console.log("hi")
+        console.log("get Items")
         console.log(proprietor)
 
 

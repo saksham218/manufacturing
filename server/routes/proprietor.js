@@ -8,4 +8,5 @@ router.post('/newproprietor', newProprietor);
 router.post('/login', loginProprietor);
 
 
+
 export default router;

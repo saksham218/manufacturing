@@ -2,8 +2,9 @@ import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 
 export const getItems = async (req, res) => {
-    console.log(req.body)
-    const { proprietor_id } = req.body
+
+    const proprietor_id = req.params.proprietor_id
+    console.log("proprietor_id: ", proprietor_id)
     try {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
 
@@ -21,7 +22,9 @@ export const getItems = async (req, res) => {
 
 export const createItem = async (req, res) => {
     console.log(req.body)
-    const { proprietor_id, design_number, description, price } = req.body
+    const { design_number, description, price } = req.body
+    const proprietor_id = req.params.proprietor_id
+    console.log("proprietor_id: ", proprietor_id)
 
     try {
 

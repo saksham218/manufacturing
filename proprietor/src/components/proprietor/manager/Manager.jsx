@@ -3,25 +3,40 @@ import { Routes, useMatch, Route } from 'react-router-dom'
 import { Navigate } from 'react-router'
 
 import Sidebar from './Sidebar'
-import ViewManager from './ViewManager'
+import ViewManager from './viewmanager/ViewManager'
 import Issue from './Issue'
 import Worker from './Worker'
 import Payment from './Payment'
 import AddManager from './AddManager'
 import { MenuItem, Select, Typography, Box } from '@mui/material'
+import { getManagers } from '../../../api'
 
 
 
-const Manager = () => {
+const Manager = ({ proprietor }) => {
 
 
-    const managers = ["manager1", "manager2", "manager3"]
-    const [manager, setManager] = useState("")
-    // load all managers for the proprietor when the component is rendered
-    // useEffect(() => {
-    // fetch managers from the database
-    // setManagers()
-    // }, [])
+    // var managers = [];
+    const [managers, setManagers] = useState([])
+    const [manager, setManager] = useState({})
+
+    const getManagersData = async () => {
+        try {
+            const res = await getManagers(proprietor.proprietor_id)
+            console.log(res.data)
+            setManagers(res.data)
+            setManager(res.data[0])
+        }
+        catch (err) {
+            console.log(err)
+        }
+    }
+
+    useEffect(() => {
+        console.log("get managers")
+        console.log(proprietor)
+        getManagersData();
+    }, [proprietor])
 
     const [isAddManager, setIsAddManager] = useState(false)
 
@@ -36,8 +51,8 @@ const Manager = () => {
                 <Box style={{ display: isAddManager ? "none" : "block" }}>
                     <Typography>Select Manager</Typography>
                     <Select value={manager} onChange={(e) => { setManager(e.target.value); console.log(manager) }}>
-                        {managers.map((manager) => (
-                            <MenuItem value={manager}>{manager}</MenuItem>
+                        {managers.map((mgr) => (
+                            <MenuItem value={mgr}>{mgr.name}</MenuItem>
 
                         ))}
                     </Select>
@@ -48,7 +63,7 @@ const Manager = () => {
                     <Route path={`/issue`} element={<Issue manager={manager} />} />
                     <Route path={`/worker`} element={<Worker manager={manager} />} />
                     <Route path={`/payment`} element={<Payment manager={manager} />} />
-                    <Route path={`/addmanager`} element={<AddManager />} />
+                    <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} />} />
                 </Routes>
             </div>
 
