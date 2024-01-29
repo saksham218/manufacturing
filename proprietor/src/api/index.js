@@ -13,4 +13,5 @@ export const getManager = (manager_id) => service.get(`/manager/${manager_id}/ge
 export const getManagers = (proprietor_id) => service.get(`/manager/${proprietor_id}/getmanagers`)
 export const recordPayment = (payment, manager_id) => service.post(`/manager/${manager_id}/recordpayment`, payment)
 export const getPayments = (manager_id) => service.get(`/manager/${manager_id}/getpayments`)
+export const issueToManager = (issue, manager_id) => service.post(`/manager/${manager_id}/issuetomanager`, issue)
 

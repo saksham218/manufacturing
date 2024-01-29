@@ -4,18 +4,19 @@ import Proprietor from '../models/proprietor.js'
 export const getItems = async (req, res) => {
 
     const proprietor_id = req.params.proprietor_id
-    console.log("proprietor_id: ", proprietor_id)
+    console.log("get items proprietor_id: ", proprietor_id)
     try {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" })
 
 
-        const items = await Item.find({ proprietor: proprietor._id })
+        const items = await Item.find({ proprietor: proprietor._id }, { _id: 0, proprietor: 0, __v: 0 })
 
         res.status(200).json(items)
     }
     catch (err) {
+        console.log(err)
         res.status(404).json({ message: err.message })
     }
 }

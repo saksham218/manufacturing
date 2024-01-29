@@ -32,7 +32,7 @@ const ViewManager = ({ manager }) => {
 
     return (
         <div style={{ paddingTop: "10px" }}>
-            <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail) }}>
+            <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); console.log(managerDetails[detail]) }}>
                 {details.map((d) => (
                     <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
                 ))}

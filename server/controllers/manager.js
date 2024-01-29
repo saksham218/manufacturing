@@ -1,5 +1,6 @@
 import Manager from "../models/manager.js";
 import Proprietor from "../models/proprietor.js";
+import Item from "../models/item.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -24,13 +25,18 @@ export const addManager = async (req, res) => {
 export const getManager = async (req, res) => {
 
     const manager_id = req.params.manager_id;
+    console.log("get manager manager_id: ", manager_id);
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id },
-            { name: 1, manager_id: 1, _id: 0, password: 0, issue_history: 1, submit_history: 1, due_forward: 1, due_backward: 1 });
+        const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 })
+            .populate({ path: 'issue_history.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'submit_history.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'due_forward.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'due_backward.item', model: 'Item', select: 'design_number description' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
-        res.status(200).json({ result: manager });
+        res.status(200).json(manager);
     }
     catch (error) {
+        console.log(error)
         res.status(500).json({ message: "Something went wrong" });
     }
 
@@ -94,3 +100,37 @@ export const getPayments = async (req, res) => {
     }
 
 };
+
+export const issueToManager = async (req, res) => {
+    console.log(req.body);
+    const manager_id = req.params.manager_id;
+    console.log("issue to manager manager_id: ", manager_id);
+    const { design_number, quantity } = req.body;
+
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id });
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+        // const [day, month, year] = date.split('/').map(Number);
+        // const dateObj = new Date(year, month - 1, day);
+        const dateObj = new Date();
+        manager.issue_history.push({ item: item._id, quantity: quantity, date: dateObj });
+        const index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
+        if (index === -1) {
+            manager.due_forward.push({ item: item._id, quantity: quantity });
+        }
+        else {
+
+            manager.due_forward[index].quantity += Number(quantity);
+        }
+        // console.log("manager: ", manager);
+        await manager.save();
+        res.status(200).json({ result: manager });
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
