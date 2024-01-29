@@ -134,3 +134,32 @@ export const issueToManager = async (req, res) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 }
+
+
+export const loginManager = async (req, res) => {
+    console.log(req.body);
+    const { manager_id, password } = req.body;
+
+    try {
+        const oldManager = await Manager.findOne({ manager_id });
+
+        if (!oldManager) return res.status(404).json({ message: "Manager doesn't exist" });
+
+        // const isPasswordCorrect = await bcrypt.compare(password, oldProprietor.password);
+
+        const isPasswordCorrect = (password === oldManager.password);
+
+        if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
+
+        // const token = jwt.sign({ proprietor_id: oldProprietor._id }, process.env.SECRET_KEY, { expiresIn: "1h" });
+
+        // res.status(200).json({ result: oldProprietor, token });
+
+        res.status(200).json({ result: oldManager });
+
+    } catch (error) {
+        res.status(500).json({ message: "Something went wrong" });
+
+        console.log(error);
+    }
+};
