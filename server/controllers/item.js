@@ -1,5 +1,6 @@
 import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
+import Manager from '../models/manager.js'
 
 export const getItems = async (req, res) => {
 
@@ -46,5 +47,21 @@ export const createItem = async (req, res) => {
     }
     catch (err) {
         res.status(409).json({ message: err.message })
+    }
+}
+
+export const getItemsForManager = async (req, res) => {
+
+    const manager_id = req.params.manager_id
+    console.log("get items manager_id: ", manager_id)
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id })
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
+        const items = await Item.find({ proprietor: manager.proprietor }, { _id: 0, proprietor: 0, __v: 0, price: 0, createdOn: 0 })
+        res.status(200).json(items)
+    }
+    catch (err) {
+        console.log(err)
+        res.status(404).json({ message: err.message })
     }
 }

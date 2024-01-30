@@ -8,6 +8,7 @@ dotenv.config();
 import proprietorRoutes from './routes/proprietor.js';
 import itemRoutes from './routes/item.js';
 import managerRoutes from './routes/manager.js';
+import workerRoutes from './routes/worker.js';
 
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors())
 app.use('/proprietor', proprietorRoutes);
 app.use('/item', itemRoutes);
 app.use('/manager', managerRoutes);
+app.use('/worker', workerRoutes);
 
 const CONNECTION_URL = process.env.MONGODB_URL
 const PORT = process.env.PORT || 5000;
