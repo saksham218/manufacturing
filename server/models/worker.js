@@ -57,7 +57,10 @@ const workerSchema = new mongoose.Schema({
         }],
         default: []
     },
-    due_amount: { type: Number, defualt: 0 },
+    due_amount: {
+        type: Number,
+        default: 0
+    },
     payment_history: {
         type: [{
             amount: Number,

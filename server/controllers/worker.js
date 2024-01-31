@@ -2,6 +2,7 @@ import Worker from '../models/worker.js'
 import Manager from '../models/manager.js'
 import Item from '../models/item.js'
 
+
 export const addWorker = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
@@ -85,10 +86,12 @@ export const issueToWorker = async (req, res) => {
     const { design_number, quantity, price } = req.body;
 
     try {
-        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'proprietor' });
+        const worker = await Worker.findOne({ worker_id: worker_id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
+
+        const manager = await Manager.findOne({ _id: worker.manager });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
         const priceIndex = worker.custom_prices.findIndex((cp) => cp.item === item._id);
@@ -101,6 +104,23 @@ export const issueToWorker = async (req, res) => {
             if (price !== item.price)
                 return res.status(400).json({ message: "Price doesn't match" });
         }
+
+        const quantityIndex = manager.due_forward.findIndex((df) => (df.item.equals(item._id) && df.quantity >= Number(quantity)));
+        if (quantityIndex === -1) {
+            return res.status(400).json({ message: "Quantity not available" });
+        }
+
+        manager.due_forward[quantityIndex].quantity -= Number(quantity);
+        if (manager.due_forward[quantityIndex].quantity === 0)
+            manager.due_forward.splice(quantityIndex, 1)
+        await manager.save();
+
+
+
+
+
+
+
 
         const dateObj = new Date();
         worker.issue_history.push({ item: item._id, quantity: quantity, price: price, date: dateObj });
@@ -124,25 +144,34 @@ export const issueToWorker = async (req, res) => {
     }
 }
 
-export const getPrice = async (req, res) => {
+export const getPriceForIssue = async (req, res) => {
     const worker_id = req.params.worker_id;
     const design_number = req.params.design_number;
     console.log("get price worker_id: ", worker_id);
     console.log("get price design_number: ", design_number);
 
     try {
-        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'proprietor' });
+        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'proprietor due_forward' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
-        const priceIndex = worker.custom_prices.findIndex((cp) => cp.item === item._id);
+        var quantity = 0;
+        const quantityIndex = worker.manager.due_forward.findIndex((df) => df.item.equals(item._id));
+        if (quantityIndex !== -1) {
+            quantity = worker.manager.due_forward[quantityIndex].quantity;
+        }
+        else {
+            return res.status(400).json({ message: `${design_number} is not available for issue` });
+        }
+
+        const priceIndex = worker.custom_prices.findIndex((cp) => cp.item.equals(item._id));
         if (priceIndex !== -1) {
             res.status(200).json({ price: worker.custom_prices[priceIndex].price });
         }
         else {
-            res.status(200).json({ price: item.price });
+            res.status(200).json({ price: item.price, quantity_available: quantity });
         }
 
     }
@@ -150,4 +179,88 @@ export const getPrice = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Something went wrong" });
     }
+}
+
+export const getPricesForSubmit = async (req, res) => {
+    const worker_id = req.params.worker_id;
+    const design_number = req.params.design_number;
+    console.log("get prices for submit worker_id: ", worker_id);
+    console.log("get prices for submit design_number: ", design_number);
+
+    try {
+        console.log("hi")
+        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'proprietor' });
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
+
+        const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+
+        const quantityPrice = []
+        worker.due_items.forEach((di) => {
+            if (di.item.equals(item._id) && di.quantity >= 0) {
+                quantityPrice.push({ price: di.price, quantity: di.quantity })
+            }
+        })
+
+        if (quantityPrice.length === 0)
+            return res.status(400).json({ message: `${design_number} is not issued to ${worker_id}` })
+
+        return res.status(200).json(quantityPrice);
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
+export const submitFromWorker = async (req, res) => {
+    console.log(req.body);
+    const worker_id = req.params.worker_id;
+    console.log("submit from worker worker_id: ", worker_id);
+    const { design_number, quantity, price, deduction, remarks } = req.body;
+
+    try {
+        const worker = await Worker.findOne({ worker_id: worker_id });
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
+
+
+        const manager = await Manager.findOne({ _id: worker.manager });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+
+        const quantityIndex = worker.due_items.findIndex((df) => (df.item.equals(item._id) && df.quantity >= Number(quantity) && df.price === Number(price)));
+        if (quantityIndex === -1) {
+            return res.status(400).json({ message: `${quantity} of ${design_number} not issued to ${worker_id} @ ${price}` });
+        }
+
+        const index = manager.due_backward.findIndex((db) => (db.item.equals(item._id)));
+        if (index === -1) {
+            manager.due_backward.push({ item: item._id, quantity: quantity });
+        }
+        else {
+            manager.due_backward[index].quantity += Number(quantity);
+        }
+        await manager.save();
+
+        worker.due_items[quantityIndex].quantity -= Number(quantity);
+        if (worker.due_items[quantityIndex].quantity === 0)
+            worker.due_items.splice(quantityIndex, 1)
+
+        worker.due_amount += ((Number(price) - Number(deduction)) * Number(quantity))
+
+        const dateObj = new Date();
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: deduction, remarks: remarks, date: dateObj });
+
+
+        // console.log("manager: ", manager);
+        await worker.save();
+        res.status(200).json({ result: worker });
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+
 }

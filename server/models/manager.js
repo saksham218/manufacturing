@@ -60,6 +60,15 @@ const managerSchema = new mongoose.Schema({
         }],
         default: []
     },
+    total_due: {
+        type: [{
+            item: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Item'
+            },
+            quantity: Number,
+        }],
+    },
     payment_history: {
         type: [{
             amount: Number,

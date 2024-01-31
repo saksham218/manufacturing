@@ -1,6 +1,7 @@
 import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 import Manager from '../models/manager.js'
+import Worker from '../models/worker.js'
 
 export const getItems = async (req, res) => {
 
@@ -50,15 +51,59 @@ export const createItem = async (req, res) => {
     }
 }
 
-export const getItemsForManager = async (req, res) => {
-
+export const getItemsForIssue = async (req, res) => {
     const manager_id = req.params.manager_id
-    console.log("get items manager_id: ", manager_id)
+    console.log("get items for issue manager_id: ", manager_id)
     try {
         const manager = await Manager.findOne({ manager_id: manager_id })
+
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
-        const items = await Item.find({ proprietor: manager.proprietor }, { _id: 0, proprietor: 0, __v: 0, price: 0, createdOn: 0 })
-        res.status(200).json(items)
+
+        const items = await Item.find({ proprietor: manager.proprietor })
+
+        const itemsForIssue = []
+        console.log(manager.due_forward)
+        items.forEach((item) => {
+            const index = manager.due_forward.findIndex((df) => {
+                console.log(df.item)
+                console.log(item._id)
+                return (df.item.equals(item._id) && df.quantity > 0);
+            })
+            console.log(index)
+            if (index !== -1) {
+                console.log("hi")
+                console.log(manager.due_forward[index])
+                itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: manager.due_forward[index].quantity })
+            }
+        })
+
+        return res.status(200).json(itemsForIssue)
+    }
+    catch (err) {
+        console.log(err)
+        res.status(404).json({ message: err.message })
+    }
+}
+
+export const getItemsForSubmit = async (req, res) => {
+    const worker_id = req.params.worker_id
+    console.log("get items for submit worker_id: ", worker_id)
+    try {
+        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', populate: 'proprietor' })
+
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" })
+
+        const items = await Item.find({ proprietor: worker.manager.proprietor })
+
+        const itemsForSubmit = []
+        items.forEach((item) => {
+            const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity > 0))
+            if (index !== -1) {
+                itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: worker.due_items[index].quantity })
+            }
+        })
+
+        return res.status(200).json(itemsForSubmit)
     }
     catch (err) {
         console.log(err)

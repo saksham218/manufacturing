@@ -116,13 +116,20 @@ export const issueToManager = async (req, res) => {
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
         manager.issue_history.push({ item: item._id, quantity: quantity, date: dateObj });
-        const index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
-        if (index === -1) {
+        const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
+        if (df_index === -1) {
             manager.due_forward.push({ item: item._id, quantity: quantity });
         }
         else {
+            manager.due_forward[df_index].quantity += Number(quantity);
+        }
 
-            manager.due_forward[index].quantity += Number(quantity);
+        const td_index = manager.total_due.findIndex((dueItem) => dueItem.item.equals(item._id));
+        if (td_index === -1) {
+            manager.total_due.push({ item: item._id, quantity: quantity });
+        }
+        else {
+            manager.total_due[td_index].quantity += Number(quantity);
         }
         // console.log("manager: ", manager);
         await manager.save();
@@ -134,6 +141,58 @@ export const issueToManager = async (req, res) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 }
+
+
+export const submitToProprietor = async (req, res) => {
+    console.log(req.body);
+    const manager_id = req.params.manager_id;
+    console.log("submit to proprietor manager_id: ", manager_id);
+    const { design_number, quantity } = req.body;
+
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id });
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+        // const [day, month, year] = date.split('/').map(Number);
+        // const dateObj = new Date(year, month - 1, day);
+
+
+        const td_index = manager.total_due.findIndex((dueItem) => dueItem.item.equals(item._id));
+        if (td_index === -1) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} not issued to ${manager_id}` });
+        }
+        else {
+            manager.total_due[td_index].quantity -= Number(quantity);
+            if (manager.total_due[td_index].quantity === 0) {
+                manager.total_due.splice(td_index, 1);
+            }
+        }
+
+        const db_index = manager.due_backward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity)));
+        if (db_index === -1) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} not due backward at ${manager_id}` });
+        }
+        else {
+            manager.due_backward[db_index].quantity -= Number(quantity);
+            if (manager.due_backward[db_index].quantity === 0) {
+                manager.due_backward.splice(db_index, 1);
+            }
+        }
+
+        const dateObj = new Date();
+        manager.submit_history.push({ item: item._id, quantity: quantity, date: dateObj });
+        // console.log("manager: ", manager);
+        await manager.save();
+        res.status(200).json({ result: manager });
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
 
 
 export const loginManager = async (req, res) => {

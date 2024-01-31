@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
 
-import { getItems, issueToWorker, getPrice } from '../../../api'
+import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 
 const Issue = ({ worker, manager }) => {
     console.log(worker)
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "" })
     const [items, setItems] = useState([])
-    const [item, setItem] = useState({ design_number: "", description: "" })
+    const [max, setMax] = useState(0)
 
 
     const getItemsData = async () => {
         try {
-            const res = await getItems(manager.manager_id)
+            const res = await getItemsForIssue(manager.manager_id)
             console.log(res.data)
             setItems(res.data)
         }
@@ -24,11 +24,12 @@ const Issue = ({ worker, manager }) => {
     const onItemSelect = async (e) => {
 
         try {
-            const res = await getPrice(worker.worker_id, e.target.value)
+            const res = await getPriceForIssue(worker.worker_id, e.target.value)
             console.log(res.data)
 
             setIssue({ ...issue, price: res.data.price, design_number: e.target.value })
             console.log(issue);
+            setMax(res.data.quantity_available)
         }
         catch (err) {
             console.log(err)
@@ -66,7 +67,7 @@ const Issue = ({ worker, manager }) => {
                 <Typography>Price: {issue.price}</Typography>
                 <FormControl style={{ padding: "15px" }}>
                     <InputLabel>Quantity</InputLabel>
-                    <Input type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
+                    <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
                 </FormControl>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0"}>Issue</Button>
