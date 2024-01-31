@@ -31,7 +31,9 @@ export const getManager = async (req, res) => {
             .populate({ path: 'issue_history.item', model: 'Item', select: 'design_number description' })
             .populate({ path: 'submit_history.item', model: 'Item', select: 'design_number description' })
             .populate({ path: 'due_forward.item', model: 'Item', select: 'design_number description' })
-            .populate({ path: 'due_backward.item', model: 'Item', select: 'design_number description' });
+            .populate({ path: 'due_backward.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'total_due.item', model: 'Item', select: 'design_number description' });
+
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
         res.status(200).json(manager);
     }

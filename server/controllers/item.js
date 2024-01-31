@@ -110,3 +110,29 @@ export const getItemsForSubmit = async (req, res) => {
         res.status(404).json({ message: err.message })
     }
 }
+
+export const getItemsForFinalSubmit = async (req, res) => {
+    const manager_id = req.params.manager_id
+    console.log("get items for final submit manager_id: ", manager_id)
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id })
+
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
+
+        const items = await Item.find({ proprietor: manager.proprietor })
+
+        const itemsForFinalSubmit = []
+        items.forEach((item) => {
+            const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
+            if (index !== -1) {
+                itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: manager.due_backward[index].quantity })
+            }
+        })
+
+        return res.status(200).json(itemsForFinalSubmit)
+    }
+    catch (err) {
+        console.log(err)
+        res.status(404).json({ message: err.message })
+    }
+}

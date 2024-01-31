@@ -15,3 +15,5 @@ export const getPriceForIssue = (worker_id, design_number) => service.get(`/work
 export const getItemsForSubmit = (worker_id) => service.get(`/item/${worker_id}/itemsforsubmit`)
 export const submitFromWorker = (submission, worker_id) => service.post(`/worker/${worker_id}/submitfromworker`, submission)
 export const getPricesForSubmit = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpricesforsubmit`)
+export const submitToProprietor = (submission, manager_id) => service.post(`/manager/${manager_id}/submittoproprietor`, submission)
+export const getItemsForFinalSubmit = (manager_id) => service.get(`/item/${manager_id}/itemsforfinalsubmit`)
