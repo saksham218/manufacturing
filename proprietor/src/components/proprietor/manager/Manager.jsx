@@ -3,7 +3,7 @@ import { Routes, useMatch, Route } from 'react-router-dom'
 import { Navigate } from 'react-router'
 
 import Sidebar from './Sidebar'
-import ViewManager from './viewmanager/ViewManager'
+import ViewManager from './ViewManager'
 import Issue from './Issue'
 import Worker from './Worker'
 import Payment from './Payment'
@@ -61,7 +61,7 @@ const Manager = ({ proprietor }) => {
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/viewmanager`} />} />
                     <Route path={`/viewmanager`} element={<ViewManager manager={manager} />} />
                     <Route path={`/issue`} element={<Issue manager={manager} proprietor={proprietor} />} />
-                    <Route path={`/worker`} element={<Worker manager={manager} />} />
+                    <Route path={`/worker`} element={<Worker manager={manager} proprietor={proprietor} />} />
                     <Route path={`/payment`} element={<Payment manager={manager} />} />
                     <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} />} />
                 </Routes>

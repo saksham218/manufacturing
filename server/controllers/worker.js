@@ -264,3 +264,54 @@ export const submitFromWorker = async (req, res) => {
     }
 
 }
+
+export const addCustomPrice = async (req, res) => {
+    console.log(req.body);
+    const worker_id = req.params.worker_id;
+    console.log("add custom price worker_id: ", worker_id);
+    const { design_number, price } = req.body;
+
+    try {
+        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'proprietor' });
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
+        const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+
+        const index = worker.custom_prices.findIndex((cp) => cp.item.equals(item._id));
+        if (index === -1) {
+            worker.custom_prices.push({ item: item._id, price: price });
+        }
+        else {
+            worker.custom_prices[index].price = price;
+        }
+
+        await worker.save();
+        return res.status(200).json({ result: worker });
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
+export const getWorker = async (req, res) => {
+    const worker_id = req.params.worker_id;
+    console.log("get worker details worker_id: ", worker_id);
+
+    try {
+        const worker = await Worker.findOne({ worker_id: worker_id })
+            .populate({ path: 'custom_prices.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'due_items.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'issue_history.item', model: 'Item', select: 'design_number description' })
+            .populate({ path: 'submit_history.item', model: 'Item', select: 'design_number description' })
+
+
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
+        return res.status(200).json({ result: worker });
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+
+}

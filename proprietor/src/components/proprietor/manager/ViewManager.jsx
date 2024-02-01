@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 
-import { getManager } from '../../../../api'
+import { getManager } from '../../../api'
 import { Select, MenuItem, Typography } from '@mui/material'
-import ViewTable from './ViewTable'
+import ViewTable from '../../layouts/ViewTable'
 
 const ViewManager = ({ manager }) => {
 
