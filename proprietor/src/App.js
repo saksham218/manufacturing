@@ -8,14 +8,14 @@ import Signup from './components/Signup';
 
 function App() {
 
-  const [proprietor, setProprietor] = useState({ name: "", proprietor_id: "" })
+
   return (
     <div>
       <Router>
         <Routes>
-          <Route path="/login" element={<Login setProprietor={setProprietor} />} />
-          <Route path="/signup" element={<Signup setProprietor={setProprietor} />} />
-          <Route path="/:proprietor/*" element={<Proprietor proprietor={proprietor} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/:proprietor/*" element={<Proprietor />} />
         </Routes>
       </Router>
       {/* <Proprietor /> */}

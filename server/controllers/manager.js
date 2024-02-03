@@ -1,3 +1,6 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
 import Manager from "../models/manager.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
@@ -13,10 +16,15 @@ export const addManager = async (req, res) => {
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
         const oldManager = await Manager.findOne({ manager_id: manager_id });
         if (oldManager) return res.status(400).json({ message: "Manager already exists" });
-        const result = await Manager.create({ name, contact_number, address, manager_id, password, proprietor: proprietor._id });
-        res.status(200).json({ result });
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const result = await Manager.create({ name, contact_number, address, manager_id, password: hashedPassword, proprietor: proprietor._id });
+
+
+        return res.status(200).json({ name: result.name, manager_id: result.manager_id });
     }
     catch (error) {
+        console.log(error);
         res.status(500).json({ message: "Something went wrong" });
     }
 
@@ -26,6 +34,7 @@ export const getManager = async (req, res) => {
 
     const manager_id = req.params.manager_id;
     console.log("get manager manager_id: ", manager_id);
+    console.log(req.headers.authorization)
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 })
             .populate({ path: 'issue_history.item', model: 'Item', select: 'design_number description' })
@@ -48,6 +57,7 @@ export const getManagers = async (req, res) => {
 
     const proprietor_id = req.params.proprietor_id;
     console.log("get managers proprietor_id: ", proprietor_id);
+    console.log(req.headers.authorization)
 
     try {
 
@@ -200,27 +210,26 @@ export const submitToProprietor = async (req, res) => {
 export const loginManager = async (req, res) => {
     console.log(req.body);
     const { manager_id, password } = req.body;
+    console.log(req.headers.authorization)
 
     try {
-        const oldManager = await Manager.findOne({ manager_id });
+        const oldManager = await Manager.findOne({ manager_id }, { password: 1, name: 1, manager_id: 1 });
 
         if (!oldManager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        // const isPasswordCorrect = await bcrypt.compare(password, oldProprietor.password);
-
-        const isPasswordCorrect = (password === oldManager.password);
+        const isPasswordCorrect = await bcrypt.compare(password, oldManager.password);
 
         if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
 
-        // const token = jwt.sign({ proprietor_id: oldProprietor._id }, process.env.SECRET_KEY, { expiresIn: "1h" });
+        const manager_token = jwt.sign({ manager_id: oldManager.manager_id }, process.env.SECRET_KEY, { expiresIn: "1h" });
 
         // res.status(200).json({ result: oldProprietor, token });
-
-        res.status(200).json({ result: oldManager });
+        // const result = { manager_id: oldManager.manager_id, name: oldManager.name, token: token };
+        return res.status(200).json({ result: { manager_id: oldManager.manager_id, name: oldManager.name }, manager_token });
 
     } catch (error) {
+        console.log(error);
         res.status(500).json({ message: "Something went wrong" });
 
-        console.log(error);
     }
 };

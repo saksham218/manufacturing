@@ -7,9 +7,16 @@ import Proprietor from './Proprietor'
 import Worker from './worker/Worker'
 import View from './View'
 
-const Manager = ({ manager }) => {
+const Manager = () => {
+
 
     const match = useMatch("/:manager/*")
+    const manager = localStorage.getItem('manager') ? JSON.parse(localStorage.getItem('manager')) : null;
+
+
+    if (!manager) {
+        return <Navigate to="/login" />
+    }
 
     return (
         <div>

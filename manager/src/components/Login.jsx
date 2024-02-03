@@ -1,28 +1,36 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 
 import { FormControl, InputLabel, Input, Button, FormGroup, Typography } from '@mui/material'
 
 import { loginManager } from '../api/index.js'
 
 
-const Login = ({ setManager }) => {
+const Login = () => {
+
 
     const navigate = useNavigate()
-
     const [credentials, setCredentials] = useState({ manager_id: "", password: "" })
+
+    if (localStorage.getItem('manager')) {
+        return <Navigate to={`/${JSON.parse(localStorage.getItem('manager')).manager_id}`} />
+    }
+
 
     const onSubmit = async () => {
         console.log(credentials)
 
         try {
             const res = await loginManager(credentials)
-            console.log(res.data.result)
-            setManager({ name: res.data.result.name, manager_id: res.data.result.manager_id })
-            setCredentials({ manager_id: "", password: "" })
+            console.log(res.data)
+
+
+            localStorage.setItem('manager', JSON.stringify({ name: res.data.result.name, manager_id: res.data.result.manager_id }))
+            localStorage.setItem('manager_token', res.data.manager_token)
 
             navigate('/' + res.data.result.manager_id)
 
+            setCredentials({ manager_id: "", password: "" })
 
 
         }

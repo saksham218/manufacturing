@@ -4,6 +4,17 @@ const service = axios.create({
     baseURL: 'http://localhost:5000'
 })
 
+service.interceptors.request.use((config) => {
+    const token = localStorage.getItem('manager_token')
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+    }
+    return config
+}, (error) => {
+    console.log("hi")
+    return Promise.reject(error)
+})
+
 export const loginManager = (manager) => service.post('/manager/login', manager)
 export const addWorker = (newWorker, manager_id) => service.post(`/worker/${manager_id}/addworker`, newWorker)
 export const getWorkers = (manager_id) => service.get(`/worker/${manager_id}/getworkers`)
@@ -17,3 +28,5 @@ export const submitFromWorker = (submission, worker_id) => service.post(`/worker
 export const getPricesForSubmit = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpricesforsubmit`)
 export const submitToProprietor = (submission, manager_id) => service.post(`/manager/${manager_id}/submittoproprietor`, submission)
 export const getItemsForFinalSubmit = (manager_id) => service.get(`/item/${manager_id}/itemsforfinalsubmit`)
+export const getManager = (manager_id) => service.get(`/manager/${manager_id}/getmanager`)
+export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}/workerdetails`)

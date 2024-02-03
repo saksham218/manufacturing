@@ -9,13 +9,19 @@ import Manager from './manager/Manager'
 import Item from './Item'
 
 
-const Proprietor = ({ proprietor }) => {
+const Proprietor = () => {
 
-    const params = useParams()
+    // const params = useParams()
     // const { url, path } = useRouteMatch()
     const match = useMatch("/:proprietor/*")
+    const proprietor = localStorage.getItem('proprietor') ? JSON.parse(localStorage.getItem('proprietor')) : null;
+
+
+    if (!proprietor) {
+        return <Navigate to="/login" />
+    }
     console.log(match)
-    console.log(params)
+    // console.log(params)
     return (
         <div>
             <Header proprietor={proprietor} />

@@ -1,17 +1,21 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { Typography, FormGroup, FormControl, InputLabel, Input, Button } from '@mui/material'
 
 import { createProprietor } from '../api/index.js'
 
 
 
-const Signup = ({ setProprietor }) => {
+const Signup = () => {
 
     const navigate = useNavigate()
 
     const [newProprietor, setNewProprietor] = useState({ name: "", proprietor_id: "", password: "" })
     const [confirmPassword, setConfirmPassword] = useState("")
+
+    if (localStorage.getItem('proprietor')) {
+        return <Navigate to={`/${JSON.parse(localStorage.getItem('proprietor')).proprietor_id}`} />
+    }
 
     const onSubmit = async () => {
         console.log(newProprietor)
@@ -20,10 +24,12 @@ const Signup = ({ setProprietor }) => {
         console.log(res.data.result)
 
 
-        setProprietor({ name: res.data.result.name, proprietor_id: res.data.result.proprietor_id })
+        localStorage.setItem('proprietor', JSON.stringify({ name: res.data.result.name, proprietor_id: res.data.result.proprietor_id }))
+        localStorage.setItem('proprietor_token', res.data.proprietor_token)
+        navigate('/' + res.data.result.proprietor_id)
+
         setNewProprietor({ name: "", id: "", password: "" })
         setConfirmPassword("")
-        navigate('/' + res.data.result.proprietor_id)
     }
 
     return (
