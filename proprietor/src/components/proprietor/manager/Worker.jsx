@@ -51,12 +51,23 @@ const Worker = ({ manager, proprietor }) => {
         getItemsData();
     }, [])
 
+    const getWorkerData = async (worker_id) => {
+        try {
+            const res = await getWorkerDetails(worker_id)
+            console.log(res.data)
+            setWorkerDetails(res.data.result)
+        }
+        catch (err) {
+            console.log(err)
+        }
+    }
+
     const onWorkerSelect = async (e) => {
         console.log(e.target.value)
         setWorker({ ...worker, worker_id: e.target.value })
-        const res = await getWorkerDetails(e.target.value)
-        console.log(res.data.result)
-        setWorkerDetails(res.data.result)
+        getWorkerData(e.target.value);
+        setCustomPrice({ design_number: "", price: "" })
+        setPrice("")
     }
 
     const onItemSelect = (e) => {
@@ -70,7 +81,10 @@ const Worker = ({ manager, proprietor }) => {
         try {
             const res = await addCustomPrice(customPrice, worker.worker_id)
             console.log(res.data)
+            getWorkerData(worker.worker_id);
             setCustomPrice({ design_number: "", price: "" })
+            setPrice("")
+
         }
         catch (err) {
             console.log(err)

@@ -10,11 +10,12 @@ const Submit = ({ worker, manager }) => {
     const [prices, setPrices] = useState([])
     const [max, setMax] = useState(0)
 
-    const getItemsData = async () => {
+    const getItemsData = async (worker_id) => {
         try {
-            const res = await getItemsForSubmit(worker.worker_id)
+            const res = await getItemsForSubmit(worker_id)
             console.log(res.data)
             setItems(res.data)
+
         }
         catch (err) {
             console.log(err)
@@ -39,7 +40,9 @@ const Submit = ({ worker, manager }) => {
     useEffect(() => {
         console.log("get items")
         console.log(manager)
-        getItemsData();
+        getItemsData(worker.worker_id);
+        setPrices([])
+        setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks: "" })
     }, [worker])
 
     const onSubmit = async (e) => {

@@ -59,7 +59,7 @@ const Manager = ({ proprietor }) => {
                 </Box>
                 <Routes>
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/viewmanager`} />} />
-                    <Route path={`/viewmanager`} element={<ViewManager manager={manager} />} />
+                    <Route path={`/viewmanager`} element={<ViewManager manager={manager} getManagersData={getManagersData} />} />
                     <Route path={`/issue`} element={<Issue manager={manager} proprietor={proprietor} />} />
                     <Route path={`/worker`} element={<Worker manager={manager} proprietor={proprietor} />} />
                     <Route path={`/payment`} element={<Payment manager={manager} />} />

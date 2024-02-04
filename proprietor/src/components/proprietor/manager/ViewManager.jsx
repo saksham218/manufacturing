@@ -4,7 +4,7 @@ import { getManager } from '../../../api'
 import { Select, MenuItem, Typography } from '@mui/material'
 import ViewTable from '../../layouts/ViewTable'
 
-const ViewManager = ({ manager }) => {
+const ViewManager = ({ manager, getManagersData }) => {
 
     const [managerDetails, setManagerDetails] = useState({})
 
@@ -19,6 +19,10 @@ const ViewManager = ({ manager }) => {
             console.log(err)
         }
     }
+
+    useEffect(() => {
+        getManagersData();
+    }, [])
 
     useEffect(() => {
         console.log("get manager")

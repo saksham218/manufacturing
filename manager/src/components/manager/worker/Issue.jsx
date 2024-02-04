@@ -15,6 +15,7 @@ const Issue = ({ worker, manager }) => {
             const res = await getItemsForIssue(manager.manager_id)
             console.log(res.data)
             setItems(res.data)
+            setIssue({ design_number: "", quantity: "", price: "" })
         }
         catch (err) {
             console.log(err)
@@ -27,7 +28,7 @@ const Issue = ({ worker, manager }) => {
             const res = await getPriceForIssue(worker.worker_id, e.target.value)
             console.log(res.data)
 
-            setIssue({ ...issue, price: res.data.price, design_number: e.target.value })
+            setIssue({ ...issue, price: res.data.price, design_number: e.target.value, quantity: "" })
             console.log(issue);
             setMax(res.data.quantity_available)
         }
@@ -40,7 +41,9 @@ const Issue = ({ worker, manager }) => {
         console.log("get items")
         console.log(manager)
         getItemsData();
-    }, [manager])
+    }, [manager, worker])
+
+
 
     const onSubmit = async (e) => {
         e.preventDefault()

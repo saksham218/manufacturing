@@ -55,7 +55,7 @@ const Worker = ({ manager }) => {
                 </Box>
                 <Routes>
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
-                    <Route path={`/view`} element={<ViewWorker worker={worker} />} />
+                    <Route path={`/view`} element={<ViewWorker worker={worker} getWorkersData={getWorkersData} />} />
                     <Route path={`/issue`} element={<Issue worker={worker} manager={manager} />} />
                     <Route path={`/submit`} element={<Submit worker={worker} manager={manager} />} />
                     <Route path={`/payment`} element={<Payment worker={worker} />} />

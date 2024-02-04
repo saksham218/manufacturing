@@ -4,7 +4,7 @@ import { Select, MenuItem, Typography } from '@mui/material'
 import { getWorkerDetails } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
 
-const ViewWorker = ({ worker }) => {
+const ViewWorker = ({ worker, getWorkersData }) => {
     const [workerDetails, setWorkerDetails] = useState({})
 
     const getWorkerData = async () => {
@@ -18,6 +18,10 @@ const ViewWorker = ({ worker }) => {
             console.log(err)
         }
     }
+
+    useEffect(() => {
+        getWorkersData();
+    }, []);
 
     useEffect(() => {
         console.log("get worker")

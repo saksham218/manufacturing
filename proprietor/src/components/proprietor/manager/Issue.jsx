@@ -41,7 +41,7 @@ const Issue = ({ manager, proprietor }) => {
         <div>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
                 <InputLabel>Item</InputLabel>
-                <Select value={issue.design_number} onChange={(e) => { setIssue({ ...issue, design_number: e.target.value }); console.log(issue); }}>
+                <Select value={issue.design_number} onChange={(e) => { setIssue({ ...issue, design_number: e.target.value, quantity: "" }); console.log(issue); }}>
                     {items.map((item) => (
                         <MenuItem value={item.design_number}>{item.design_number}-{item.description}</MenuItem>
                     ))}
