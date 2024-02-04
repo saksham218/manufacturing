@@ -17,11 +17,11 @@ const Header = ({ manager }) => {
     }
     return (
         <div>
-            <Box>
-                <Typography>Manufacturing</Typography>
-                <Button onClick={onLogout}>Logout</Button>
+            <Box style={{ display: 'flex', backgroundColor: "lightblue" }}>
+                <Typography variant='h5'>Manufacturing</Typography>
+                <Button style={{ marginLeft: "1000px", height: "30px", width: "80px" }} onClick={onLogout} variant="contained" color="primary">Logout</Button>
             </Box>
-            <Typography>{manager.name}</Typography>
+            <Typography variant='h6'>Manager: {manager.name}</Typography>
         </div>
     )
 }

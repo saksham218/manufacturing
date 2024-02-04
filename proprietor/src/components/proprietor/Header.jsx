@@ -16,9 +16,11 @@ const Header = ({ proprietor }) => {
     }
     return (
         <div>
-            <Box><Typography>Manufacturing</Typography>
-                <Button onClick={onLogout}>Logout</Button></Box>
-            <Typography>{proprietor.name}</Typography>
+            <Box style={{ display: 'flex', backgroundColor: "lightblue" }}>
+                <Typography variant='h5'>Manufacturing</Typography>
+                <Button style={{ marginLeft: "1000px", height: "30px", width: "80px" }} onClick={onLogout} variant="contained" color="primary">Logout</Button>
+            </Box>
+            <Typography variant="h6">Proprietor: {proprietor.name}</Typography>
         </div>
     )
 }

@@ -38,8 +38,8 @@ const Login = () => {
 
     }
     return (
-        <div>
-            <Typography variant="h4">Login</Typography>
+        <div style={{ padding: "20px" }}>
+            <Typography variant="h4">Proprietor Login</Typography>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
 
                 <FormControl style={{ padding: "15px" }}>
@@ -56,6 +56,7 @@ const Login = () => {
 
                     onClick={onSubmit}>Login</Button>
             </FormGroup>
+            <Typography style={{ paddingLeft: "80px" }}>New Proprietor? <Button style={{ textDecoration: "underline" }} onClick={() => { navigate('/signup'); }}>Signup</Button></Typography>
         </div>
     )
 }

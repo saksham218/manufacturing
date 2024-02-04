@@ -1,17 +1,23 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { AppBar, Toolbar, Typography, Button } from '@mui/material'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+
+import './Navbar.css'
 
 const Navbar = ({ match }) => {
+
+    const navigate = useNavigate()
+    const [option, setOption] = useState("manager")
+
     console.log(match)
     return (
         <div>
 
             <AppBar position="static" style={{ boxShadow: 'none' }}>
-                <Toolbar>
-                    <Button color="inherit" component={Link} to={`${match.pathnameBase}/manager`}>Manager</Button>
-                    <Button color="inherit" component={Link} to={`${match.pathnameBase}/item`}>Items</Button>
+                <Toolbar className='navbar'>
+                    <Button className={option === 'manager' ? "selected" : ""} color="inherit" onClick={() => { navigate(`${match.pathnameBase}/manager`); setOption("manager"); }} >Manager</Button>
+                    <Button className={option === 'item' ? "selected" : ""} color="inherit" onClick={() => { navigate(`${match.pathnameBase}/item`); setOption("item"); }}>Items</Button>
                 </Toolbar>
             </AppBar>
         </div>

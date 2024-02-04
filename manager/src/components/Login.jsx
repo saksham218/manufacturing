@@ -43,8 +43,8 @@ const Login = () => {
 
     }
     return (
-        <div>
-            <Typography variant="h4">Login</Typography>
+        <div style={{ padding: "20px" }}>
+            <Typography variant="h4">Manager Login</Typography>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
 
                 <FormControl style={{ padding: "15px" }}>

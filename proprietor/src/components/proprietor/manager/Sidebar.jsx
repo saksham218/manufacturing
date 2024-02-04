@@ -1,8 +1,14 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Drawer, List, ListItem, ListItemText } from '@mui/material'
 
+import './Sidebar.css'
+
 const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
+
+    const navigate = useNavigate()
+    const [option, setOption] = useState("view")
+
     console.log(match)
     return (
         <div >
@@ -18,20 +24,20 @@ const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
                     },
                 }}
             >
-                <List>
-                    <ListItem component={Link} to={`${match.pathnameBase}/viewmanager`} onClick={() => { setIsAddManager(false) }}>
+                <List className='sidebar'>
+                    <ListItem className={option === "view" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/viewmanager`); setOption("view"); }}>
                         <ListItemText primary="View Manager" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/issue`} onClick={() => { setIsAddManager(false) }}>
+                    <ListItem className={option === "issue" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/issue`); setOption("issue"); }}>
                         <ListItemText primary="Issue" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/worker`} onClick={() => { setIsAddManager(false) }}>
+                    <ListItem className={option === "worker" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/worker`); setOption("worker"); }}>
                         <ListItemText primary="Worker" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/payment`} onClick={() => { setIsAddManager(false) }}>
+                    <ListItem className={option === "payment" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/payment`); setOption("payment"); }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/addmanager`} onClick={() => { setIsAddManager(true) }}>
+                    <ListItem className={option === "addmanager" ? "selected" : ""} onClick={() => { setIsAddManager(true); navigate(`${match.pathnameBase}/addmanager`); setOption("payaddmanager"); }}>
                         <ListItemText primary="Add Manager" />
                     </ListItem>
                 </List>

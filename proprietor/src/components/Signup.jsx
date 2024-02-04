@@ -33,8 +33,8 @@ const Signup = () => {
     }
 
     return (
-        <div>
-            <Typography variant="h4">Signup</Typography>
+        <div style={{ padding: "20px" }}>
+            <Typography variant="h4">Proprietor Signup</Typography>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
 
 
@@ -65,8 +65,8 @@ const Signup = () => {
 
             </FormGroup>
 
-
-        </div>
+            <Typography style={{ paddingLeft: "80px" }}>Proprietor already registered? <Button style={{ textDecoration: "underline" }} onClick={() => { navigate('/login'); }}>Login</Button></Typography>
+        </div >
     )
 }
 

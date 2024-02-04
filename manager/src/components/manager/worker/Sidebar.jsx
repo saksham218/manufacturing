@@ -1,8 +1,15 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Drawer, List, ListItem, ListItemText } from '@mui/material'
+import React, { useState } from 'react'
+
+import { useNavigate, Link } from 'react-router-dom'
+import { Drawer, List, ListItem, ListItemText, Button } from '@mui/material'
+
+import './Sidebar.css'
 
 const Sidebar = ({ match, setIsAddWorker }) => {
+
+    const navigate = useNavigate()
+    const [option, setOption] = useState("view")
+
     console.log(match)
     return (
         <div >
@@ -18,20 +25,20 @@ const Sidebar = ({ match, setIsAddWorker }) => {
                     },
                 }}
             >
-                <List>
-                    <ListItem component={Link} to={`${match.pathnameBase}/view`} onClick={() => { setIsAddWorker(false) }}>
+                <List className="sidebar">
+                    <ListItem className={option === "view" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/view`); setOption("view"); }}>
                         <ListItemText primary="View Worker" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/issue`} onClick={() => { setIsAddWorker(false) }}>
+                    <ListItem className={option === "issue" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/issue`); setOption("issue"); }}>
                         <ListItemText primary="Issue" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/submit`} onClick={() => { setIsAddWorker(false) }}>
+                    <ListItem className={option === "submit" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/submit`); setOption("submit"); }}>
                         <ListItemText primary="Submit" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/payment`} onClick={() => { setIsAddWorker(false) }}>
+                    <ListItem className={option === "payment" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/payment`); setOption("payment"); }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
-                    <ListItem component={Link} to={`${match.pathnameBase}/addworker`} onClick={() => { setIsAddWorker(true) }}>
+                    <ListItem className={option === "add" ? "selected" : ""} onClick={() => { setIsAddWorker(true); navigate(`${match.pathnameBase}/addworker`); setOption("add"); }}>
                         <ListItemText primary="Add Worker" />
                     </ListItem>
                 </List>

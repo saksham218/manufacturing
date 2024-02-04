@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, Box } from '@mui/material'
 
 import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
@@ -99,30 +99,37 @@ const Worker = ({ manager, proprietor }) => {
                     <MenuItem value={w.worker_id}>{w.name}</MenuItem>
                 ))}
             </Select>
-            <FormGroup style={{ width: "500px", padding: "20px" }}>
+            <Box style={{ display: 'flex' }}>
+                <Box style={{ paddingTop: '20px', paddingRight: '30px' }}>
+                    <Typography>Add Custom Price:</Typography>
+                    <FormGroup style={{ width: "200px" }}>
 
-                <InputLabel>Item</InputLabel>
-                <Select value={customPrice.design_number} onChange={onItemSelect}>
-                    {items.map((item) => (
-                        <MenuItem value={item.design_number}>{item.design_number}-{item.description}</MenuItem>
-                    ))}
-                </Select>
+                        <InputLabel>Item</InputLabel>
+                        <Select value={customPrice.design_number} onChange={onItemSelect}>
+                            {items.map((item) => (
+                                <MenuItem value={item.design_number}>{item.design_number}-{item.description}</MenuItem>
+                            ))}
+                        </Select>
 
-                <Typography>General price: {price}</Typography>
-                <FormControl style={{ padding: "15px" }}>
-                    <InputLabel>Price</InputLabel>
-                    <Input type="number" value={customPrice.price} onChange={(e) => setCustomPrice({ ...customPrice, price: e.target.value })} />
-                </FormControl>
-                <Button onClick={onSubmit} variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                    disabled={customPrice.design_number === "" || customPrice.price === "" || customPrice.price === "0" || worker.worker_id === ""}>Add</Button>
-            </FormGroup>
-            <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); console.log(workerDetails[detail]) }}>
-                {details.map((d) => (
-                    <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
-                ))}
-            </Select>
-            {(workerDetails[detail] && workerDetails[detail].length > 0) ? <ViewTable data={workerDetails[detail]} />
-                : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
+                        <Typography>General price: {price}</Typography>
+                        <FormControl style={{ padding: "15px" }}>
+                            <InputLabel>Price</InputLabel>
+                            <Input type="number" value={customPrice.price} onChange={(e) => setCustomPrice({ ...customPrice, price: e.target.value })} />
+                        </FormControl>
+                        <Button onClick={onSubmit} variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
+                            disabled={customPrice.design_number === "" || customPrice.price === "" || customPrice.price === "0" || worker.worker_id === ""}>Add</Button>
+                    </FormGroup>
+                </Box>
+                <Box style={{ width: '800px', paddingTop: '20px' }}>
+                    <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); console.log(workerDetails[detail]) }}>
+                        {details.map((d) => (
+                            <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
+                        ))}
+                    </Select>
+                    {(workerDetails[detail] && workerDetails[detail].length > 0) ? <ViewTable data={workerDetails[detail]} />
+                        : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
+                </Box>
+            </Box>
         </div>
     )
 }
