@@ -40,7 +40,7 @@ const Submit = ({ worker, manager }) => {
         console.log("get items")
         console.log(manager)
         getItemsData();
-    }, [manager])
+    }, [worker])
 
     const onSubmit = async (e) => {
         e.preventDefault()

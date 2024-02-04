@@ -18,7 +18,7 @@ const Item = ({ proprietor }) => {
         try {
             const submitItem = { ...newItem, proprietor_id: proprietor.proprietor_id }
             console.log(submitItem)
-            const res = await createItem(submitItem)
+            const res = await createItem(submitItem, proprietor.proprietor_id)
             console.log(res)
             // setItems(...items, res.data.result)
             getItemsData();

@@ -26,7 +26,7 @@ const ViewManager = ({ manager }) => {
         getManagerData();
     }, [manager])
 
-    const details = ['issue_history', 'submit_history', 'due_forward', 'due_backward', 'total_due']
+    const details = ['total_due', 'due_forward', 'due_backward', 'issue_history', 'submit_history']
 
     const [detail, setDetail] = useState(details[0])
 

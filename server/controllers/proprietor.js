@@ -39,7 +39,7 @@ export const newProprietor = async (req, res) => {
 export const loginProprietor = async (req, res) => {
     console.log(req.body);
     const { proprietor_id, password } = req.body;
-    console.log(req.headers.authorization);
+
     try {
         const oldProprietor = await Proprietor.findOne({ proprietor_id });
 
