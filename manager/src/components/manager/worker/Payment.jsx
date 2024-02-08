@@ -11,12 +11,14 @@ const Payment = ({ worker }) => {
     const today = new Date()
     const [payment, setPayment] = useState({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
     const [payments, setPayments] = useState([])
+    const [dueAmount, setDueAmount] = useState(0)
 
     const getPaymentsData = async () => {
         try {
             const res = await getPayments(worker.worker_id)
             console.log(res.data)
-            setPayments(res.data)
+            setPayments(res.data.payment_history)
+            setDueAmount(res.data.due_amount)
         }
         catch (err) {
             console.log(err)
@@ -61,6 +63,7 @@ const Payment = ({ worker }) => {
                     </FormGroup>
                 </Box>
                 <Box style={{ width: "600px", padding: "20px" }}>
+                    <Typography>Due Amount: {dueAmount}</Typography>
                     <Typography>Payment History:</Typography>
                     <Table container={Paper}>
                         <TableHead>

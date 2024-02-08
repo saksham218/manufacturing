@@ -64,6 +64,7 @@ export const recordPayment = async (req, res) => {
         if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
         const [day, month, year] = date.split('/').map(Number);
         const dateObj = new Date(year, month - 1, day);
+        worker.due_amount -= amount;
         worker.payment_history.push({ amount: amount, date: dateObj, remarks: remarks });
         // console.log("manager: ", manager);
         await worker.save();
@@ -83,7 +84,7 @@ export const getPayments = async (req, res) => {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
         if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
-        res.status(200).json(worker.payment_history);
+        res.status(200).json({ payment_history: worker.payment_history, due_amount: worker.due_amount });
     }
     catch (error) {
         console.log(error)

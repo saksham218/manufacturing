@@ -37,7 +37,7 @@ const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
                     <ListItem className={option === "payment" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/payment`); setOption("payment"); }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
-                    <ListItem className={option === "addmanager" ? "selected" : ""} onClick={() => { setIsAddManager(true); navigate(`${match.pathnameBase}/addmanager`); setOption("payaddmanager"); }}>
+                    <ListItem className={option === "addmanager" ? "selected" : ""} onClick={() => { setIsAddManager(true); navigate(`${match.pathnameBase}/addmanager`); setOption("addmanager"); }}>
                         <ListItemText primary="Add Manager" />
                     </ListItem>
                 </List>
