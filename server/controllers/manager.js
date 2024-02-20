@@ -100,6 +100,7 @@ export const recordPayment = async (req, res) => {
         const [day, month, year] = date.split('/').map(Number);
         const dateObj = new Date(year, month - 1, day);
         manager.payment_history.push({ amount: amount, date: dateObj, remarks: remarks });
+        manager.due_amount -= Number(amount);
         // console.log("manager: ", manager);
         await manager.save();
         res.status(200).json({ result: manager });
@@ -180,7 +181,7 @@ export const submitToProprietor = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("submit to proprietor manager_id: ", manager_id);
-    const { design_number, quantity } = req.body;
+    const { design_number, quantity, price, deduction, remarks } = req.body;
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
 
@@ -204,27 +205,58 @@ export const submitToProprietor = async (req, res) => {
             }
         }
 
-        const db_index = manager.due_backward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity)));
-        if (db_index === -1) {
-            return res.status(404).json({ message: `${quantity} of ${design_number} not due backward at ${manager_id}` });
+        const dbIndex = manager.due_backward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity) && dueItem.price === Number(price) && Number(dueItem.deduction) === Number(deduction) && dueItem.remarks === remarks));
+        if (dbIndex === -1) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} not due backward at ${manager_id} with price: ${price}, deduction: ${deduction} and remarks: ${remarks}` });
         }
         else {
-            manager.due_backward[db_index].quantity -= Number(quantity);
-            if (manager.due_backward[db_index].quantity === 0) {
-                manager.due_backward.splice(db_index, 1);
+            manager.due_backward[dbIndex].quantity -= Number(quantity);
+            if (manager.due_backward[dbIndex].quantity === 0) {
+                manager.due_backward.splice(dbIndex, 1);
             }
         }
 
+        manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
+
         const dateObj = new Date();
-        manager.submit_history.push({ item: item._id, quantity: quantity, date: dateObj });
+        manager.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: deduction, remarks: remarks, date: dateObj });
         // console.log("manager: ", manager);
         await manager.save();
-        res.status(200).json({ result: manager });
+        return res.status(200).json({ result: manager });
 
     }
     catch (error) {
         console.log(error)
         res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
+
+export const raiseExpenseRequest = async (req, res) => {
+    console.log(req.body);
+    const manager_id = req.params.manager_id;
+    console.log(`raise expense request manager_id: ${manager_id}`);
+    const { amount, remarks } = req.body;
+
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id });
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
+
+        const dateObj = new Date();
+        if (!manager.expense_requests)
+            manager.expense_requests = [];
+        manager.expense_requests.push({ amount: amount, remarks: remarks, date: dateObj });
+        manager.due_amount += Number(amount);
+        // console.log("manager: ", manager);
+        await manager.save();
+        return res.status(200).json({ result: manager });
+
+    }
+    catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "Something went wrong" });
     }
 }
 
@@ -256,3 +288,24 @@ export const loginManager = async (req, res) => {
 
     }
 };
+
+export const getPricesForFinalSubmit = async (req, res) => {
+    const manager_id = req.params.manager_id;
+    const design_number = req.params.design_number;
+    console.log(`get prices for final submit manager_id: ${manager_id} design_number: ${design_number}`);
+
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+
+    try {
+        const manager = await Manager.findOne({ manager_id: manager_id });
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+        const prices = manager.due_backward.filter((db) => db.item.equals(item._id)).map((db) => ({ quantity: db.quantity, price: db.price, deduction: db.deduction ? db.deduction : 0, remarks: db.remarks }));
+        res.status(200).json(prices);
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}

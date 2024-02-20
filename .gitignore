@@ -5,4 +5,6 @@ proprietor/.env
 proprietor/node_modules
 manager/.env
 manager/node_modules
+proprietor/build
+manager/build
 ```

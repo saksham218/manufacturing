@@ -36,6 +36,9 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            price: Number,
+            deduction: Number,
+            remarks: String,
             date: Date,
         }],
         default: []
@@ -57,6 +60,9 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            price: Number,
+            deduction: Number,
+            remarks: String,
         }],
         default: []
     },
@@ -76,6 +82,18 @@ const managerSchema = new mongoose.Schema({
             remarks: String
         }],
         default: []
+    },
+    expense_requests: {
+        type: [{
+            amount: Number,
+            date: Date,
+            remarks: String
+        }],
+        default: []
+    },
+    due_amount: {
+        type: Number,
+        default: 0
     },
 });
 

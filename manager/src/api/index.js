@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const baseURL = process.env.REACT_APP_BASE_URL
+// const baseURL = process.env.REACT_APP_BASE_URL
+const baseURL = 'http://localhost:5000'
+
 const service = axios.create({
     baseURL: baseURL
 })
@@ -29,5 +31,7 @@ export const submitFromWorker = (submission, worker_id) => service.post(`/worker
 export const getPricesForSubmit = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpricesforsubmit`)
 export const submitToProprietor = (submission, manager_id) => service.post(`/manager/${manager_id}/submittoproprietor`, submission)
 export const getItemsForFinalSubmit = (manager_id) => service.get(`/item/${manager_id}/itemsforfinalsubmit`)
+export const getPricesForFinalSubmit = (manager_id, design_number) => service.get(`/manager/${manager_id}/${design_number}/getpricesforfinalsubmit`)
+export const raiseExpenseRequest = (expense, manager_id) => service.post(`/manager/${manager_id}/raiseexpenserequest`, expense)
 export const getManager = (manager_id) => service.get(`/manager/${manager_id}/getmanager`)
 export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}/workerdetails`)

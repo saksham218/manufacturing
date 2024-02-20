@@ -1,0 +1,7 @@
+.sidebar li:hover {
+    background-color: lightgrey;
+}
+
+.sidebar .selected {
+    background-color: grey;
+}

@@ -255,14 +255,29 @@ export const submitFromWorker = async (req, res) => {
             return res.status(400).json({ message: `${quantity} of ${design_number} not issued to ${worker_id} @ ${price}` });
         }
 
-        const index = manager.due_backward.findIndex((db) => (db.item.equals(item._id)));
-        if (index === -1) {
-            manager.due_backward.push({ item: item._id, quantity: quantity });
+        if (Number(deduction) > Number(price))
+            return res.status(400).json({ message: "Deduction cannot be more than price" });
+
+        if (Number(quantity) === 0)
+            return res.status(400).json({ message: "Quantity cannot be 0" });
+
+        if (Number(deduction) !== 0 && !remarks)
+            return res.status(400).json({ message: "Remarks required for deduction" });
+
+        if (Number(deduction) !== 0 || remarks) {
+            manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks });
         }
         else {
-            manager.due_backward[index].quantity += Number(quantity);
+            const index = manager.due_backward.findIndex((db) => (db.item.equals(item._id) && db.price === Number(price) && Number(db.deduction) === 0 && !db.remarks));
+            if (index === -1) {
+                manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks });
+            }
+            else {
+                manager.due_backward[index].quantity += Number(quantity);
+            }
         }
         await manager.save();
+        console.log("manager saved in submit from worker");
 
         worker.due_items[quantityIndex].quantity -= Number(quantity);
         if (worker.due_items[quantityIndex].quantity === 0)
@@ -271,12 +286,14 @@ export const submitFromWorker = async (req, res) => {
         worker.due_amount += ((Number(price) - Number(deduction)) * Number(quantity))
 
         const dateObj = new Date();
-        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: deduction, remarks: remarks, date: dateObj });
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks, date: dateObj });
 
 
         // console.log("manager: ", manager);
         await worker.save();
-        res.status(200).json({ result: worker });
+        console.log("worker saved in submit from worker");
+
+        return res.status(200).json({ result: worker });
 
     }
     catch (error) {

@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { addManager, getManager, getManagers, recordPayment, getPayments, issueToManager, loginManager, submitToProprietor } from '../controllers/manager.js';
+import { addManager, getManager, getManagers, recordPayment, getPayments, issueToManager, loginManager, submitToProprietor, raiseExpenseRequest, getPricesForFinalSubmit } from '../controllers/manager.js';
 import proprietor from '../middleware/proprietor.js';
 import manager from '../middleware/manager.js';
 
@@ -13,6 +13,8 @@ router.post('/:manager_id/recordpayment', proprietor, recordPayment);
 router.get('/:manager_id/getpayments', proprietor, getPayments);
 router.post('/:manager_id/issuetomanager', proprietor, issueToManager);
 router.post('/:manager_id/submittoproprietor', manager, submitToProprietor);
+router.get('/:manager_id/:design_number/getpricesforfinalsubmit', manager, getPricesForFinalSubmit);
+router.post('/:manager_id/raiseexpenserequest', manager, raiseExpenseRequest);
 router.post('/login', loginManager);
 
 export default router;

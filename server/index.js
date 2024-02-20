@@ -22,6 +22,21 @@ app.use('/item', itemRoutes);
 app.use('/manager', managerRoutes);
 app.use('/worker', workerRoutes);
 
+// // Define the originalConsoleLog function
+// const originalConsoleLog = console.log;
+
+// // Override console.log to prepend timestamps
+// console.log = function () {
+//     const timestamp = new Date().toISOString();
+//     const updatedArguments = Array.from(arguments).map(arg => {
+//         if (typeof arg === 'string' || arg instanceof String)
+//             return `[${timestamp}]: ${arg}`;
+//         else
+//             return `[${timestamp}]: ${JSON.stringify(arg)}`
+//     });
+//     originalConsoleLog.apply(console, updatedArguments);
+// };
+
 const CONNECTION_URL = process.env.MONGODB_URL
 const PORT = process.env.PORT || 5000;
 
