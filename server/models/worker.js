@@ -38,7 +38,10 @@ const workerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            underprocessing_value: Number,
+            thread_raw_material: String,
             price: Number,
+            remarks: String,
             date: Date,
         }],
         default: []

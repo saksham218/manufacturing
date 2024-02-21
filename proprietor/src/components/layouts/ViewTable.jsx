@@ -17,7 +17,7 @@ const ViewTable = ({ data }) => {
                     <TableRow>
                         {keys.map((key) => (
 
-                            <TableCell>{key.charAt(0).toUpperCase() + key.slice(1)}</TableCell>
+                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))}
                     </TableRow>
                     {data.map((row) => (
@@ -25,7 +25,7 @@ const ViewTable = ({ data }) => {
                             {keys.map((key) => {
                                 if (key === 'date') {
                                     const date = new Date(row[key])
-                                    return <TableCell>{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</TableCell>
+                                    return <TableCell>{date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/{date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/{date.getFullYear()}</TableCell>
                                 }
                                 else if (key === 'item') {
                                     return <TableCell>{row[key].design_number}-{row[key].description}</TableCell>

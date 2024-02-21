@@ -96,7 +96,7 @@ export const issueToWorker = async (req, res) => {
     console.log(req.body);
     const worker_id = req.params.worker_id;
     console.log("issue to worker worker_id: ", worker_id);
-    const { design_number, quantity, price } = req.body;
+    const { design_number, quantity, price, underprocessing_value, thread_raw_material, remarks } = req.body;
 
     try {
         const worker = await Worker.findOne({ worker_id: worker_id });
@@ -129,15 +129,8 @@ export const issueToWorker = async (req, res) => {
             manager.due_forward.splice(quantityIndex, 1)
         await manager.save();
 
-
-
-
-
-
-
-
         const dateObj = new Date();
-        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, date: dateObj });
+        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, remarks: remarks, date: dateObj });
 
         const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.price === Number(price)));
         if (index === -1) {
@@ -204,7 +197,7 @@ export const getPricesForSubmit = async (req, res) => {
     console.log("get prices for submit design_number: ", design_number);
 
     try {
-        console.log("hi")
+
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 

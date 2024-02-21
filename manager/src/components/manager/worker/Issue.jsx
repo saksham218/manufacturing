@@ -5,7 +5,7 @@ import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 
 const Issue = ({ worker, manager }) => {
     console.log(worker)
-    const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "" })
+    const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
     const [items, setItems] = useState([])
     const [max, setMax] = useState(0)
 
@@ -15,7 +15,7 @@ const Issue = ({ worker, manager }) => {
             const res = await getItemsForIssue(manager.manager_id)
             console.log(res.data)
             setItems(res.data)
-            setIssue({ design_number: "", quantity: "", price: "" })
+            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
         }
         catch (err) {
             console.log(err)
@@ -72,8 +72,23 @@ const Issue = ({ worker, manager }) => {
                     <InputLabel>Quantity</InputLabel>
                     <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
                 </FormControl>
+                <FormControl style={{ padding: "15px" }}>
+                    <InputLabel>Underprocessing Value</InputLabel>
+                    <Input type="number" value={issue.underprocessing_value} onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }} />
+                </FormControl>
+                <FormControl style={{ padding: "15px" }}>
+                    <InputLabel>Thread Raw Material</InputLabel>
+                    <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
+                </FormControl>
+
+                <FormControl style={{ padding: "15px" }}>
+                    <InputLabel>Remarks</InputLabel>
+                    <Input value={issue.remarks} onChange={(e) => { setIssue({ ...issue, remarks: e.target.value }); console.log(issue); }} />
+                </FormControl>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                    disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0"}>Issue</Button>
+                    disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
+                        issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
+                        issue.thread_raw_material === "" || issue.remarks === ""}>Issue</Button>
             </FormGroup>
 
         </div>

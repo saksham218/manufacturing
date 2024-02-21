@@ -17,7 +17,7 @@ export const getItems = async (req, res) => {
 
         const items = await Item.find({ proprietor: proprietor._id }, { _id: 0, proprietor: 0, __v: 0 })
 
-        res.status(200).json(items)
+        return res.status(200).json(items)
     }
     catch (err) {
         console.log(err)

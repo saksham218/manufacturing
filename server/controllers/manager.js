@@ -133,7 +133,7 @@ export const issueToManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("issue to manager manager_id: ", manager_id);
-    const { design_number, quantity } = req.body;
+    const { design_number, quantity, underprocessing_value, thread_raw_material, general_price, remarks } = req.body;
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
@@ -146,10 +146,11 @@ export const issueToManager = async (req, res) => {
 
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+        if (item.price !== Number(general_price)) return res.status(400).json({ message: "General price doesn't match" });
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
-        manager.issue_history.push({ item: item._id, quantity: quantity, date: dateObj });
+        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, general_price: general_price, remarks: remarks, date: dateObj });
         const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
         if (df_index === -1) {
             manager.due_forward.push({ item: item._id, quantity: quantity });

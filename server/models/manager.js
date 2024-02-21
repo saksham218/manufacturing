@@ -25,6 +25,10 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            underprocessing_value: Number,
+            thread_raw_material: String,
+            general_price: Number,
+            remarks: String,
             date: Date,
         }],
         default: []
