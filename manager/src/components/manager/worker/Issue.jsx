@@ -3,19 +3,29 @@ import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Ty
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 
+
+
 const Issue = ({ worker, manager }) => {
     console.log(worker)
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
     const [items, setItems] = useState([])
+    const [itemIndex, setItemIndex] = useState("")
     const [max, setMax] = useState(0)
+
+    const [open, setOpen] = useState(false);
 
 
     const getItemsData = async () => {
         try {
             const res = await getItemsForIssue(manager.manager_id)
             console.log(res.data)
-            setItems(res.data)
+            let i = 0;
+            const itemsData = res.data.map((item) => {
+                return { ...item, index: i++ }
+            })
+            setItems(itemsData)
             setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
+            setItemIndex("")
         }
         catch (err) {
             console.log(err)
@@ -25,12 +35,23 @@ const Issue = ({ worker, manager }) => {
     const onItemSelect = async (e) => {
 
         try {
-            const res = await getPriceForIssue(worker.worker_id, e.target.value)
+            setItemIndex(e.target.value)
+
+            const res = await getPriceForIssue(worker.worker_id, items[e.target.value].design_number)
             console.log(res.data)
 
-            setIssue({ ...issue, price: res.data.price, design_number: e.target.value, quantity: "" })
+
+            setIssue({
+                ...issue,
+                price: res.data.price,
+                design_number: items[e.target.value].design_number,
+                quantity: "",
+                underprocessing_value: items[e.target.value].underprocessing_value,
+                thread_raw_material: "",
+                remarks: items[e.target.value].remarks_from_proprietor
+            })
             console.log(issue);
-            setMax(res.data.quantity_available)
+            setMax(items[e.target.value].quantity)
         }
         catch (err) {
             console.log(err)
@@ -51,7 +72,7 @@ const Issue = ({ worker, manager }) => {
             const res = await issueToWorker(issue, worker.worker_id)
             console.log(res.data)
 
-            setIssue({ design_number: "", quantity: "" })
+            await getItemsData();
         }
         catch (err) {
             console.log(err)
@@ -62,33 +83,29 @@ const Issue = ({ worker, manager }) => {
         <div>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
                 <InputLabel>Item</InputLabel>
-                <Select value={issue.design_number} onChange={onItemSelect}>
+                <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
                     {items.map((item) => (
-                        <MenuItem value={item.design_number}>{item.design_number}-{item.description}</MenuItem>
+                        <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}, Thread/Raw Material Available-${item.thread_raw_material}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
                     ))}
                 </Select>
                 <Typography>Price: {issue.price}</Typography>
-                <FormControl style={{ padding: "15px" }}>
+                <Typography>Underprocessing Value: {issue.underprocessing_value}</Typography>
+                <Typography style={{ marginTop: "25px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
+                <FormControl style={{ marginTop: "20px" }}>
                     <InputLabel>Quantity</InputLabel>
                     <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
                 </FormControl>
-                <FormControl style={{ padding: "15px" }}>
-                    <InputLabel>Underprocessing Value</InputLabel>
-                    <Input type="number" value={issue.underprocessing_value} onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }} />
-                </FormControl>
-                <FormControl style={{ padding: "15px" }}>
+                <Typography style={{ marginTop: "25px" }}>Thread/Raw Material Available: {itemIndex !== "" && items[itemIndex].thread_raw_material}</Typography>
+                <FormControl style={{ marginTop: "20px" }}>
                     <InputLabel>Thread Raw Material</InputLabel>
                     <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
                 </FormControl>
 
-                <FormControl style={{ padding: "15px" }}>
-                    <InputLabel>Remarks</InputLabel>
-                    <Input value={issue.remarks} onChange={(e) => { setIssue({ ...issue, remarks: e.target.value }); console.log(issue); }} />
-                </FormControl>
+                <Typography>Remarks from Proprietor: {issue.remarks}</Typography>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
                         issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.thread_raw_material === "" || issue.remarks === ""}>Issue</Button>
+                        issue.thread_raw_material === ""}>Issue</Button>
             </FormGroup>
 
         </div>

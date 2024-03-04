@@ -28,6 +28,8 @@ const workerSchema = new mongoose.Schema({
             },
             quantity: Number,
             price: Number,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
         }],
         default: []
     },
@@ -38,10 +40,10 @@ const workerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            price: Number,
             underprocessing_value: Number,
             thread_raw_material: String,
-            price: Number,
-            remarks: String,
+            remarks_from_proprietor: String,
             date: Date,
         }],
         default: []
@@ -55,7 +57,9 @@ const workerSchema = new mongoose.Schema({
             quantity: Number,
             price: Number,
             deduction: Number,
-            remarks: String,
+            remarks_from_manager: String,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
             date: Date,
         }],
         default: []

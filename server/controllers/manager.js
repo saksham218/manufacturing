@@ -120,7 +120,7 @@ export const getPayments = async (req, res) => {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
         if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
-        res.status(200).json(manager.payment_history);
+        return res.status(200).json({ payment_history: manager.payment_history, due_amount: manager.due_amount });
     }
     catch (error) {
         console.log(error)
@@ -150,22 +150,31 @@ export const issueToManager = async (req, res) => {
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
-        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, general_price: general_price, remarks: remarks, date: dateObj });
-        const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
-        if (df_index === -1) {
-            manager.due_forward.push({ item: item._id, quantity: quantity });
+        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, general_price: general_price, remarks_from_proprietor: remarks, date: dateObj });
+
+        // const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
+        // if (df_index === -1) {
+        //     manager.due_forward.push({ item: item._id, quantity: quantity, });
+        // }
+        // else {
+        //     manager.due_forward[df_index].quantity += Number(quantity);
+        // }
+
+        manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, remarks_from_proprietor: remarks });
+
+        if (remarks === "") {
+            const td_index = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));
+            if (td_index === -1) {
+                manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+            }
+            else {
+                manager.total_due[td_index].quantity += Number(quantity);
+            }
         }
         else {
-            manager.due_forward[df_index].quantity += Number(quantity);
+            manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
         }
 
-        const td_index = manager.total_due.findIndex((dueItem) => dueItem.item.equals(item._id));
-        if (td_index === -1) {
-            manager.total_due.push({ item: item._id, quantity: quantity });
-        }
-        else {
-            manager.total_due[td_index].quantity += Number(quantity);
-        }
         // console.log("manager: ", manager);
         await manager.save();
         res.status(200).json({ result: manager });
@@ -182,7 +191,7 @@ export const submitToProprietor = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("submit to proprietor manager_id: ", manager_id);
-    const { design_number, quantity, price, deduction, remarks } = req.body;
+    const { design_number, quantity, price, deduction, remarks_from_proprietor, remarks_from_manager, underprocessing_value } = req.body;
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
 
@@ -195,20 +204,20 @@ export const submitToProprietor = async (req, res) => {
         // const dateObj = new Date(year, month - 1, day);
 
 
-        const td_index = manager.total_due.findIndex((dueItem) => dueItem.item.equals(item._id));
-        if (td_index === -1) {
-            return res.status(404).json({ message: `${quantity} of ${design_number} not issued to ${manager_id}` });
+        const tdIndex = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity) && dueItem.remarks_from_proprietor === remarks_from_proprietor && dueItem.underprocessing_value === Number(underprocessing_value)));
+        if (tdIndex === -1) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor} not issued to ${manager_id}` });
         }
         else {
-            manager.total_due[td_index].quantity -= Number(quantity);
-            if (manager.total_due[td_index].quantity === 0) {
-                manager.total_due.splice(td_index, 1);
+            manager.total_due[tdIndex].quantity -= Number(quantity);
+            if (manager.total_due[tdIndex].quantity === 0) {
+                manager.total_due.splice(tdIndex, 1);
             }
         }
 
-        const dbIndex = manager.due_backward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity) && dueItem.price === Number(price) && Number(dueItem.deduction) === Number(deduction) && dueItem.remarks === remarks));
+        const dbIndex = manager.due_backward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity) && dueItem.price === Number(price) && Number(dueItem.deduction) === Number(deduction) && dueItem.remarks_from_manager === remarks_from_manager && dueItem.underprocessing_value === Number(underprocessing_value) && dueItem.remarks_from_proprietor === remarks_from_proprietor));
         if (dbIndex === -1) {
-            return res.status(404).json({ message: `${quantity} of ${design_number} not due backward at ${manager_id} with price: ${price}, deduction: ${deduction} and remarks: ${remarks}` });
+            return res.status(404).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} not due backward at ${manager_id} with price: ${price}, deduction: ${deduction} and remarks from manager: ${remarks_from_manager} and remarks from proprietor:${remarks_from_proprietor}` });
         }
         else {
             manager.due_backward[dbIndex].quantity -= Number(quantity);
@@ -220,7 +229,7 @@ export const submitToProprietor = async (req, res) => {
         manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
 
         const dateObj = new Date();
-        manager.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: deduction, remarks: remarks, date: dateObj });
+        manager.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: deduction, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: dateObj });
         // console.log("manager: ", manager);
         await manager.save();
         return res.status(200).json({ result: manager });

@@ -28,7 +28,7 @@ const managerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             thread_raw_material: String,
             general_price: Number,
-            remarks: String,
+            remarks_from_proprietor: String,
             date: Date,
         }],
         default: []
@@ -42,7 +42,8 @@ const managerSchema = new mongoose.Schema({
             quantity: Number,
             price: Number,
             deduction: Number,
-            remarks: String,
+            remarks_from_proprietor: String,
+            remarks_from_manager: String,
             date: Date,
         }],
         default: []
@@ -54,6 +55,9 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            underprocessing_value: Number,
+            thread_raw_material: String,
+            remarks_from_proprietor: String,
         }],
         default: []
     },
@@ -66,7 +70,9 @@ const managerSchema = new mongoose.Schema({
             quantity: Number,
             price: Number,
             deduction: Number,
-            remarks: String,
+            remarks_from_manager: String,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
         }],
         default: []
     },
@@ -77,6 +83,8 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Item'
             },
             quantity: Number,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
         }],
     },
     payment_history: {

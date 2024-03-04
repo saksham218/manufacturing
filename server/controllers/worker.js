@@ -119,9 +119,12 @@ export const issueToWorker = async (req, res) => {
                 return res.status(400).json({ message: "Price doesn't match" });
         }
 
-        const quantityIndex = manager.due_forward.findIndex((df) => (df.item.equals(item._id) && df.quantity >= Number(quantity)));
+        const quantityIndex = manager.due_forward.findIndex((df) => {
+            return (df.item.equals(item._id) && df.quantity >= Number(quantity) && df.underprocessing_value === Number(underprocessing_value) && df.remarks_from_proprietor === remarks)
+        });
+
         if (quantityIndex === -1) {
-            return res.status(400).json({ message: "Quantity not available" });
+            return res.status(400).json({ message: `Quantity not available for ${design_number}, underprocessing_value: ${underprocessing_value} and remarks_from_proprietor: ${remarks}` });
         }
 
         manager.due_forward[quantityIndex].quantity -= Number(quantity);
@@ -130,14 +133,20 @@ export const issueToWorker = async (req, res) => {
         await manager.save();
 
         const dateObj = new Date();
-        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, remarks: remarks, date: dateObj });
+        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, remarks_from_proprietor: remarks, date: dateObj });
 
-        const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.price === Number(price)));
-        if (index === -1) {
-            worker.due_items.push({ item: item._id, price: price, quantity: quantity });
+        if (remarks === "") {
+            const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.remarks_from_proprietor === "" && di.price === Number(price) && di.underprocessing_value === Number(underprocessing_value)));
+            if (index === -1) {
+                worker.due_items.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+            }
+            else {
+                worker.due_items[index].quantity += Number(quantity);
+            }
         }
         else {
-            worker.due_items[index].quantity += Number(quantity);
+            worker.due_items.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+
         }
 
         // console.log("manager: ", manager);
@@ -166,21 +175,21 @@ export const getPriceForIssue = async (req, res) => {
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
-        var quantity = 0;
-        const quantityIndex = worker.manager.due_forward.findIndex((df) => df.item.equals(item._id));
-        if (quantityIndex !== -1) {
-            quantity = worker.manager.due_forward[quantityIndex].quantity;
-        }
-        else {
-            return res.status(400).json({ message: `${design_number} is not available for issue` });
-        }
+        // var quantity = 0;
+        // const quantityIndex = worker.manager.due_forward.findIndex((df) => df.item.equals(item._id));
+        // if (quantityIndex !== -1) {
+        //     quantity = worker.manager.due_forward[quantityIndex].quantity;
+        // }
+        // else {
+        //     return res.status(400).json({ message: `${design_number} is not available for issue` });
+        // }
 
         const priceIndex = worker.custom_prices.findIndex((cp) => cp.item.equals(item._id));
         if (priceIndex !== -1) {
-            res.status(200).json({ price: worker.custom_prices[priceIndex].price, quantity_available: quantity });
+            res.status(200).json({ price: worker.custom_prices[priceIndex].price });
         }
         else {
-            res.status(200).json({ price: item.price, quantity_available: quantity });
+            res.status(200).json({ price: item.price });
         }
 
     }
@@ -229,7 +238,7 @@ export const submitFromWorker = async (req, res) => {
     console.log(req.body);
     const worker_id = req.params.worker_id;
     console.log("submit from worker worker_id: ", worker_id);
-    const { design_number, quantity, price, deduction, remarks } = req.body;
+    const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value } = req.body;
 
     try {
         const worker = await Worker.findOne({ worker_id: worker_id });
@@ -243,9 +252,9 @@ export const submitFromWorker = async (req, res) => {
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
-        const quantityIndex = worker.due_items.findIndex((df) => (df.item.equals(item._id) && df.quantity >= Number(quantity) && df.price === Number(price)));
+        const quantityIndex = worker.due_items.findIndex((df) => (df.item.equals(item._id) && df.quantity >= Number(quantity) && df.price === Number(price) && df.underprocessing_value === Number(underprocessing_value) && df.remarks_from_proprietor === remarks_from_proprietor));
         if (quantityIndex === -1) {
-            return res.status(400).json({ message: `${quantity} of ${design_number} not issued to ${worker_id} @ ${price}` });
+            return res.status(400).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor}, not issued to ${worker_id} @ ${price}` });
         }
 
         if (Number(deduction) > Number(price))
@@ -257,13 +266,13 @@ export const submitFromWorker = async (req, res) => {
         if (Number(deduction) !== 0 && !remarks)
             return res.status(400).json({ message: "Remarks required for deduction" });
 
-        if (Number(deduction) !== 0 || remarks) {
-            manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks });
+        if (Number(deduction) !== 0 || remarks !== "" || remarks_from_proprietor !== "") {
+            manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor });
         }
         else {
-            const index = manager.due_backward.findIndex((db) => (db.item.equals(item._id) && db.price === Number(price) && Number(db.deduction) === 0 && !db.remarks));
+            const index = manager.due_backward.findIndex((db) => (db.item.equals(item._id) && db.remarks_from_manager === "" && db.remarks_from_proprietor === "" && db.price === Number(price) && Number(db.deduction) === 0 && db.underprocessing_value === Number(underprocessing_value)));
             if (index === -1) {
-                manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks });
+                manager.due_backward.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor });
             }
             else {
                 manager.due_backward[index].quantity += Number(quantity);
@@ -279,7 +288,7 @@ export const submitFromWorker = async (req, res) => {
         worker.due_amount += ((Number(price) - Number(deduction)) * Number(quantity))
 
         const dateObj = new Date();
-        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks: remarks, date: dateObj });
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj });
 
 
         // console.log("manager: ", manager);

@@ -45,16 +45,16 @@ const Payment = ({ worker }) => {
     return (
         <div>
             <Box style={{ display: 'flex' }}>
-                <Box style={{ width: "400px", padding: "20px" }}>
+                <Box style={{ width: "400px", marginTop: "20px" }}>
                     <FormGroup >
-                        <FormControl style={{ padding: "15px" }}>
+                        <FormControl style={{ marginTop: "15px", marginBottom: "15px" }}>
                             <InputLabel>Amount</InputLabel>
                             <Input type="number" value={payment.amount} onChange={(e) => { setPayment({ ...payment, amount: e.target.value }); console.log(payment); }} />
                         </FormControl>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker format='DD/MM/YYYY' value={dayjs(payment.date, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setPayment({ ...payment, date: d.format('DD/MM/YYYY') }); console.log(payment) }} />
                         </LocalizationProvider>
-                        <FormControl style={{ padding: "15px" }}>
+                        <FormControl style={{ marginTop: "15px" }}>
                             <InputLabel>Remarks</InputLabel>
                             <Input value={payment.remarks} onChange={(e) => { setPayment({ ...payment, remarks: e.target.value }); console.log(payment); }} />
                         </FormControl>
@@ -81,7 +81,7 @@ const Payment = ({ worker }) => {
                             return (
                                 <TableRow>
                                     <TableCell>{p.amount}</TableCell>
-                                    <TableCell>{d.getDate()} / {d.getMonth() + 1} / {d.getFullYear()}</TableCell>
+                                    <TableCell>{d.getDate() < 10 ? ("0" + d.getDate()) : d.getDate()}/{d.getMonth() < 9 ? ("0" + (d.getMonth() + 1)) : (d.getMonth() + 1)}/{d.getFullYear()}</TableCell>
                                     <TableCell>{p.remarks}</TableCell>
                                 </TableRow>);
                         })}

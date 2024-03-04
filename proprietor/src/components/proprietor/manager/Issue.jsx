@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
 
 import { getItems, issueToManager } from '../../../api'
-import { Form } from 'react-router-dom'
+
 
 const Issue = ({ manager, proprietor }) => {
     console.log(manager)
@@ -48,27 +48,27 @@ const Issue = ({ manager, proprietor }) => {
                     ))}
                 </Select>
                 <Typography>General price: {issue.general_price}</Typography>
-                <FormControl style={{ padding: "15px" }}>
+                <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Quantity</InputLabel>
                     <Input type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
                 </FormControl>
-                <FormControl style={{ padding: "15px" }}>
+                <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Underprocessing Value</InputLabel>
                     <Input type="number" value={issue.underprocessing_value} onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }} />
                 </FormControl>
-                <FormControl style={{ padding: "15px" }}>
+                <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Thread Raw Material</InputLabel>
                     <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
                 </FormControl>
 
-                <FormControl style={{ padding: "15px" }}>
+                <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Remarks</InputLabel>
                     <Input value={issue.remarks} onChange={(e) => { setIssue({ ...issue, remarks: e.target.value }); console.log(issue); }} />
                 </FormControl>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
                         issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.thread_raw_material === "" || issue.remarks === ""}>Issue</Button>
+                        issue.thread_raw_material === ""}>Issue</Button>
             </FormGroup>
 
         </div>

@@ -69,18 +69,26 @@ export const getItemsForIssue = async (req, res) => {
 
         const itemsForIssue = []
         console.log(manager.due_forward)
+        // items.forEach((item) => {
+        //     const index = manager.due_forward.findIndex((df) => {
+        //         console.log(df.item)
+        //         console.log(item._id)
+        //         return (df.item.equals(item._id) && df.quantity > 0);
+        //     })
+        //     console.log(index)
+        //     if (index !== -1) {
+        //         console.log("hi")
+        //         console.log(manager.due_forward[index])
+        //         itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: manager.due_forward[index].quantity, underprocessing_value: manager.due_forward[index].underprocessing_value, thread_raw_material: manager.due_forward[index].thread_raw_material, remarks_from_proprietor: manager.due_forward[index].remarks_from_proprietor })
+        //     }
+        // })
+
         items.forEach((item) => {
-            const index = manager.due_forward.findIndex((df) => {
-                console.log(df.item)
-                console.log(item._id)
-                return (df.item.equals(item._id) && df.quantity > 0);
+            manager.due_forward.forEach((df) => {
+                if (df.item.equals(item._id) && df.quantity > 0) {
+                    itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, underprocessing_value: df.underprocessing_value, thread_raw_material: df.thread_raw_material, remarks_from_proprietor: df.remarks_from_proprietor })
+                }
             })
-            console.log(index)
-            if (index !== -1) {
-                console.log("hi")
-                console.log(manager.due_forward[index])
-                itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: manager.due_forward[index].quantity })
-            }
         })
 
         return res.status(200).json(itemsForIssue)
@@ -104,11 +112,19 @@ export const getItemsForSubmit = async (req, res) => {
         const items = await Item.find({ proprietor: worker.manager.proprietor })
 
         const itemsForSubmit = []
+        // items.forEach((item) => {
+        //     const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity > 0))
+        //     if (index !== -1) {
+        //         itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: worker.due_items[index].quantity })
+        //     }
+        // })
+
         items.forEach((item) => {
-            const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity > 0))
-            if (index !== -1) {
-                itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: worker.due_items[index].quantity })
-            }
+            worker.due_items.forEach((di) => {
+                if (di.item.equals(item._id) && di.quantity > 0) {
+                    itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor })
+                }
+            })
         })
 
         return res.status(200).json(itemsForSubmit)
@@ -131,11 +147,19 @@ export const getItemsForFinalSubmit = async (req, res) => {
         const items = await Item.find({ proprietor: manager.proprietor })
 
         const itemsForFinalSubmit = []
+        // items.forEach((item) => {
+        //     const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
+        //     if (index !== -1) {
+        //         itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: manager.due_backward[index].quantity })
+        //     }
+        // })
+
         items.forEach((item) => {
-            const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
-            if (index !== -1) {
-                itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: manager.due_backward[index].quantity })
-            }
+            manager.due_backward.forEach((df) => {
+                if (df.item.equals(item._id) && df.quantity > 0) {
+                    itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, price: df.price, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, remarks_from_manager: df.remarks_from_manager, deduction: df.deduction })
+                }
+            })
         })
 
         return res.status(200).json(itemsForFinalSubmit)
