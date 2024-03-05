@@ -11,7 +11,7 @@ import AddWorker from './AddWorker'
 import { getWorkers } from '../../../api'
 
 
-const Worker = ({ manager }) => {
+const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
     // var workers = [];
     const [workers, setWorkers] = useState([])
     const [worker, setWorker] = useState({})
@@ -21,7 +21,15 @@ const Worker = ({ manager }) => {
             const res = await getWorkers(manager.manager_id)
             console.log(res.data)
             setWorkers(res.data)
-            setWorker(res.data[0])
+            const i = res.data.findIndex((wkr) => wkr.worker_id === currentWorker.worker_id)
+            console.log("index: ", i)
+            if (i !== -1) {
+                setWorker(res.data[i])
+            }
+            else {
+                setWorker(res.data[0])
+                setCurrentWorker(res.data[0])
+            }
         }
         catch (err) {
             console.log(err)
@@ -46,7 +54,7 @@ const Worker = ({ manager }) => {
             <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
                 <Box style={{ display: isAddWorker ? "none" : "block" }}>
                     <Typography>Select Worker</Typography>
-                    <Select value={worker} onChange={(e) => { setWorker(e.target.value); console.log(worker) }}>
+                    <Select value={worker} onChange={(e) => { setWorker(e.target.value); setCurrentWorker(e.target.value); console.log(worker) }}>
                         {workers.map((wkr) => (
                             <MenuItem value={wkr}>{wkr.name}</MenuItem>
 

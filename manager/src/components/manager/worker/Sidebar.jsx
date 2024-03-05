@@ -4,11 +4,16 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Drawer, List, ListItem, ListItemText, Button } from '@mui/material'
 
 import './Sidebar.css'
+import { useEffect } from 'react'
 
 const Sidebar = ({ match, setIsAddWorker }) => {
 
     const navigate = useNavigate()
-    const [option, setOption] = useState("view")
+    const [option, setOption] = useState("")
+
+    useEffect(() => {
+        setOption(match.pathname.split("/")[3])
+    }, [match])
 
     console.log(match)
     return (
@@ -38,7 +43,7 @@ const Sidebar = ({ match, setIsAddWorker }) => {
                     <ListItem className={option === "payment" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/payment`); setOption("payment"); }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
-                    <ListItem className={option === "add" ? "selected" : ""} onClick={() => { setIsAddWorker(true); navigate(`${match.pathnameBase}/addworker`); setOption("add"); }}>
+                    <ListItem className={option === "addworker" ? "selected" : ""} onClick={() => { setIsAddWorker(true); navigate(`${match.pathnameBase}/addworker`); setOption("addworker"); }}>
                         <ListItemText primary="Add Worker" />
                     </ListItem>
                 </List>

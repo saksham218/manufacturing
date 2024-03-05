@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { useNavigate, Link } from 'react-router-dom'
 import { Drawer, List, ListItem, ListItemText, Button } from '@mui/material'
@@ -8,7 +8,12 @@ import './Sidebar.css'
 const Sidebar = ({ match }) => {
 
     const navigate = useNavigate()
-    const [option, setOption] = useState("submititems")
+    const [option, setOption] = useState("")
+
+    useEffect(() => {
+        setOption(match.pathname.split("/")[3])
+    }, [match])
+
 
     console.log(match)
     return (

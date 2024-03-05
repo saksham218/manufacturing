@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Routes, Route, Navigate, useMatch } from 'react-router-dom'
 
 import Header from './Header'
@@ -13,6 +13,8 @@ const Manager = () => {
     const match = useMatch("/:manager/*")
     const manager = localStorage.getItem('manager') ? JSON.parse(localStorage.getItem('manager')) : null;
 
+    const [currentWorker, setCurrentWorker] = useState({})
+
 
     if (!manager) {
         return <Navigate to="/login" />
@@ -26,7 +28,7 @@ const Manager = () => {
             <Routes>
                 <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
                 <Route path={`/view`} element={<View manager={manager} />} />
-                <Route path={`/worker/*`} element={<Worker manager={manager} />} />
+                <Route path={`/worker/*`} element={<Worker manager={manager} currentWorker={currentWorker} setCurrentWorker={setCurrentWorker} />} />
                 <Route path={`/proprietor/*`} element={<Proprietor manager={manager} />} />
             </Routes>
         </div>

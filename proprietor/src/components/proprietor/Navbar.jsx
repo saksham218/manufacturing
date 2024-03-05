@@ -4,11 +4,16 @@ import { AppBar, Toolbar, Typography, Button } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
 import './Navbar.css'
+import { useEffect } from 'react'
 
 const Navbar = ({ match }) => {
 
     const navigate = useNavigate()
-    const [option, setOption] = useState("manager")
+    const [option, setOption] = useState("")
+
+    useEffect(() => {
+        setOption(match.pathname.split("/")[2])
+    }, [match])
 
     console.log(match)
     return (

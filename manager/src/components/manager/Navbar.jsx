@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppBar, Toolbar, Button } from '@mui/material'
 
@@ -7,7 +7,11 @@ import './Navbar.css'
 const Navbar = ({ match }) => {
 
     const navigate = useNavigate();
-    const [option, setOption] = useState("view")
+    const [option, setOption] = useState("")
+
+    useEffect(() => {
+        setOption(match.pathname.split("/")[2])
+    }, [])
 
     return (
         <div>

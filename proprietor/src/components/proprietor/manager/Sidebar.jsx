@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { Drawer, List, ListItem, ListItemText } from '@mui/material'
 
 import './Sidebar.css'
+import { useEffect } from 'react'
 
 const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
 
     const navigate = useNavigate()
-    const [option, setOption] = useState("view")
+    const [option, setOption] = useState("")
+
+    useEffect(() => {
+        setOption(match.pathname.split("/")[3])
+    }, [match])
 
     console.log(match)
     return (
@@ -25,7 +30,7 @@ const Sidebar = ({ match, isAddManager, setIsAddManager }) => {
                 }}
             >
                 <List className='sidebar'>
-                    <ListItem className={option === "view" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/viewmanager`); setOption("view"); }}>
+                    <ListItem className={option === "viewmanager" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/viewmanager`); setOption("viewmanager"); }}>
                         <ListItemText primary="View Manager" />
                     </ListItem>
                     <ListItem className={option === "issue" ? "selected" : ""} onClick={() => { setIsAddManager(false); navigate(`${match.pathnameBase}/issue`); setOption("issue"); }}>

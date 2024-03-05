@@ -13,7 +13,7 @@ import { getManagers } from '../../../api'
 
 
 
-const Manager = ({ proprietor }) => {
+const Manager = ({ proprietor, currentManager, setCurrentManager }) => {
 
 
     // var managers = [];
@@ -25,7 +25,16 @@ const Manager = ({ proprietor }) => {
             const res = await getManagers(proprietor.proprietor_id)
             console.log(res.data)
             setManagers(res.data)
-            setManager(res.data[0])
+            const i = res.data.findIndex((mgr) => mgr.manager_id === currentManager.manager_id)
+            console.log("index: ", i)
+            if (i !== -1) {
+                setManager(res.data[i])
+            }
+            else {
+                setManager(res.data[0])
+                setCurrentManager(res.data[0])
+            }
+
         }
         catch (err) {
             console.log(err)
@@ -50,7 +59,7 @@ const Manager = ({ proprietor }) => {
             <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
                 <Box style={{ display: isAddManager ? "none" : "block" }}>
                     <Typography>Select Manager</Typography>
-                    <Select value={manager} onChange={(e) => { setManager(e.target.value); console.log(manager) }}>
+                    <Select value={manager} onChange={(e) => { setManager(e.target.value); setCurrentManager(e.target.value); console.log(manager) }}>
                         {managers.map((mgr) => (
                             <MenuItem value={mgr}>{mgr.name}</MenuItem>
 
