@@ -11,7 +11,7 @@ const Navbar = ({ match }) => {
 
     useEffect(() => {
         setOption(match.pathname.split("/")[2])
-    }, [])
+    }, [match])
 
     return (
         <div>

@@ -93,7 +93,10 @@ const Issue = ({ worker, manager }) => {
                 <Typography style={{ marginTop: "25px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
                 <FormControl style={{ marginTop: "20px" }}>
                     <InputLabel>Quantity</InputLabel>
-                    <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
+                    <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity}
+                        onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }}
+                        onWheel={(e) => { e.target.blur(); }}
+                    />
                 </FormControl>
                 <Typography style={{ marginTop: "25px" }}>Thread/Raw Material Available: {itemIndex !== "" && items[itemIndex].thread_raw_material}</Typography>
                 <FormControl style={{ marginTop: "20px" }}>
@@ -105,7 +108,7 @@ const Issue = ({ worker, manager }) => {
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
                         issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.thread_raw_material === ""}>Issue</Button>
+                        issue.quantity > max || issue.thread_raw_material === ""}>Issue</Button>
             </FormGroup>
 
         </div>

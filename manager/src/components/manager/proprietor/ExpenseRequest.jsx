@@ -25,7 +25,11 @@ const ExpenseRequest = ({ manager }) => {
         <FormGroup style={{ width: "500px", padding: "20px" }}>
             <FormControl style={{ padding: "15px" }}>
                 <InputLabel>Amount</InputLabel>
-                <Input type="number" value={expense.amount} onChange={(e) => { setExpense({ ...expense, amount: e.target.value }); console.log(expense) }} />
+                <Input type="number" value={expense.amount}
+                    inputProps={{ min: "0" }}
+                    onChange={(e) => { setExpense({ ...expense, amount: e.target.value }); console.log(expense) }}
+                    onWheel={(e) => { e.target.blur(); }}
+                />
             </FormControl>
             <FormControl style={{ padding: "15px" }}>
                 <InputLabel>Remarks</InputLabel>

@@ -117,7 +117,10 @@ const Submit = ({ worker, manager }) => {
                 <FormControl style={{ marginTop: "10px" }}>
 
                     <InputLabel>Quantity</InputLabel>
-                    <Input disabled={submission.price === ""} inputProps={{ min: 1, max: max }} type="number" value={submission.quantity} onChange={(e) => { setSubmission({ ...submission, quantity: e.target.value }); console.log(submission); }} />
+                    <Input disabled={submission.price === ""} inputProps={{ min: 1, max: max }} type="number" value={submission.quantity}
+                        onChange={(e) => { setSubmission({ ...submission, quantity: e.target.value }); console.log(submission); }}
+                        onWheel={(e) => { e.target.blur(); }}
+                    />
                 </FormControl>
 
                 <FormControl style={{ marginTop: "25px" }}>
@@ -132,7 +135,9 @@ const Submit = ({ worker, manager }) => {
 
 
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                    disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0" || ((submission.deduction !== "0" && submission.deduction !== "") && submission.remarks === "")}>Submit</Button>
+                    disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0"
+                        || submission.quantity > max
+                        || ((submission.deduction !== "0" && submission.deduction !== "") && submission.remarks === "")}>Submit</Button>
             </FormGroup>
 
         </div>

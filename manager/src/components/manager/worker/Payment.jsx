@@ -49,7 +49,11 @@ const Payment = ({ worker }) => {
                     <FormGroup >
                         <FormControl style={{ marginTop: "15px", marginBottom: "15px" }}>
                             <InputLabel>Amount</InputLabel>
-                            <Input type="number" value={payment.amount} onChange={(e) => { setPayment({ ...payment, amount: e.target.value }); console.log(payment); }} />
+                            <Input type="number" value={payment.amount}
+                                inputProps={{ min: "0" }}
+                                onChange={(e) => { setPayment({ ...payment, amount: e.target.value }); console.log(payment); }}
+                                onWheel={(e) => { e.target.blur(); }}
+                            />
                         </FormControl>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker format='DD/MM/YYYY' value={dayjs(payment.date, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setPayment({ ...payment, date: d.format('DD/MM/YYYY') }); console.log(payment) }} />

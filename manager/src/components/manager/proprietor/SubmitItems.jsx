@@ -123,13 +123,16 @@ const SubmitItems = ({ manager }) => {
 
                 <FormControl style={{ marginTop: "10px" }}>
                     <InputLabel>Quantity</InputLabel>
-                    <Input disabled={submission.design_number === ""} type="number" inputProps={{ min: 1, max: max }} value={submission.quantity} onChange={(e) => setSubmission({ ...submission, quantity: e.target.value })} />
+                    <Input disabled={submission.design_number === ""} type="number" inputProps={{ min: 1, max: max }}
+                        value={submission.quantity} onChange={(e) => setSubmission({ ...submission, quantity: e.target.value })}
+                        onWheel={(e) => { e.target.blur(); }}
+                    />
                 </FormControl>
                 <Typography style={{ marginTop: "15px" }}>Underprocessing Value: {itemIndex !== "" && items[itemIndex].underprocessing_value}</Typography>
                 <Typography>Remarks From Proprietor: {itemIndex !== "" && items[itemIndex].remarks_from_proprietor}</Typography>
                 <Button variant="contained" color="primary" onClick={onSubmit} style={{ width: "100px", marginLeft: "100px", marginTop: "15px" }}
-                    disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0" ||
-                        submission.price === ""}>Submit</Button>
+                    disabled={submission.design_number === "" || submission.quantity === "" ||
+                        submission.quantity === "0" || submission.quantity > max || submission.price === ""}>Submit</Button>
             </FormGroup>
         </div>
     )

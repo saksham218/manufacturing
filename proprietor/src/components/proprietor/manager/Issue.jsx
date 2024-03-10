@@ -50,7 +50,11 @@ const Issue = ({ manager, proprietor }) => {
                 <Typography>General price: {issue.general_price}</Typography>
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Quantity</InputLabel>
-                    <Input type="number" value={issue.quantity} onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }} />
+                    <Input type="number" value={issue.quantity}
+                        inputProps={{ min: "0" }}
+                        onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }}
+                        onWheel={(e) => { e.target.blur(); }}
+                    />
                 </FormControl>
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Underprocessing Value</InputLabel>
