@@ -58,7 +58,10 @@ const Issue = ({ manager, proprietor }) => {
                 </FormControl>
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Underprocessing Value</InputLabel>
-                    <Input type="number" value={issue.underprocessing_value} onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }} />
+                    <Input type="number" value={issue.underprocessing_value}
+                        inputProps={{ min: "0" }}
+                        onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }}
+                        onWheel={(e) => { e.target.blur() }} />
                 </FormControl>
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Thread Raw Material</InputLabel>
