@@ -42,7 +42,7 @@ const workerSchema = new mongoose.Schema({
             quantity: Number,
             price: Number,
             underprocessing_value: Number,
-            thread_raw_material: String,
+            // thread_raw_material: String,
             remarks_from_proprietor: String,
             date: Date,
         }],

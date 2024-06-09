@@ -6,7 +6,7 @@ import { getItems, issueToManager } from '../../../api'
 
 const Issue = ({ manager, proprietor }) => {
     console.log(manager)
-    const [issue, setIssue] = useState({ design_number: "", quantity: "", underprocessing_value: "", thread_raw_material: "", general_price: "", remarks: "" })
+    const [issue, setIssue] = useState({ design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "" })
     const [items, setItems] = useState([])
 
     const getItemsData = async () => {
@@ -31,7 +31,7 @@ const Issue = ({ manager, proprietor }) => {
         try {
             const res = await issueToManager(issue, manager.manager_id)
             console.log(res.data)
-            setIssue({ design_number: "", quantity: "", underprocessing_value: "", general_price: "", thread_raw_material: "", remarks: "" })
+            setIssue({ design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "" })
         }
         catch (err) {
             console.log(err)
@@ -63,10 +63,10 @@ const Issue = ({ manager, proprietor }) => {
                         onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }}
                         onWheel={(e) => { e.target.blur() }} />
                 </FormControl>
-                <FormControl style={{ marginTop: "15px" }}>
+                {/* <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Thread Raw Material</InputLabel>
                     <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
-                </FormControl>
+                </FormControl> */}
 
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Remarks</InputLabel>
@@ -74,8 +74,7 @@ const Issue = ({ manager, proprietor }) => {
                 </FormControl>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
-                        issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.thread_raw_material === ""}>Issue</Button>
+                        issue.underprocessing_value === "" || issue.underprocessing_value === "0"}>Issue</Button>
             </FormGroup>
 
         </div>

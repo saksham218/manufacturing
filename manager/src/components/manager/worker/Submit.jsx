@@ -125,7 +125,7 @@ const Submit = ({ worker, manager }) => {
 
                 <FormControl style={{ marginTop: "25px" }}>
                     <InputLabel>Deduction</InputLabel>
-                    <Input disabled={submission.price === ""} inputProps={{ min: 0 }} type="number" value={submission.deduction} onChange={(e) => { setSubmission({ ...submission, deduction: e.target.value }); console.log(submission); }} />
+                    <Input disabled={submission.price === ""} inputProps={{ min: 0 }} type="number" value={submission.deduction} onChange={(e) => { setSubmission({ ...submission, deduction: e.target.value }); console.log(submission); }} onWheel={(e) => { e.target.blur(); }} />
                 </FormControl>
 
                 <FormControl style={{ marginTop: "15px" }}>

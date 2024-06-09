@@ -7,7 +7,7 @@ import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 
 const Issue = ({ worker, manager }) => {
     console.log(worker)
-    const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
+    const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
     const [items, setItems] = useState([])
     const [itemIndex, setItemIndex] = useState("")
     const [max, setMax] = useState(0)
@@ -24,7 +24,7 @@ const Issue = ({ worker, manager }) => {
                 return { ...item, index: i++ }
             })
             setItems(itemsData)
-            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", thread_raw_material: "", remarks: "" })
+            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
             setItemIndex("")
         }
         catch (err) {
@@ -47,7 +47,7 @@ const Issue = ({ worker, manager }) => {
                 design_number: items[e.target.value].design_number,
                 quantity: "",
                 underprocessing_value: items[e.target.value].underprocessing_value,
-                thread_raw_material: "",
+
                 remarks: items[e.target.value].remarks_from_proprietor
             })
             console.log(issue);
@@ -85,7 +85,7 @@ const Issue = ({ worker, manager }) => {
                 <InputLabel>Item</InputLabel>
                 <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
                     {items.map((item) => (
-                        <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}, Thread/Raw Material Available-${item.thread_raw_material}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
+                        <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
                     ))}
                 </Select>
                 <Typography>Price: {issue.price}</Typography>
@@ -98,17 +98,17 @@ const Issue = ({ worker, manager }) => {
                         onWheel={(e) => { e.target.blur(); }}
                     />
                 </FormControl>
-                <Typography style={{ marginTop: "25px" }}>Thread/Raw Material Available: {itemIndex !== "" && items[itemIndex].thread_raw_material}</Typography>
-                <FormControl style={{ marginTop: "20px" }}>
+                {/* <Typography style={{ marginTop: "25px" }}>Thread/Raw Material Available: {itemIndex !== "" && items[itemIndex].thread_raw_material}</Typography> */}
+                {/* <FormControl style={{ marginTop: "20px" }}>
                     <InputLabel>Thread Raw Material</InputLabel>
                     <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
-                </FormControl>
+                </FormControl> */}
 
                 <Typography>Remarks from Proprietor: {issue.remarks}</Typography>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
                     disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
                         issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.quantity > max || issue.thread_raw_material === ""}>Issue</Button>
+                        issue.quantity > max}>Issue</Button>
             </FormGroup>
 
         </div>

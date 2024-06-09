@@ -133,7 +133,7 @@ export const issueToManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("issue to manager manager_id: ", manager_id);
-    const { design_number, quantity, underprocessing_value, thread_raw_material, general_price, remarks } = req.body;
+    const { design_number, quantity, underprocessing_value, general_price, remarks } = req.body;
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
@@ -150,7 +150,7 @@ export const issueToManager = async (req, res) => {
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
-        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, general_price: general_price, remarks_from_proprietor: remarks, date: dateObj });
+        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, general_price: general_price, remarks_from_proprietor: remarks, date: dateObj });
 
         // const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
         // if (df_index === -1) {
@@ -160,7 +160,7 @@ export const issueToManager = async (req, res) => {
         //     manager.due_forward[df_index].quantity += Number(quantity);
         // }
 
-        manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, thread_raw_material: thread_raw_material, remarks_from_proprietor: remarks });
+        manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
 
         if (remarks === "") {
             const td_index = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));

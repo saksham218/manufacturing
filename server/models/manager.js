@@ -26,7 +26,7 @@ const managerSchema = new mongoose.Schema({
             },
             quantity: Number,
             underprocessing_value: Number,
-            thread_raw_material: String,
+            // thread_raw_material: String,
             general_price: Number,
             remarks_from_proprietor: String,
             date: Date,
@@ -56,7 +56,7 @@ const managerSchema = new mongoose.Schema({
             },
             quantity: Number,
             underprocessing_value: Number,
-            thread_raw_material: String,
+            // thread_raw_material: String,
             remarks_from_proprietor: String,
         }],
         default: []

@@ -134,7 +134,7 @@ const Worker = ({ manager, proprietor }) => {
 
     return (
         <div style={{ paddingTop: "10px" }}>
-
+            <Typography>Select Worker</Typography>
             <Select value={worker.worker_id} onChange={onWorkerSelect}>
                 {workers.map((w) => (
                     <MenuItem value={w.worker_id}>{w.name}</MenuItem>
