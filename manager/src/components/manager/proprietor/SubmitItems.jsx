@@ -86,7 +86,9 @@ const SubmitItems = ({ manager }) => {
                                         <TableCell style={{ width: "225px" }}>
 
                                             <Input type="number" placeholder='submit quantity' inputProps={{ min: 0, max: item.quantity }} style={{ width: "135px", marginRight: "10px" }}
-                                                value={item.submit_quantity} onChange={(e) => { let dueBackwardData = dueBackward; dueBackwardData[groupIndex].items[index].submit_quantity = e.target.value; setDueBackward([...dueBackwardData]); }} />
+                                                value={item.submit_quantity} onChange={(e) => { let dueBackwardData = dueBackward; dueBackwardData[groupIndex].items[index].submit_quantity = e.target.value; setDueBackward([...dueBackwardData]); }}
+                                                onWheel={(e) => { e.target.blur(); }}
+                                            />
 
                                             <Button variant="contained" color="primary" onClick={(e) => { onSubmit(e, groupIndex, index) }}
                                                 disabled={item.submit_quantity < 1 || item.submit_quantity > item.quantity}>Submit</Button>

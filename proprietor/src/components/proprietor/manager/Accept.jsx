@@ -96,10 +96,14 @@ const Accept = ({ manager }) => {
                                     <TableCell>
 
                                         <Input type="number" placeholder="accept quantity" inputProps={{ min: 0, max: item.quantity }} style={{ marginTop: "10px", width: "150px" }} value={item.accept_quantity}
-                                            onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].accept_quantity = e.target.value; setSubmissions([...submissionsData]) }} />
+                                            onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].accept_quantity = e.target.value; setSubmissions([...submissionsData]) }}
+                                            onWheel={(e) => { e.target.blur(); }}
+                                        />
 
                                         <Input type="number" placeholder="deduction" inputProps={{ min: 0 }} style={{ marginTop: "10px", width: "150px" }} value={item.deduction}
-                                            onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].deduction = e.target.value; setSubmissions([...submissionsData]) }} />
+                                            onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].deduction = e.target.value; setSubmissions([...submissionsData]) }}
+                                            onWheel={(e) => { e.target.blur(); }}
+                                        />
 
                                         <Input type="text" placeholder="final remarks" style={{ marginTop: "10px", width: "150px" }} value={item.final_remarks}
                                             onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].final_remarks = e.target.value; setSubmissions([...submissionsData]) }} />
