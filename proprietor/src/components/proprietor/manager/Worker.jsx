@@ -27,7 +27,7 @@ const Worker = ({ manager, proprietor }) => {
     const [price, setPrice] = useState("")
     const [customPrice, setCustomPrice] = useState({ design_number: "", price: "" })
 
-    const details = ['due_items', 'issue_history', 'submit_history', 'payment_history', 'custom_prices']
+    const details = ['due_items', 'issue_history', 'submit_history', 'deductions_from_proprietor', 'payment_history', 'custom_prices']
     const [detail, setDetail] = useState(details[0])
 
     const getWorkersData = async () => {

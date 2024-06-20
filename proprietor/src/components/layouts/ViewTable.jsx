@@ -1,4 +1,4 @@
-import { Table, TableHead, TableRow, TableCell, Paper } from '@mui/material'
+import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/material'
 import React from 'react'
 
 const ViewTable = ({ data }) => {
@@ -20,10 +20,12 @@ const ViewTable = ({ data }) => {
                             <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))}
                     </TableRow>
+                </TableHead>
+                <TableBody>
                     {data.map((row) => (
                         <TableRow>
                             {keys.map((key) => {
-                                if (key === 'date') {
+                                if (key.includes('date')) {
                                     const date = new Date(row[key])
                                     return <TableCell>{date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/{date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/{date.getFullYear()}</TableCell>
                                 }
@@ -36,7 +38,7 @@ const ViewTable = ({ data }) => {
                             })}
                         </TableRow>
                     ))}
-                </TableHead>
+                </TableBody>
 
             </Table>
         </div>

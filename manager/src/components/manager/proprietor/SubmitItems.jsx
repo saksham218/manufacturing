@@ -1,141 +1,109 @@
-import React, { useState, useEffect } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Input, FormControl, FormGroup } from '@mui/material'
 
-import { getItemsForFinalSubmit, submitToProprietor, getPricesForFinalSubmit } from '../../../api'
+import { getItemsForFinalSubmit, submitToProprietor } from '../../../api'
 
 const SubmitItems = ({ manager }) => {
-    console.log(manager)
 
-    const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_manager: "", remarks_from_proprietor: "", underprocessing_value: "" })
-    const [items, setItems] = useState([])
-    const [itemIndex, setItemIndex] = useState("")
-    // const [prices, setPrices] = useState([])
-    const [max, setMax] = useState(0)
+    const [dueBackward, setDueBackward] = useState([])
 
-    const [open, setOpen] = useState(false)
 
     const getItemsData = async () => {
         try {
             const res = await getItemsForFinalSubmit(manager.manager_id)
             console.log(res.data)
+            const itemsData = res.data;
+            itemsData.forEach((group) => {
+                group.items = group.items.map((item) => {
+                    return { ...item, submit_quantity: "" }
+                });
+            });
 
-            let i = 0;
-            const itemsData = res.data.map((item) => {
-                return { ...item, index: i++ }
-            })
-            setItems(itemsData)
-            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_manager: "", remarks_from_proprietor: "", underprocessing_value: "" })
-            setItemIndex("")
+            setDueBackward(itemsData)
         }
         catch (err) {
             console.log(err)
         }
     }
 
-
-    const onItemSelect = async (e) => {
+    const onSubmit = async (e, groupIndex, index) => {
         try {
-            // const res = await getPricesForFinalSubmit(manager.manager_id, e.target.value)
-            // console.log(res.data)
-            // setPrices(res.data)
-            setSubmission({
-                ...submission,
-                design_number: items[e.target.value].design_number,
-                quantity: "",
-                price: items[e.target.value].price,
-                deduction: items[e.target.value].deduction,
-                remarks_from_manager: items[e.target.value].remarks_from_manager,
-                remarks_from_proprietor: items[e.target.value].remarks_from_proprietor,
-                underprocessing_value: items[e.target.value].underprocessing_value,
-            })
-            console.log(submission);
-
-            setMax(items[e.target.value].quantity)
-            setItemIndex(e.target.value)
-
-
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
-
-    // const onPriceSelect = (e) => {
-    //     const chosenPrice = JSON.parse(e.target.value)
-    //     setSubmission({ ...submission, quantity: "", price: chosenPrice.price, deduction: chosenPrice.deduction, remarks: chosenPrice.remarks })
-    //     setMax(chosenPrice.quantity)
-    //     console.log(max)
-    // }
-
-    useEffect(() => {
-        console.log("get items")
-        console.log(manager)
-        getItemsData();
-    }, [manager])
-
-
-
-    const onSubmit = async (e) => {
-        e.preventDefault()
-        try {
+            const submission = {
+                worker_id: dueBackward[groupIndex].worker.worker_id,
+                design_number: dueBackward[groupIndex].items[index].item.design_number,
+                submit_quantity: dueBackward[groupIndex].items[index].submit_quantity,
+                price: dueBackward[groupIndex].items[index].price,
+                deduction_from_manager: dueBackward[groupIndex].items[index].deduction_from_manager,
+                remarks_from_manager: dueBackward[groupIndex].items[index].remarks_from_manager,
+                underprocessing_value: dueBackward[groupIndex].items[index].underprocessing_value,
+                remarks_from_proprietor: dueBackward[groupIndex].items[index].remarks_from_proprietor
+            }
+            console.log(submission)
             const res = await submitToProprietor(submission, manager.manager_id)
             console.log(res.data)
-
-            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_manager: "", remarks_from_proprietor: "", underprocessing_value: "" })
-            setItemIndex("")
-            await getItemsData();
+            await getItemsData()
         }
         catch (err) {
             console.log(err)
         }
-
     }
 
+    useEffect(() => {
+        getItemsData()
+    }, [manager])
+
     return (
-        <div>
-            <FormGroup style={{ width: "500px", padding: "20px" }}>
+        <div style={{ paddingTop: "20px", width: "1200px" }}>
+            <Table component={Paper} >
+                <TableHead>
+                    <TableRow>
+                        <TableCell style={{ width: "80px" }}>Worker</TableCell>
+                        <TableCell style={{ width: "80px" }}>Item</TableCell>
+                        <TableCell style={{ width: "40px" }}>Quantity</TableCell>
+                        <TableCell style={{ width: "40px" }}>Price</TableCell>
+                        <TableCell style={{ width: "40px" }}>Deduction from Manager</TableCell>
+                        <TableCell style={{ width: "80px" }}>Remarks from Manager</TableCell>
+                        <TableCell style={{ width: "40px" }}>Underprocessing Value</TableCell>
+                        <TableCell style={{ width: "80px" }}>Remarks from Proprietor</TableCell>
+                        <TableCell style={{ width: "225px" }}>Submit </TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {dueBackward.map((group, groupIndex) => (
+                        <React.Fragment>
+                            {
+                                group.items.map((item, index) => (
 
-                <InputLabel>Item</InputLabel>
-                <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                    {items.map((item) => (
-                        <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Price: ${item.price}, Quantity Available: ${item.quantity}${item.remarks_from_manager !== "" ? ", Remarks from manager: " + item.remarks_from_manager : ""}${item.remarks_from_proprietor !== "" ? ", Remarks from proprietor: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
+                                    <TableRow>
+                                        {index === 0 && <TableCell rowSpan={group.items.length}>{group.worker.worker_id}-{group.worker.name}</TableCell>}
+                                        <TableCell>{item.item.design_number}-{item.item.description}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell>{item.price}</TableCell>
+                                        <TableCell>{item.deduction_from_manager}</TableCell>
+                                        <TableCell>{item.remarks_from_manager}</TableCell>
+                                        <TableCell>{item.underprocessing_value}</TableCell>
+                                        <TableCell>{item.remarks_from_proprietor}</TableCell>
+                                        <TableCell style={{ width: "225px" }}>
+
+                                            <Input type="number" placeholder='submit quantity' inputProps={{ min: 0, max: item.quantity }} style={{ width: "135px", marginRight: "10px" }}
+                                                value={item.submit_quantity} onChange={(e) => { let dueBackwardData = dueBackward; dueBackwardData[groupIndex].items[index].submit_quantity = e.target.value; setDueBackward([...dueBackwardData]); }} />
+
+                                            <Button variant="contained" color="primary" onClick={(e) => { onSubmit(e, groupIndex, index) }}
+                                                disabled={item.submit_quantity < 1 || item.submit_quantity > item.quantity}>Submit</Button>
+
+                                        </TableCell>
+
+                                    </TableRow>
+
+                                ))
+                            }
+                        </React.Fragment>
                     ))}
-                </Select>
-
-                {/* <InputLabel>Price</InputLabel>
-                <Select value={JSON.stringify({ quantity: max, price: submission.price, deduction: submission.deduction, remarks: submission.remarks })}
-                    onChange={onPriceSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                    {
-                        prices.map((p) => {
-                            return (
-                                <MenuItem value={JSON.stringify(p)}>{open ? `Price: ${p.price}, Deduction: ${p.deduction ? p.deduction : ""}, Remarks: ${p.remarks}, Quantity Available: ${p.quantity}` : p.price}</MenuItem>
-                            )
-                        })
-                    }
-
-
-                </Select> */}
-                <Typography>Price: {itemIndex !== "" && items[itemIndex].price}</Typography>
-                <Typography>Deduction: {itemIndex !== "" && items[itemIndex].deduction}</Typography>
-                <Typography>Remarks From Manager: {itemIndex !== "" && items[itemIndex].remarks_from_manager}</Typography>
-
-                <Typography style={{ marginTop: "20px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
-
-                <FormControl style={{ marginTop: "10px" }}>
-                    <InputLabel>Quantity</InputLabel>
-                    <Input disabled={submission.design_number === ""} type="number" inputProps={{ min: 1, max: max }}
-                        value={submission.quantity} onChange={(e) => setSubmission({ ...submission, quantity: e.target.value })}
-                        onWheel={(e) => { e.target.blur(); }}
-                    />
-                </FormControl>
-                <Typography style={{ marginTop: "15px" }}>Underprocessing Value: {itemIndex !== "" && items[itemIndex].underprocessing_value}</Typography>
-                <Typography>Remarks From Proprietor: {itemIndex !== "" && items[itemIndex].remarks_from_proprietor}</Typography>
-                <Button variant="contained" color="primary" onClick={onSubmit} style={{ width: "100px", marginLeft: "100px", marginTop: "15px" }}
-                    disabled={submission.design_number === "" || submission.quantity === "" ||
-                        submission.quantity === "0" || submission.quantity > max || submission.price === ""}>Submit</Button>
-            </FormGroup>
+                </TableBody>
+            </Table>
         </div>
     )
 }
+
 
 export default SubmitItems

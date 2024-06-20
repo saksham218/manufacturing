@@ -33,18 +33,27 @@ const managerSchema = new mongoose.Schema({
         }],
         default: []
     },
-    submit_history: {
+    accepted_history: {
         type: [{
-            item: {
+            worker: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Item'
+                ref: 'Worker'
             },
-            quantity: Number,
-            price: Number,
-            deduction: Number,
-            remarks_from_proprietor: String,
-            remarks_from_manager: String,
-            date: Date,
+            items: [{
+                item: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Item'
+                },
+                quantity: Number,
+                price: Number,
+                deduction_from_proprietor: Number,
+                final_remarks_from_proprietor: String,
+                deduction_from_manager: Number,
+                remarks_from_manager: String,
+                underprocessing_value: Number,
+                remarks_from_proprietor: String,
+                date: Date,
+            }],
         }],
         default: []
     },
@@ -63,16 +72,44 @@ const managerSchema = new mongoose.Schema({
     },
     due_backward: {
         type: [{
-            item: {
+            worker: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Item'
+                ref: 'Worker'
             },
-            quantity: Number,
-            price: Number,
-            deduction: Number,
-            remarks_from_manager: String,
-            underprocessing_value: Number,
-            remarks_from_proprietor: String,
+            items: [{
+                item: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Item'
+                },
+                quantity: Number,
+                price: Number,
+                deduction_from_manager: Number,
+                remarks_from_manager: String,
+                underprocessing_value: Number,
+                remarks_from_proprietor: String,
+            }],
+        }],
+        default: []
+    },
+    submissions: {
+        type: [{
+            worker: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Worker'
+            },
+            items: [{
+                item: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Item'
+                },
+                quantity: Number,
+                price: Number,
+                deduction_from_manager: Number,
+                remarks_from_manager: String,
+                underprocessing_value: Number,
+                remarks_from_proprietor: String,
+                date: Date,
+            }],
         }],
         default: []
     },
@@ -108,6 +145,8 @@ const managerSchema = new mongoose.Schema({
         default: 0
     },
 });
+
+managerSchema.set('strictPopulate', false);
 
 const Manager = mongoose.model('Manager', managerSchema);
 export default Manager;

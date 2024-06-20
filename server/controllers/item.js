@@ -140,13 +140,16 @@ export const getItemsForFinalSubmit = async (req, res) => {
     console.log("get items for final submit manager_id: ", manager_id)
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" })
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id })
+        const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward').populate([
+            { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },
+            { path: 'due_backward.items.item', model: 'Item', select: 'design_number description' }
+        ])
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
-        const items = await Item.find({ proprietor: manager.proprietor })
+        // const items = await Item.find({ proprietor: manager.proprietor })
 
-        const itemsForFinalSubmit = []
+        // const itemsForFinalSubmit = []
         // items.forEach((item) => {
         //     const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
         //     if (index !== -1) {
@@ -154,15 +157,17 @@ export const getItemsForFinalSubmit = async (req, res) => {
         //     }
         // })
 
-        items.forEach((item) => {
-            manager.due_backward.forEach((df) => {
-                if (df.item.equals(item._id) && df.quantity > 0) {
-                    itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, price: df.price, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, remarks_from_manager: df.remarks_from_manager, deduction: df.deduction })
-                }
-            })
-        })
+        // items.forEach((item) => {
+        //     manager.due_backward.forEach((df) => {
+        //         if (df.item.equals(item._id) && df.quantity > 0) {
+        //             itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, price: df.price, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, remarks_from_manager: df.remarks_from_manager, deduction: df.deduction })
+        //         }
+        //     })
+        // })
 
-        return res.status(200).json(itemsForFinalSubmit)
+        // return res.status(200).json(itemsForFinalSubmit)
+
+        return res.status(200).json(manager.due_backward)
     }
     catch (err) {
         console.log(err)

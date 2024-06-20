@@ -56,7 +56,7 @@ const workerSchema = new mongoose.Schema({
             },
             quantity: Number,
             price: Number,
-            deduction: Number,
+            deduction_from_manager: Number,
             remarks_from_manager: String,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
@@ -76,6 +76,23 @@ const workerSchema = new mongoose.Schema({
         }],
         default: []
     },
+    deductions_from_proprietor: {
+        type: [{
+            item: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Item'
+            },
+            price: Number,
+            quantity: Number,
+            deduction_from_proprietor: Number,
+            final_remarks_from_proprietor: String,
+            deduction_from_manager: Number,
+            deduction_date: Date,
+            remarks_from_manager: String,
+            remarks_from_proprietor: String,
+        }],
+        default: []
+    }
 
 });
 

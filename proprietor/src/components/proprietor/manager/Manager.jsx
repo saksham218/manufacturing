@@ -5,6 +5,7 @@ import { Navigate } from 'react-router'
 import Sidebar from './Sidebar'
 import ViewManager from './ViewManager'
 import Issue from './Issue'
+import Accept from './Accept'
 import Worker from './Worker'
 import Payment from './Payment'
 import AddManager from './AddManager'
@@ -70,6 +71,7 @@ const Manager = ({ proprietor, currentManager, setCurrentManager }) => {
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/viewmanager`} />} />
                     <Route path={`/viewmanager`} element={<ViewManager manager={manager} getManagersData={getManagersData} />} />
                     <Route path={`/issue`} element={<Issue manager={manager} proprietor={proprietor} />} />
+                    <Route path={`/accept`} element={<Accept manager={manager} />} />
                     <Route path={`/worker`} element={<Worker manager={manager} proprietor={proprietor} />} />
                     <Route path={`/payment`} element={<Payment manager={manager} />} />
                     <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} />} />

@@ -15,7 +15,7 @@ const ViewWorker = ({ worker, getWorkersData }) => {
     const [range, setRange] = useState({ start: todayString, end: todayString })
     const [total, setTotal] = useState(0)
 
-    const details = ['due_items', 'issue_history', 'submit_history', 'payment_history', 'custom_prices']
+    const details = ['due_items', 'issue_history', 'submit_history', 'deductions_from_proprietor', 'payment_history', 'custom_prices']
     const [detail, setDetail] = useState(details[0])
 
     const [workerDetails, setWorkerDetails] = useState({})
@@ -54,9 +54,9 @@ const ViewWorker = ({ worker, getWorkersData }) => {
         setData(displayData)
     }
 
-    useEffect(() => {
-        getWorkersData();
-    }, []);
+    // useEffect(() => {
+    //     getWorkersData();
+    // }, []);
 
     useEffect(() => {
         console.log("get worker")

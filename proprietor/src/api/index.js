@@ -33,4 +33,7 @@ export const issueToManager = (issue, manager_id) => service.post(`/manager/${ma
 export const getWorkers = (manager_id) => service.get(`/worker/${manager_id}/getworkers`)
 export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}/workerdetails`)
 export const addCustomPrice = (customPrice, worker_id) => service.post(`/worker/${worker_id}/customprice`, customPrice)
+export const getSubmissions = (manager_id) => service.get(`/manager/${manager_id}/getsubmissions`)
+export const acceptFromManager = (accepted, manager_id) => service.post(`/manager/${manager_id}/acceptfrommanager`, accepted)
+
 
