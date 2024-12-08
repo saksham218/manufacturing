@@ -1,14 +1,30 @@
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/material'
 import React from 'react'
 
+const computeContent = (item, key) => {
+    if (key === 'item') {
+        return `${item[key].design_number}-${item[key].description}`
+    }
+    else if (key === 'date') {
+        const date = new Date(item[key])
+        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
+    }
+    else {
+        return item[key]
+    }
+}
+
+const filterKeys = (keys) => {
+    const notRequired = ['_id', 'is_adhoc']
+    return keys.filter((key) => !notRequired.includes(key))
+}
+
 const ViewTable = ({ data }) => {
     console.log(data)
     console.log(data[0])
-    const keys = Object.keys(data[0])
-    // remove _id if present
-    if (keys.includes('_id')) {
-        keys.splice(keys.indexOf('_id'), 1)
-    }
+    let keys = Object.keys(data[0])
+
+    keys = filterKeys(keys)
 
     return (
         <div style={{ paddingTop: "20px" }}>
@@ -25,16 +41,7 @@ const ViewTable = ({ data }) => {
                     {data.map((row) => (
                         <TableRow>
                             {keys.map((key) => {
-                                if (key.includes('date')) {
-                                    const date = new Date(row[key])
-                                    return <TableCell>{date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/{date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/{date.getFullYear()}</TableCell>
-                                }
-                                else if (key === 'item') {
-                                    return <TableCell>{row[key].design_number}-{row[key].description}</TableCell>
-                                }
-                                else {
-                                    return <TableCell>{row[key]}</TableCell>
-                                }
+                                return <TableCell style={{ 'backgroundColor': row?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(row, key)}</TableCell>
                             })}
                         </TableRow>
                     ))}

@@ -25,7 +25,7 @@ const Login = () => {
             console.log(res.data)
 
 
-            localStorage.setItem('manager', JSON.stringify({ name: res.data.result.name, manager_id: res.data.result.manager_id }))
+            localStorage.setItem('manager', JSON.stringify({ name: res.data.result.name, manager_id: res.data.result.manager_id, proprietor_id: res.data.result.proprietor_id }))
             localStorage.setItem('manager_token', res.data.manager_token)
 
             navigate('/' + res.data.result.manager_id)

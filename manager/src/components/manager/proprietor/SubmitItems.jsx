@@ -3,6 +3,22 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Input,
 
 import { getItemsForFinalSubmit, submitToProprietor } from '../../../api'
 
+const keys = ['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor']
+
+const computeContent = (item, key) => {
+    if (key === 'item') {
+        return `${item[key].design_number}-${item[key].description}`
+    }
+    else if (key === 'date') {
+        const date = new Date(item[key])
+        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
+    }
+    else {
+        return item[key]
+    }
+}
+
+
 const SubmitItems = ({ manager }) => {
 
     const [dueBackward, setDueBackward] = useState([])
@@ -36,7 +52,8 @@ const SubmitItems = ({ manager }) => {
                 deduction_from_manager: dueBackward[groupIndex].items[index].deduction_from_manager,
                 remarks_from_manager: dueBackward[groupIndex].items[index].remarks_from_manager,
                 underprocessing_value: dueBackward[groupIndex].items[index].underprocessing_value,
-                remarks_from_proprietor: dueBackward[groupIndex].items[index].remarks_from_proprietor
+                remarks_from_proprietor: dueBackward[groupIndex].items[index].remarks_from_proprietor,
+                is_adhoc: dueBackward[groupIndex].items[index].is_adhoc
             }
             console.log(submission)
             const res = await submitToProprietor(submission, manager.manager_id)
@@ -58,13 +75,9 @@ const SubmitItems = ({ manager }) => {
                 <TableHead>
                     <TableRow>
                         <TableCell style={{ width: "80px" }}>Worker</TableCell>
-                        <TableCell style={{ width: "80px" }}>Item</TableCell>
-                        <TableCell style={{ width: "40px" }}>Quantity</TableCell>
-                        <TableCell style={{ width: "40px" }}>Price</TableCell>
-                        <TableCell style={{ width: "40px" }}>Deduction from Manager</TableCell>
-                        <TableCell style={{ width: "80px" }}>Remarks from Manager</TableCell>
-                        <TableCell style={{ width: "40px" }}>Underprocessing Value</TableCell>
-                        <TableCell style={{ width: "80px" }}>Remarks from Proprietor</TableCell>
+                        {keys.map((key) => (
+                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                        ))}
                         <TableCell style={{ width: "225px" }}>Submit </TableCell>
                     </TableRow>
                 </TableHead>
@@ -76,14 +89,10 @@ const SubmitItems = ({ manager }) => {
 
                                     <TableRow>
                                         {index === 0 && <TableCell rowSpan={group.items.length}>{group.worker.worker_id}-{group.worker.name}</TableCell>}
-                                        <TableCell>{item.item.design_number}-{item.item.description}</TableCell>
-                                        <TableCell>{item.quantity}</TableCell>
-                                        <TableCell>{item.price}</TableCell>
-                                        <TableCell>{item.deduction_from_manager}</TableCell>
-                                        <TableCell>{item.remarks_from_manager}</TableCell>
-                                        <TableCell>{item.underprocessing_value}</TableCell>
-                                        <TableCell>{item.remarks_from_proprietor}</TableCell>
-                                        <TableCell style={{ width: "225px" }}>
+                                        {keys.map((key) => {
+                                            return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
+                                        })}
+                                        <TableCell style={{ width: "225px", 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>
 
                                             <Input type="number" placeholder='submit quantity' inputProps={{ min: 0, max: item.quantity }} style={{ width: "135px", marginRight: "10px" }}
                                                 value={item.submit_quantity} onChange={(e) => { let dueBackwardData = dueBackward; dueBackwardData[groupIndex].items[index].submit_quantity = e.target.value; setDueBackward([...dueBackwardData]); }}
@@ -91,6 +100,7 @@ const SubmitItems = ({ manager }) => {
                                             />
 
                                             <Button variant="contained" color="primary" onClick={(e) => { onSubmit(e, groupIndex, index) }}
+                                                style={{ marginTop: "10px" }}
                                                 disabled={item.submit_quantity < 1 || item.submit_quantity > item.quantity}>Submit</Button>
 
                                         </TableCell>

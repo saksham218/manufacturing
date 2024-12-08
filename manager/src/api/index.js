@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-const baseURL = process.env.REACT_APP_BASE_URL
-// const baseURL = 'http://localhost:5000'
+// const baseURL = process.env.REACT_APP_BASE_URL
+const baseURL = 'http://localhost:5001'
 
 const service = axios.create({
     baseURL: baseURL
@@ -28,10 +28,11 @@ export const getItemsForIssue = (manager_id) => service.get(`/item/${manager_id}
 export const getPriceForIssue = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpriceforissue`)
 export const getItemsForSubmit = (worker_id) => service.get(`/item/${worker_id}/itemsforsubmit`)
 export const submitFromWorker = (submission, worker_id) => service.post(`/worker/${worker_id}/submitfromworker`, submission)
-export const getPricesForSubmit = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpricesforsubmit`)
+export const getPricesForSubmitAdhoc = (worker_id, design_number) => service.get(`/worker/${worker_id}/${design_number}/getpricesforsubmitadhoc`)
 export const submitToProprietor = (submission, manager_id) => service.post(`/manager/${manager_id}/submittoproprietor`, submission)
 export const getItemsForFinalSubmit = (manager_id) => service.get(`/item/${manager_id}/itemsforfinalsubmit`)
 export const getPricesForFinalSubmit = (manager_id, design_number) => service.get(`/manager/${manager_id}/${design_number}/getpricesforfinalsubmit`)
 export const raiseExpenseRequest = (expense, manager_id) => service.post(`/manager/${manager_id}/raiseexpenserequest`, expense)
 export const getManager = (manager_id) => service.get(`/manager/${manager_id}/getmanager`)
 export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}/workerdetails`)
+export const getItems = (proprietor_id) => service.get(`/item/${proprietor_id}/getitems`)

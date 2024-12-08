@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { addWorker, getWorkers, getWorker, recordPayment, getPayments, issueToWorker, getPriceForIssue, getPricesForSubmit, submitFromWorker, addCustomPrice } from '../controllers/worker.js'
+import { addWorker, getWorkers, getWorker, recordPayment, getPayments, issueToWorker, getPriceForIssue, getPricesForSubmitAdhoc, submitFromWorker, addCustomPrice } from '../controllers/worker.js'
 import manager from '../middleware/manager.js'
 import proprietor from '../middleware/proprietor.js'
 
@@ -12,7 +12,7 @@ router.post('/:worker_id/recordpayment', manager, recordPayment);
 router.get('/:worker_id/getpayments', manager, getPayments);
 router.post('/:worker_id/issuetoworker', manager, issueToWorker);
 router.get('/:worker_id/:design_number/getpriceforissue', manager, getPriceForIssue);
-router.get('/:worker_id/:design_number/getpricesforsubmit', manager, getPricesForSubmit);
+router.get('/:worker_id/:design_number/getpricesforsubmitadhoc', manager, getPricesForSubmitAdhoc);
 router.post('/:worker_id/submitfromworker', manager, submitFromWorker);
 router.post('/:worker_id/customprice', proprietor, addCustomPrice)
 router.get('/:worker_id/workerdetails', [manager, proprietor], getWorker)

@@ -53,6 +53,10 @@ const managerSchema = new mongoose.Schema({
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
                 date: Date,
+                is_adhoc: {
+                    type: Boolean,
+                    default: false
+                },
             }],
         }],
         default: []
@@ -87,6 +91,10 @@ const managerSchema = new mongoose.Schema({
                 remarks_from_manager: String,
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
+                is_adhoc: {
+                    type: Boolean,
+                    default: false
+                },
             }],
         }],
         default: []
@@ -109,6 +117,10 @@ const managerSchema = new mongoose.Schema({
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
                 date: Date,
+                is_adhoc: {
+                    type: Boolean,
+                    default: false
+                },
             }],
         }],
         default: []
@@ -122,6 +134,10 @@ const managerSchema = new mongoose.Schema({
             quantity: Number,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            },
         }],
     },
     payment_history: {

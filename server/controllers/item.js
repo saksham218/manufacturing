@@ -7,12 +7,21 @@ export const getItems = async (req, res) => {
 
     const proprietor_id = req.params.proprietor_id
     console.log("get items proprietor_id: ", proprietor_id)
-    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(401).json({ message: "Access Denied" })
+    console.log("manager:", req.manager);
+    console.log("proprietor:", req.proprietor);
+    if ((!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) && (!req.manager || !req.manager.manager_id)) return res.status(401).json({ message: "Access Denied" })
 
     try {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" })
+
+        if (req.manager && req.manager.manager_id) {
+            const manager = await Manager.findOne({ manager_id: req.manager.manager_id })
+            console.log("manager founds:", manager)
+            if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
+            if (!manager.proprietor.equals(proprietor._id)) return res.status(401).json({ message: "Access Denied" })
+        }
 
 
         const items = await Item.find({ proprietor: proprietor._id }, { _id: 0, proprietor: 0, __v: 0 })

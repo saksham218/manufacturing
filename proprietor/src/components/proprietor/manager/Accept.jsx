@@ -4,6 +4,21 @@ import { Table, TableHead, TableRow, TableCell, Paper, Button, FormControl, Inpu
 import { useEffect } from 'react'
 import { getSubmissions, acceptFromManager } from '../../../api'
 
+const keys = ['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'date']
+
+const computeContent = (item, key) => {
+    if (key === 'item') {
+        return `${item[key].design_number}-${item[key].description}`
+    }
+    else if (key === 'date') {
+        const date = new Date(item[key])
+        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
+    }
+    else {
+        return item[key]
+    }
+}
+
 const Accept = ({ manager }) => {
 
     const [submissions, setSubmissions] = useState([])
@@ -42,7 +57,8 @@ const Accept = ({ manager }) => {
                 underprocessing_value: submissions[groupIndex].items[index].underprocessing_value,
                 remarks_from_proprietor: submissions[groupIndex].items[index].remarks_from_proprietor,
                 deduction: submissions[groupIndex].items[index].deduction,
-                final_remarks: submissions[groupIndex].items[index].final_remarks
+                final_remarks: submissions[groupIndex].items[index].final_remarks,
+                is_adhoc: submissions[groupIndex].items[index].is_adhoc
             }
             console.log(accepted)
             const res = await acceptFromManager(accepted, manager.manager_id)
@@ -62,14 +78,9 @@ const Accept = ({ manager }) => {
                 <TableHead>
                     <TableRow>
                         <TableCell>Worker</TableCell>
-                        <TableCell>Item</TableCell>
-                        <TableCell>Quantity</TableCell>
-                        <TableCell>Price</TableCell>
-                        <TableCell>Deduction from Manager</TableCell>
-                        <TableCell>Remarks from Manager</TableCell>
-                        <TableCell>Underprocessing Value</TableCell>
-                        <TableCell>Remarks from Proprietor</TableCell>
-                        <TableCell>Date</TableCell>
+                        {keys.map((key) => (
+                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                        ))}
                         <TableCell style={{ width: "200px" }}>Accept </TableCell>
                     </TableRow>
                 </TableHead>
@@ -79,28 +90,17 @@ const Accept = ({ manager }) => {
                             {group.items.map((item, index) => (
                                 <TableRow>
                                     {index === 0 && <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>}
-                                    <TableCell>{item.item.design_number}-{item.item.description}</TableCell>
-                                    <TableCell>{item.quantity}</TableCell>
-                                    <TableCell>{item.price}</TableCell>
-                                    <TableCell>{item.deduction_from_manager}</TableCell>
-                                    <TableCell>{item.remarks_from_manager}</TableCell>
-                                    <TableCell>{item.underprocessing_value}</TableCell>
-                                    <TableCell>{item.remarks_from_proprietor}</TableCell>
-                                    <TableCell>{
-                                        (() => {
-                                            const date = new Date(item.date)
-                                            return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
-                                        })()
-                                    }
-                                    </TableCell>
-                                    <TableCell>
+                                    {keys.map((key) => {
+                                        return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
+                                    })}
+                                    <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>
 
                                         <Input type="number" placeholder="accept quantity" inputProps={{ min: 0, max: item.quantity }} style={{ marginTop: "10px", width: "150px" }} value={item.accept_quantity}
                                             onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].accept_quantity = e.target.value; setSubmissions([...submissionsData]) }}
                                             onWheel={(e) => { e.target.blur(); }}
                                         />
 
-                                        <Input type="number" placeholder="deduction" inputProps={{ min: 0 }} style={{ marginTop: "10px", width: "150px" }} value={item.deduction}
+                                        <Input type="number" placeholder="deduction" inputProps={{ min: 0, max: item.price }} style={{ marginTop: "10px", width: "150px" }} value={item.deduction}
                                             onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].deduction = e.target.value; setSubmissions([...submissionsData]) }}
                                             onWheel={(e) => { e.target.blur(); }}
                                         />
@@ -109,7 +109,7 @@ const Accept = ({ manager }) => {
                                             onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].final_remarks = e.target.value; setSubmissions([...submissionsData]) }} />
 
                                         <Button variant="contained" color="primary" style={{ marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" }}
-                                            disabled={item.accept_quantity < 1 || item.accept_quantity > item.quantity || (item.deduction > 0 && item.final_remarks === "")}
+                                            disabled={item.accept_quantity < 1 || item.accept_quantity > item.quantity || item.deduction > item.price || (item.deduction > 0 && item.final_remarks === "")}
                                             onClick={(e) => { onSubmit(e, groupIndex, index) }}>Accept</Button>
 
                                     </TableCell>

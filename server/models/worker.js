@@ -61,6 +61,10 @@ const workerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             remarks_from_proprietor: String,
             date: Date,
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            },
         }],
         default: []
     },
@@ -92,7 +96,7 @@ const workerSchema = new mongoose.Schema({
             remarks_from_proprietor: String,
         }],
         default: []
-    }
+    },
 
 });
 

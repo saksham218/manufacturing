@@ -9,6 +9,7 @@ import Submit from './Submit'
 import Payment from './Payment'
 import AddWorker from './AddWorker'
 import { getWorkers } from '../../../api'
+import SubmitAdhoc from './SubmitAdhoc'
 
 
 const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
@@ -66,6 +67,7 @@ const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
                     <Route path={`/view`} element={<ViewWorker worker={worker} getWorkersData={getWorkersData} />} />
                     <Route path={`/issue`} element={<Issue worker={worker} manager={manager} />} />
                     <Route path={`/submit`} element={<Submit worker={worker} manager={manager} />} />
+                    <Route path={`/submitadhoc`} element={<SubmitAdhoc worker={worker} manager={manager} />} />
                     <Route path={`/payment`} element={<Payment worker={worker} />} />
                     <Route path={`/addworker`} element={<AddWorker manager={manager} />} />
 

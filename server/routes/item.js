@@ -7,7 +7,7 @@ import manager from '../middleware/manager.js';
 
 const router = express.Router();
 
-router.get('/:proprietor_id/getitems', proprieter, getItems);
+router.get('/:proprietor_id/getitems', [proprieter,manager], getItems);
 router.get('/:manager_id/itemsforissue', manager, getItemsForIssue);
 router.get('/:worker_id/itemsforsubmit', manager, getItemsForSubmit);
 router.get('/:manager_id/itemsforfinalsubmit', manager, getItemsForFinalSubmit)

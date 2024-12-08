@@ -199,11 +199,11 @@ export const getPriceForIssue = async (req, res) => {
     }
 }
 
-export const getPricesForSubmit = async (req, res) => {
+export const getPricesForSubmitAdhoc = async (req, res) => {
     const worker_id = req.params.worker_id;
     const design_number = req.params.design_number;
-    console.log("get prices for submit worker_id: ", worker_id);
-    console.log("get prices for submit design_number: ", design_number);
+    console.log("get prices for submit adhoc worker_id: ", worker_id);
+    console.log("get prices for submit adhoc design_number: ", design_number);
 
     try {
 
@@ -215,17 +215,14 @@ export const getPricesForSubmit = async (req, res) => {
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
-        const quantityPrice = []
-        worker.due_items.forEach((di) => {
-            if (di.item.equals(item._id) && di.quantity >= 0) {
-                quantityPrice.push({ price: di.price, quantity: di.quantity })
+        if (worker.custom_prices.length) {
+            const priceIndex = worker.custom_prices.findIndex((cp) => cp.item.equals(item._id));
+            if (priceIndex !== -1) {
+                return res.status(200).json({ price: worker.custom_prices[priceIndex].price });
             }
-        })
+        }
 
-        if (quantityPrice.length === 0)
-            return res.status(400).json({ message: `${design_number} is not issued to ${worker_id}` })
-
-        return res.status(200).json(quantityPrice);
+        return res.status(200).json({ price: item.price });
 
     }
     catch (error) {
@@ -238,9 +235,12 @@ export const submitFromWorker = async (req, res) => {
     console.log(req.body);
     const worker_id = req.params.worker_id;
     console.log("submit from worker worker_id: ", worker_id);
-    const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value } = req.body;
+    const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value, is_adhoc } = req.body;
 
     try {
+
+        console.log("is_adhoc: ", is_adhoc)
+
         const worker = await Worker.findOne({ worker_id: worker_id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
@@ -252,9 +252,13 @@ export const submitFromWorker = async (req, res) => {
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
-        const quantityIndex = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity >= Number(quantity) && di.price === Number(price) && di.underprocessing_value === Number(underprocessing_value) && di.remarks_from_proprietor === remarks_from_proprietor));
-        if (quantityIndex === -1) {
-            return res.status(400).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor}, not issued to ${worker_id} @ ${price}` });
+        let quantityIndex = -1;
+
+        if (!is_adhoc) {
+            quantityIndex = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity >= Number(quantity) && di.price === Number(price) && di.underprocessing_value === Number(underprocessing_value) && di.remarks_from_proprietor === remarks_from_proprietor));
+            if (quantityIndex === -1) {
+                return res.status(400).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor}, not issued to ${worker_id} @ ${price}` });
+            }
         }
 
         if (Number(deduction) > Number(price))
@@ -273,28 +277,41 @@ export const submitFromWorker = async (req, res) => {
         }
 
         if (Number(deduction) !== 0 || remarks !== "" || remarks_from_proprietor !== "") {
-            manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor });
+            manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc ? true : false });
         }
         else {
-            const index = manager.due_backward[workerIndex].items.findIndex((db) => (db.item.equals(item._id) && db.remarks_from_manager === "" && db.remarks_from_proprietor === "" && db.price === Number(price) && Number(db.deduction_from_manager) === 0 && db.underprocessing_value === Number(underprocessing_value)));
+            const index = manager.due_backward[workerIndex].items.findIndex((db) => (db.item.equals(item._id) && db.remarks_from_manager === "" && db.remarks_from_proprietor === "" && db.price === Number(price) && Number(db.deduction_from_manager) === 0 && Number(db.underprocessing_value) === Number(underprocessing_value) && (db.is_adhoc === (is_adhoc ? true : false))));
             if (index === -1) {
-                manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor });
+                manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc ? true : false });
             }
             else {
                 manager.due_backward[workerIndex].items[index].quantity += Number(quantity);
             }
         }
+
+        if (is_adhoc) {
+            const tdIndex = manager.total_due.findIndex((td) => (td.item.equals(item._id) && td.is_adhoc && Number(td.underprocessing_value) === Number(underprocessing_value) && td.remarks_from_proprietor === remarks_from_proprietor));
+            if (tdIndex === -1) {
+                manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: true });
+            }
+            else {
+                manager.total_due[tdIndex].quantity += Number(quantity);
+            }
+        }
+
         await manager.save();
         console.log("manager saved in submit from worker");
 
-        worker.due_items[quantityIndex].quantity -= Number(quantity);
-        if (worker.due_items[quantityIndex].quantity === 0)
-            worker.due_items.splice(quantityIndex, 1)
+        if (!is_adhoc) {
+            worker.due_items[quantityIndex].quantity -= Number(quantity);
+            if (worker.due_items[quantityIndex].quantity === 0)
+                worker.due_items.splice(quantityIndex, 1)
+        }
 
         worker.due_amount += ((Number(price) - Number(deduction)) * Number(quantity))
 
         const dateObj = new Date();
-        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj });
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj, is_adhoc: is_adhoc ? true : false });
 
 
         // console.log("manager: ", manager);
