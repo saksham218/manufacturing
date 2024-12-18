@@ -24,20 +24,18 @@ const View = ({ manager }) => {
 
     const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(0)
 
-    const getManagerData = async () => {
+    const getManagerData = async (manager_id) => {
         try {
-            const res = await getManager(manager.manager_id)
+            const res = await getManager(manager_id)
             console.log(res.data)
-            setManagerDetails(res.data)
-            setDisplayData(detail, range, res.data)
-
+            return res.data
         }
         catch (err) {
             console.log(err)
         }
     }
 
-    const setDisplayData = (d, r, mD) => {
+    const setDisplayData = (r, d, mD) => {
         var displayData = mD[d];
         var fNEI = 0;
         console.log(displayData)
@@ -76,7 +74,6 @@ const View = ({ manager }) => {
         console.log(fNEI)
         setFirstNonEmptyIndex(fNEI)
         console.log(displayData)
-        console.log(managerDetails)
         setData(displayData)
     }
 
@@ -88,13 +85,15 @@ const View = ({ manager }) => {
     useEffect(() => {
         console.log("get manager")
         console.log(manager)
-        getManagerData();
-        setDisplayData(detail, range, managerDetails);
+        getManagerData(manager.manager_id).then((managerData) => {
+            setManagerDetails(managerData)
+        });
+
     }, [manager])
 
-    // useEffect(() => {
-    //     setDisplayData();
-    // }, [range, detail, managerDetails])
+    useEffect(() => {
+        setDisplayData(range, detail, managerDetails);
+    }, [range, detail, managerDetails])
 
 
 

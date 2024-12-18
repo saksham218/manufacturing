@@ -3,6 +3,7 @@ import { Table, TableHead, TableRow, TableCell, Paper, Button, FormControl, Inpu
 
 import { useEffect } from 'react'
 import { getSubmissions, acceptFromManager } from '../../../api'
+import { useManager } from './managerContext/ManagerContext'
 
 const keys = ['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'date']
 
@@ -19,8 +20,9 @@ const computeContent = (item, key) => {
     }
 }
 
-const Accept = ({ manager }) => {
+const Accept = () => {
 
+    const { manager } = useManager()
     const [submissions, setSubmissions] = useState([])
 
     const getSubmissionsData = async () => {
@@ -33,7 +35,8 @@ const Accept = ({ manager }) => {
                     return { ...item, accept_quantity: "", deduction: "", final_remarks: "" }
                 });
             });
-            setSubmissions(submissionsData)
+
+            return submissionsData;
         }
         catch (err) {
             console.log(err)
@@ -42,7 +45,17 @@ const Accept = ({ manager }) => {
 
 
     useEffect(() => {
-        getSubmissionsData();
+
+        let isMounted = true;
+
+        getSubmissionsData().then((submissionsData) => {
+
+            if (submissionsData && isMounted) {
+                setSubmissions(submissionsData)
+            }
+        });
+
+        return () => { isMounted = false }
     }, [manager])
 
     const onSubmit = async (e, groupIndex, index) => {
@@ -63,7 +76,8 @@ const Accept = ({ manager }) => {
             console.log(accepted)
             const res = await acceptFromManager(accepted, manager.manager_id)
             console.log(res.data)
-            await getSubmissionsData();
+            const submissionsData = await getSubmissionsData();
+            setSubmissions(submissionsData)
         }
         catch (err) {
             console.log(err)
@@ -85,7 +99,7 @@ const Accept = ({ manager }) => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {submissions.map((group, groupIndex) => (
+                    {submissions?.map((group, groupIndex) => (
                         <React.Fragment>
                             {group.items.map((item, index) => (
                                 <TableRow>

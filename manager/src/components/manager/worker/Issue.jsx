@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
+import { useWorker } from './workerContext/WorkerContext'
 
 
 
-const Issue = ({ worker, manager }) => {
+const Issue = ({ manager }) => {
+
+    const { worker } = useWorker()
     console.log(worker)
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
     const [items, setItems] = useState([])
@@ -23,35 +26,21 @@ const Issue = ({ worker, manager }) => {
             const itemsData = res.data.map((item) => {
                 return { ...item, index: i++ }
             })
-            setItems(itemsData)
-            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
-            setItemIndex("")
+
+            console.log(itemsData)
+
+            return itemsData;
         }
         catch (err) {
             console.log(err)
         }
     }
 
-    const onItemSelect = async (e) => {
-
+    const getPrice = async (worker_id, design_number) => {
         try {
-            setItemIndex(e.target.value)
-
-            const res = await getPriceForIssue(worker.worker_id, items[e.target.value].design_number)
+            const res = await getPriceForIssue(worker_id, design_number)
             console.log(res.data)
-
-
-            setIssue({
-                ...issue,
-                price: res.data.price,
-                design_number: items[e.target.value].design_number,
-                quantity: "",
-                underprocessing_value: items[e.target.value].underprocessing_value,
-
-                remarks: items[e.target.value].remarks_from_proprietor
-            })
-            console.log(issue);
-            setMax(items[e.target.value].quantity)
+            return res.data.price
         }
         catch (err) {
             console.log(err)
@@ -59,10 +48,64 @@ const Issue = ({ worker, manager }) => {
     }
 
     useEffect(() => {
+
+        let isMounted = true;
+
         console.log("get items")
         console.log(manager)
-        getItemsData();
+        setItems([])
+        setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
+        setItemIndex("")
+        getItemsData().then((itemsData) => {
+            if (isMounted) {
+                setItems(itemsData)
+            }
+
+        });
+
+        return () => { isMounted = false }
     }, [manager, worker])
+
+
+
+    useEffect(() => {
+
+        let isMounted = true;
+
+        setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
+        setMax(0)
+
+        if (itemIndex !== "" && items.length > 0) {
+
+            getPrice(worker.worker_id, items[itemIndex].design_number).then((price) => {
+
+                if (isMounted) {
+                    setIssue({
+                        ...issue,
+                        price: price,
+                        design_number: items[itemIndex].design_number,
+                        quantity: "",
+                        underprocessing_value: items[itemIndex].underprocessing_value,
+
+                        remarks: items[itemIndex].remarks_from_proprietor
+                    })
+                    console.log(issue);
+                    setMax(items[itemIndex].quantity)
+                }
+            })
+        }
+
+        return () => { isMounted = false }
+
+    }, [itemIndex, items])
+
+
+    const onItemSelect = async (e) => {
+
+        setItemIndex(e.target.value)
+        console.log(itemIndex)
+
+    }
 
 
 
@@ -72,7 +115,10 @@ const Issue = ({ worker, manager }) => {
             const res = await issueToWorker(issue, worker.worker_id)
             console.log(res.data)
 
-            await getItemsData();
+            const itemsData = await getItemsData();
+            setItems(itemsData);
+            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
+            setItemIndex("");
         }
         catch (err) {
             console.log(err)
@@ -84,7 +130,7 @@ const Issue = ({ worker, manager }) => {
             <FormGroup style={{ width: "500px", padding: "20px" }}>
                 <InputLabel>Item</InputLabel>
                 <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
-                    {items.map((item) => (
+                    {items?.map((item) => (
                         <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}${item.underprocessing_value ? ", Underprocessing Value: " + item.underprocessing_value : ""}` : ""}</MenuItem>
                     ))}
                 </Select>

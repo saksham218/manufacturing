@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
 
 import { getItems, issueToManager } from '../../../api'
+import { useManager } from './managerContext/ManagerContext'
 
 
-const Issue = ({ manager, proprietor }) => {
+const Issue = ({ proprietor }) => {
+
+    const { manager } = useManager()
     console.log(manager)
     const [issue, setIssue] = useState({ design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "" })
     const [items, setItems] = useState([])
@@ -13,7 +16,7 @@ const Issue = ({ manager, proprietor }) => {
         try {
             const res = await getItems(proprietor.proprietor_id)
             console.log(res.data)
-            setItems(res.data)
+            return res.data
         }
         catch (err) {
             console.log(err)
@@ -23,7 +26,9 @@ const Issue = ({ manager, proprietor }) => {
     useEffect(() => {
         console.log("get items")
         console.log(proprietor)
-        getItemsData();
+        getItemsData().then((itemsData) => {
+            setItems(itemsData)
+        });
     }, [proprietor])
 
     const onSubmit = async (e) => {

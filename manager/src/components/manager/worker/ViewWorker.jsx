@@ -6,8 +6,11 @@ import dayjs from 'dayjs'
 
 import { getWorkerDetails } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
+import { useWorker } from './workerContext/WorkerContext'
 
-const ViewWorker = ({ worker, getWorkersData }) => {
+const ViewWorker = () => {
+
+    const { worker } = useWorker()
 
     const today = new Date()
     const todayString = (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear()
@@ -23,11 +26,11 @@ const ViewWorker = ({ worker, getWorkersData }) => {
 
 
 
-    const getWorkerData = async () => {
+    const getWorkerData = async (worker_id) => {
         try {
-            const res = await getWorkerDetails(worker.worker_id)
+            const res = await getWorkerDetails(worker_id)
             console.log(res.data.result)
-            setWorkerDetails(res.data.result)
+            return res.data.result
 
         }
         catch (err) {
@@ -35,11 +38,11 @@ const ViewWorker = ({ worker, getWorkersData }) => {
         }
     }
 
-    const setDisplayData = () => {
-        var displayData = workerDetails[detail]
-        if (displayData && (detail === "issue_history" || detail === "submit_history" || detail === "payment_history")) {
-            const start = dayjs(range.start, 'DD/MM/YYYY')
-            const end = dayjs(range.end, 'DD/MM/YYYY')
+    const getDisplayData = (chosenRange, chosenDetail, workerInfo) => {
+        var displayData = workerInfo[chosenDetail]
+        if (displayData && (chosenDetail === "issue_history" || chosenDetail === "submit_history" || chosenDetail === "payment_history")) {
+            const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
+            const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
             console.log("start: ", start)
             console.log("end:", end)
             displayData = displayData.filter((d) => {
@@ -51,7 +54,8 @@ const ViewWorker = ({ worker, getWorkersData }) => {
             });
         }
         console.log(displayData)
-        setData(displayData)
+        return displayData
+
     }
 
     // useEffect(() => {
@@ -59,14 +63,31 @@ const ViewWorker = ({ worker, getWorkersData }) => {
     // }, []);
 
     useEffect(() => {
+
+        let isMounted = true;
         console.log("get worker")
         console.log(worker)
-        getWorkerData();
-        setDisplayData();
+        if (worker) {
+            getWorkerData(worker.worker_id).then((workerData) => {
+                if (isMounted) {
+                    setWorkerDetails(workerData)
+                }
+
+            });
+        }
+
+        return () => { isMounted = false }
+
     }, [worker])
 
     useEffect(() => {
-        setDisplayData();
+        let isMounted = true;
+        const displayData = getDisplayData(range, detail, workerDetails);
+        if (isMounted) {
+            setData(displayData)
+        }
+
+        return () => { isMounted = false }
     }, [range, detail, workerDetails])
 
 

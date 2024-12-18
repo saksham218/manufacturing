@@ -5,8 +5,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { recordPayment, getPayments } from '../../../api'
+import { useManager } from './managerContext/ManagerContext'
 
-const Payment = ({ manager }) => {
+const Payment = () => {
+
+    const { manager } = useManager()
 
     const today = new Date()
     const [payment, setPayment] = useState({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
@@ -17,8 +20,7 @@ const Payment = ({ manager }) => {
         try {
             const res = await getPayments(manager.manager_id)
             console.log(res.data)
-            setPayments(res.data.payment_history)
-            setDueAmount(res.data.due_amount)
+            return res.data
         }
         catch (err) {
             console.log(err)
@@ -26,9 +28,18 @@ const Payment = ({ manager }) => {
     }
 
     useEffect(() => {
+
+        let isMounted = true
         console.log("get payments")
         console.log(manager)
-        getPaymentsData()
+        getPaymentsData().then((paymentsData) => {
+            if (paymentsData && isMounted) {
+                setPayments(paymentsData.payment_history)
+                setDueAmount(paymentsData.due_amount)
+            }
+        })
+
+        return () => { isMounted = false }
     }, [manager])
 
 
@@ -36,7 +47,9 @@ const Payment = ({ manager }) => {
         const res = await recordPayment(payment, manager.manager_id)
         console.log(res)
         setPayment({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
-        getPaymentsData()
+        const paymentsData = await getPaymentsData()
+        setPayments(paymentsData.payment_history)
+        setDueAmount(paymentsData.due_amount)
 
     }
 

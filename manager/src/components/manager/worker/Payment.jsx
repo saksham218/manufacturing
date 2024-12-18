@@ -5,8 +5,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { recordPayment, getPayments } from '../../../api'
+import { useWorker } from './workerContext/WorkerContext'
 
-const Payment = ({ worker }) => {
+const Payment = () => {
+
+    const { worker } = useWorker()
 
     const today = new Date()
     const [payment, setPayment] = useState({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
@@ -16,9 +19,7 @@ const Payment = ({ worker }) => {
     const getPaymentsData = async () => {
         try {
             const res = await getPayments(worker.worker_id)
-            console.log(res.data)
-            setPayments(res.data.payment_history)
-            setDueAmount(res.data.due_amount)
+            return res.data
         }
         catch (err) {
             console.log(err)
@@ -26,9 +27,19 @@ const Payment = ({ worker }) => {
     }
 
     useEffect(() => {
+
+        let isMounted = true;
+
         console.log("get payments")
         console.log(worker)
-        getPaymentsData()
+        getPaymentsData().then((paymentsData) => {
+            if (isMounted && paymentsData) {
+                setPayments(paymentsData.payment_history)
+                setDueAmount(paymentsData.due_amount)
+            }
+        })
+
+        return () => { isMounted = false }
     }, [worker])
 
 
@@ -36,7 +47,9 @@ const Payment = ({ worker }) => {
         const res = await recordPayment(payment, worker.worker_id)
         console.log(res)
         setPayment({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
-        getPaymentsData()
+        const paymentsData = await getPaymentsData()
+        setPayments(paymentsData.payment_history)
+        setDueAmount(paymentsData.due_amount)
 
     }
 

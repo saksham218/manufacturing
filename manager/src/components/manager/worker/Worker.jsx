@@ -10,27 +10,21 @@ import Payment from './Payment'
 import AddWorker from './AddWorker'
 import { getWorkers } from '../../../api'
 import SubmitAdhoc from './SubmitAdhoc'
+import { useWorker } from './workerContext/WorkerContext'
 
 
-const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
+const Worker = ({ manager }) => {
     // var workers = [];
     const [workers, setWorkers] = useState([])
-    const [worker, setWorker] = useState({})
+    const { worker, setWorker } = useWorker()
+
+    console.log("worker: ", worker)
 
     const getWorkersData = async () => {
         try {
             const res = await getWorkers(manager.manager_id)
             console.log(res.data)
-            setWorkers(res.data)
-            const i = res.data.findIndex((wkr) => wkr.worker_id === currentWorker.worker_id)
-            console.log("index: ", i)
-            if (i !== -1) {
-                setWorker(res.data[i])
-            }
-            else {
-                setWorker(res.data[0])
-                setCurrentWorker(res.data[0])
-            }
+            return res.data
         }
         catch (err) {
             console.log(err)
@@ -38,10 +32,21 @@ const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
     }
 
     useEffect(() => {
+
+
         console.log("get workers")
-        console.log(manager)
-        getWorkersData();
-    }, [manager])
+        getWorkersData().then((workersData) => {
+            setWorkers(workersData)
+        });
+
+    }, [])
+
+    useEffect(() => {
+        const i = workers.findIndex((wkr) => wkr?.worker_id === worker?.worker_id)
+        console.log("worker: ", worker)
+        console.log("index: ", i)
+        setWorker((i !== -1) ? workers[i] : workers[0])
+    }, [workers])
 
     const [isAddWorker, setIsAddWorker] = useState(false)
 
@@ -55,7 +60,7 @@ const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
             <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
                 <Box style={{ display: isAddWorker ? "none" : "block" }}>
                     <Typography>Select Worker</Typography>
-                    <Select value={worker} onChange={(e) => { setWorker(e.target.value); setCurrentWorker(e.target.value); console.log(worker) }}>
+                    <Select value={worker} onChange={(e) => { setWorker(e.target.value); console.log(worker) }}>
                         {workers.map((wkr) => (
                             <MenuItem value={wkr}>{wkr.name}</MenuItem>
 
@@ -64,11 +69,11 @@ const Worker = ({ manager, currentWorker, setCurrentWorker }) => {
                 </Box>
                 <Routes>
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
-                    <Route path={`/view`} element={<ViewWorker worker={worker} getWorkersData={getWorkersData} />} />
-                    <Route path={`/issue`} element={<Issue worker={worker} manager={manager} />} />
-                    <Route path={`/submit`} element={<Submit worker={worker} manager={manager} />} />
-                    <Route path={`/submitadhoc`} element={<SubmitAdhoc worker={worker} manager={manager} />} />
-                    <Route path={`/payment`} element={<Payment worker={worker} />} />
+                    <Route path={`/view`} element={<ViewWorker />} />
+                    <Route path={`/issue`} element={<Issue manager={manager} />} />
+                    <Route path={`/submit`} element={<Submit manager={manager} />} />
+                    <Route path={`/submitadhoc`} element={<SubmitAdhoc manager={manager} />} />
+                    <Route path={`/payment`} element={<Payment />} />
                     <Route path={`/addworker`} element={<AddWorker manager={manager} />} />
 
                 </Routes>

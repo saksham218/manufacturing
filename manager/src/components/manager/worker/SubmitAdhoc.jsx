@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, TextField } from '@mui/material'
 
 import { submitFromWorker, getPricesForSubmitAdhoc, getItems } from '../../../api'
+import { useWorker } from './workerContext/WorkerContext'
 
 
-const SubmitAdhoc = ({ worker, manager }) => {
+
+const SubmitAdhoc = ({ manager }) => {
+
+    const { worker } = useWorker()
     console.log(worker)
     const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: true })
     const [items, setItems] = useState([])
@@ -14,7 +18,6 @@ const SubmitAdhoc = ({ worker, manager }) => {
     const [maxDeduction, setMaxDeduction] = useState(0)
 
     const [currentWorkerPrice, setCurrentWorkerPrice] = useState("")
-
 
 
     const getItemsData = async (proprietor_id) => {
@@ -28,9 +31,7 @@ const SubmitAdhoc = ({ worker, manager }) => {
             })
 
             console.log(itemsData)
-            setItems(itemsData)
-            setItemIndex("")
-            setCurrentWorkerPrice("")
+            return itemsData;
 
 
         }
@@ -39,17 +40,47 @@ const SubmitAdhoc = ({ worker, manager }) => {
         }
     }
 
-    const onItemSelect = async (e) => {
-
+    const getPrices = async (worker_id, design_number) => {
         try {
-            const res = await getPricesForSubmitAdhoc(worker.worker_id, items[e.target.value].design_number)
+            const res = await getPricesForSubmitAdhoc(worker_id, design_number)
             console.log(res.data)
+            return res.data
+        }
+        catch (err) {
+            console.log(err)
+        }
+    }
 
-            setCurrentWorkerPrice(res.data.price)
+    useEffect(() => {
+
+        let isMounted = true;
+        console.log("get items")
+        console.log(manager)
+        setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: true })
+        setMaxDeduction(0)
+        setItemIndex("")
+        setCurrentWorkerPrice("")
+        getItemsData(manager.proprietor_id).then((itemsData) => {
+
+            if (isMounted) {
+                setItems(itemsData)
+            }
+        });
+        // setPrices([])
+
+        return () => { isMounted = false }
+
+    }, [worker, manager])
+
+    useEffect(() => {
+
+        let isMounted = true;
+
+        if (itemIndex !== "" && items.length > 0) {
 
             setSubmission({
                 ...submission,
-                design_number: items[e.target.value].design_number,
+                design_number: items[itemIndex].design_number,
                 quantity: "",
                 price: "",
                 deduction: "",
@@ -59,15 +90,28 @@ const SubmitAdhoc = ({ worker, manager }) => {
                 is_adhoc: true
             })
 
+            getPrices(worker.worker_id, items[itemIndex].design_number).then((pricesData) => {
+                console.log(pricesData)
 
-            setItemIndex(e.target.value)
+                if (isMounted) {
+                    setCurrentWorkerPrice(pricesData.price)
+                }
 
-            // setPrices(res.data)
-            console.log(submission);
+            })
         }
-        catch (err) {
-            console.log(err)
-        }
+
+        return () => { isMounted = false }
+
+
+    }, [items, itemIndex])
+
+    const onItemSelect = async (e) => {
+
+        setItemIndex(e.target.value)
+
+        // setPrices(res.data)
+        console.log(submission);
+
     }
 
     const onPriceChange = (e) => {
@@ -80,16 +124,6 @@ const SubmitAdhoc = ({ worker, manager }) => {
         setMaxDeduction(Number(e.target.value))
     }
 
-
-
-    useEffect(() => {
-        console.log("get items")
-        console.log(manager)
-        getItemsData(manager.proprietor_id);
-        // setPrices([])
-        setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: true })
-        setMaxDeduction(0)
-    }, [worker, manager])
 
     const onSubmit = async (e) => {
         e.preventDefault()

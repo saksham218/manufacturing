@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, TextField } from '@mui/material'
 
 import { getItemsForSubmit, submitFromWorker } from '../../../api'
+import { useWorker } from './workerContext/WorkerContext'
 
-const Submit = ({ worker, manager }) => {
+const Submit = ({ manager }) => {
+
+    const { worker } = useWorker()
     console.log(worker)
     const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
@@ -24,41 +27,9 @@ const Submit = ({ worker, manager }) => {
             const itemsData = res.data.map((item) => {
                 return { ...item, index: i++ }
             })
-            setItems(itemsData)
-            setItemIndex("")
 
+            return itemsData;
 
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
-
-    const onItemSelect = async (e) => {
-
-        try {
-            // const res = await getPricesForSubmit(worker.worker_id, e.target.value)
-            // console.log(res.data)
-
-            setSubmission({
-                ...submission,
-                design_number: items[e.target.value].design_number,
-                quantity: "",
-                price: items[e.target.value].price,
-                deduction: "",
-                underprocessing_value: items[e.target.value].underprocessing_value,
-                remarks_from_proprietor: items[e.target.value].remarks_from_proprietor,
-                remarks: ""
-            })
-
-            setMaxQuantity(items[e.target.value].quantity)
-
-            setMaxDeduction(items[e.target.value].price)
-
-            setItemIndex(e.target.value)
-
-            // setPrices(res.data)
-            console.log(submission);
         }
         catch (err) {
             console.log(err)
@@ -66,12 +37,63 @@ const Submit = ({ worker, manager }) => {
     }
 
     useEffect(() => {
-        console.log("get items")
-        console.log(manager)
-        getItemsData(worker.worker_id);
-        // setPrices([])
-        setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
+
+        let isMounted = true;
+
+        if (worker) {
+            console.log("get items")
+            console.log(manager)
+            setItems([])
+            setItemIndex("")
+            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
+            getItemsData(worker.worker_id).then((itemsData) => {
+
+                if (isMounted) {
+                    setItems(itemsData)
+                }
+
+            });
+            // setPrices([])
+        }
+
+        return () => { isMounted = false }
     }, [worker])
+
+    useEffect(() => {
+
+        let isMounted = true;
+
+
+        if (itemIndex !== "" && items.length > 0 && isMounted) {
+            setSubmission({
+                ...submission,
+                design_number: items[itemIndex].design_number,
+                quantity: "",
+                price: items[itemIndex].price,
+                deduction: "",
+                underprocessing_value: items[itemIndex].underprocessing_value,
+                remarks_from_proprietor: items[itemIndex].remarks_from_proprietor,
+                remarks: ""
+            })
+
+            setMaxQuantity(items[itemIndex].quantity)
+
+            setMaxDeduction(items[itemIndex].price)
+        }
+
+        console.log(submission);
+
+        return () => { isMounted = false }
+
+    }, [itemIndex, items])
+
+
+
+    const onItemSelect = async (e) => {
+        console.log("selected item index: ", e.target.value)
+        setItemIndex(e.target.value)
+    }
+
 
     const onSubmit = async (e) => {
         e.preventDefault()
@@ -80,7 +102,9 @@ const Submit = ({ worker, manager }) => {
             console.log(res.data)
 
             setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
-            await getItemsData(worker.worker_id);
+            const itemsData = await getItemsData(worker.worker_id);
+            setItems(itemsData);
+            setItemIndex("");
         }
         catch (err) {
             console.log(err)
@@ -93,7 +117,7 @@ const Submit = ({ worker, manager }) => {
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <InputLabel>Item</InputLabel>
                 <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                    {items.map((item) => (
+                    {items?.map((item) => (
                         <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Price: ${item.price}, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
                     ))}
                 </Select>

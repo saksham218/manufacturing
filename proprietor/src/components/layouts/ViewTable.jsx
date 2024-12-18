@@ -5,7 +5,7 @@ const computeContent = (item, key) => {
     if (key === 'item') {
         return `${item[key].design_number}-${item[key].description}`
     }
-    else if (key === 'date') {
+    else if (key === 'date' || key === 'deduction_date') {
         const date = new Date(item[key])
         return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
     }

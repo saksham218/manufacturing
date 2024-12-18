@@ -6,9 +6,12 @@ import dayjs from 'dayjs'
 
 import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
+import { useManager } from './managerContext/ManagerContext'
 
 
-const Worker = ({ manager, proprietor }) => {
+const Worker = ({ proprietor }) => {
+
+    const { manager } = useManager()
     console.log(manager)
 
     const today = new Date()
@@ -34,7 +37,7 @@ const Worker = ({ manager, proprietor }) => {
         try {
             const res = await getWorkers(manager.manager_id)
             console.log(res.data)
-            setWorkers(res.data)
+            return res.data
         }
         catch (err) {
             console.log(err)
@@ -46,51 +49,29 @@ const Worker = ({ manager, proprietor }) => {
         try {
             const res = await getItems(proprietor.proprietor_id)
             console.log(res.data)
-            setItems(res.data)
+            return res.data
         }
         catch (err) {
             console.log(err)
         }
     }
-
-    useEffect(() => {
-        console.log("get items")
-        console.log(manager)
-        getItemsData();
-    }, [])
 
     const getWorkerData = async (worker_id) => {
         try {
             const res = await getWorkerDetails(worker_id)
             console.log(res.data)
-            setWorkerDetails(res.data.result)
+            return res.data.result
         }
         catch (err) {
             console.log(err)
         }
     }
 
-    const onWorkerSelect = async (e) => {
-        console.log(e.target.value)
-        setWorker({ ...worker, worker_id: e.target.value })
-        await getWorkerData(e.target.value);
-        setCustomPrice({ design_number: "", price: "" })
-        setPrice("")
-    }
-
-    const onItemSelect = (e) => {
-        setCustomPrice({ ...customPrice, design_number: e.target.value });
-        console.log(customPrice)
-        const index = items.findIndex((item) => item.design_number === e.target.value)
-        setPrice(items[index].price)
-    }
-
-
-    const setDisplayData = () => {
-        var displayData = workerDetails[detail]
-        if (displayData && (detail === "issue_history" || detail === "submit_history" || detail === "payment_history")) {
-            const start = dayjs(range.start, 'DD/MM/YYYY')
-            const end = dayjs(range.end, 'DD/MM/YYYY')
+    const setDisplayData = (chosenRange, chosenDetail, workerInfo) => {
+        var displayData = workerInfo ? workerInfo[chosenDetail] : null
+        if (displayData && (chosenDetail === "issue_history" || chosenDetail === "submit_history" || chosenDetail === "payment_history")) {
+            const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
+            const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
             console.log("start: ", start)
             console.log("end:", end)
             displayData = displayData.filter((d) => {
@@ -106,23 +87,72 @@ const Worker = ({ manager, proprietor }) => {
     }
 
     useEffect(() => {
+        console.log("get items")
+        console.log(manager)
+        getItemsData().then((itemsData) => {
+            setItems(itemsData)
+        });
+    }, [])
+
+    useEffect(() => {
+
+        let isMounted = true;
+
         console.log("get workers")
         console.log(manager)
-        getWorkersData();
         setWorker({ worker_id: "" })
         setWorkerDetails({})
         setData([]);
+        setWorkers([])
+        getWorkersData().then((workersData) => {
+            if (isMounted) {
+                setWorkers(workersData)
+            }
+            // setWorkers(data)
+        })
+
+        return () => { isMounted = false }
     }, [manager])
 
+
+
     useEffect(() => {
-        setDisplayData();
+        setDisplayData(range, detail, workerDetails);
     }, [range, detail, workerDetails])
+
+    useEffect(() => {
+        let isMounted = true;
+        setCustomPrice({ design_number: "", price: "" })
+        setPrice("")
+        getWorkerData(worker.worker_id).then((workerData) => {
+
+            if (isMounted) {
+                setWorkerDetails(workerData)
+            }
+        })
+
+        return () => { isMounted = false }
+    }, [worker])
+
+    const onWorkerSelect = async (e) => {
+        console.log(e.target.value)
+        setWorker({ ...worker, worker_id: e.target.value })
+    }
+
+    const onItemSelect = (e) => {
+        setCustomPrice({ ...customPrice, design_number: e.target.value });
+        console.log(customPrice)
+        const index = items.findIndex((item) => item.design_number === e.target.value)
+        setPrice(items[index].price)
+    }
+
 
     const onSubmit = async () => {
         try {
             const res = await addCustomPrice(customPrice, worker.worker_id)
             console.log(res.data)
-            getWorkerData(worker.worker_id);
+            const result = await getWorkerData(worker.worker_id);
+            setWorkerDetails(result)
             setCustomPrice({ design_number: "", price: "" })
             setPrice("")
 
@@ -135,8 +165,8 @@ const Worker = ({ manager, proprietor }) => {
     return (
         <div style={{ paddingTop: "10px" }}>
             <Typography>Select Worker</Typography>
-            <Select value={worker.worker_id} onChange={onWorkerSelect}>
-                {workers.map((w) => (
+            <Select value={worker?.worker_id} onChange={onWorkerSelect}>
+                {workers?.map((w) => (
                     <MenuItem value={w.worker_id}>{w.name}</MenuItem>
                 ))}
             </Select>
@@ -168,7 +198,7 @@ const Worker = ({ manager, proprietor }) => {
                                 <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
                             ))}
                         </Select>
-                        <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails.due_amount}</Typography>
+                        <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails?.due_amount}</Typography>
                     </Box>
                     <Box style={{ padding: "10px" }}>
                         {(detail === "issue_history" || detail === "submit_history" || detail === "payment_history") ?

@@ -7,8 +7,11 @@ import dayjs from 'dayjs'
 import { getManager } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
 import ViewNestedTable from '../../layouts/ViewNestedTable';
+import { useManager } from './managerContext/ManagerContext'
 
-const ViewManager = ({ manager, getManagersData }) => {
+const ViewManager = () => {
+
+    const { manager } = useManager()
 
     const today = new Date()
     const todayString = (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear()
@@ -29,8 +32,7 @@ const ViewManager = ({ manager, getManagersData }) => {
         try {
             const res = await getManager(manager.manager_id)
             console.log(res.data)
-            setManagerDetails(res.data)
-            setDisplayData(detail, range, res.data)
+            return res.data
 
         }
         catch (err) {
@@ -38,7 +40,7 @@ const ViewManager = ({ manager, getManagersData }) => {
         }
     }
 
-    const setDisplayData = (d, r, mD) => {
+    const setDisplayData = (r, d, mD) => {
         var displayData = mD[d];
         var fNEI = 0;
         console.log(displayData)
@@ -81,19 +83,25 @@ const ViewManager = ({ manager, getManagersData }) => {
         setData(displayData)
     }
 
-    // useEffect(() => {
-    //     getManagersData();
-    // }, [])
 
     useEffect(() => {
+
+        let isMounted = true;
+
         console.log("get manager")
         console.log(manager)
-        getManagerData();
+        getManagerData().then((managerData) => {
+            if (managerData && isMounted) {
+                setManagerDetails(managerData)
+            }
+        });
+
+        return () => { isMounted = false }
     }, [manager])
 
-    // useEffect(() => {
-    //     setDisplayData();
-    // }, [range, detail, managerDetails])
+    useEffect(() => {
+        setDisplayData(range, detail, managerDetails);
+    }, [range, detail, managerDetails])
 
 
     return (
@@ -104,7 +112,7 @@ const ViewManager = ({ manager, getManagersData }) => {
                         <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
                     ))}
                 </Select>
-                <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails.due_amount}</Typography>
+                <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails?.due_amount}</Typography>
             </Box>
             <Box style={{ padding: "10px" }}>
                 {(detail === "issue_history" || detail === "accepted_history" || detail === "expense_requests") ?

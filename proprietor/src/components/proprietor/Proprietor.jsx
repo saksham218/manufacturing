@@ -7,6 +7,7 @@ import Header from './Header'
 import Navbar from './Navbar'
 import Manager from './manager/Manager'
 import Item from './Item'
+import { ManagerProvider } from './manager/managerContext/ManagerContext'
 
 
 const Proprietor = () => {
@@ -15,8 +16,6 @@ const Proprietor = () => {
     // const { url, path } = useRouteMatch()
     const match = useMatch("/:proprietor/*")
     const proprietor = localStorage.getItem('proprietor') ? JSON.parse(localStorage.getItem('proprietor')) : null;
-
-    const [currentManager, setCurrentManager] = useState({})
 
     if (!proprietor) {
         return <Navigate to="/login" />
@@ -30,7 +29,11 @@ const Proprietor = () => {
             <Navbar match={match} />
             <Routes>
                 <Route path="/" element={<Navigate to={`${match.pathnameBase}/manager`} />} />
-                <Route path={`/manager/*`} element={<Manager proprietor={proprietor} currentManager={currentManager} setCurrentManager={setCurrentManager} />} />
+                <Route path={`/manager/*`} element={
+                    <ManagerProvider>
+                        <Manager proprietor={proprietor} />
+                    </ManagerProvider>
+                } />
                 <Route path={`/item`} element={<Item proprietor={proprietor} />} />
             </Routes>
 
