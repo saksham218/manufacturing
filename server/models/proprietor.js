@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Hold_Info from "./hold_info.js";
 
 
 const proprietorSchema = new mongoose.Schema({
@@ -19,6 +20,34 @@ const proprietorSchema = new mongoose.Schema({
     // },
     proprietor_id: { type: String, required: true },
     password: { type: String, required: true },
+    on_hold: [{
+        item: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Item'
+        },
+        quantity: Number,
+        price: Number,
+        partial_payment: Number,
+        underprocessing_value: Number,
+        remarks_from_proprietor: String,
+        deduction_from_manager: Number,
+        remarks_from_manager: String,
+        hold_date: Date,
+        holding_remakrs: String,
+        is_adhoc: {
+            type: Boolean,
+            default: false
+        },
+        worker: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Worker'
+        },
+        manager: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Manager'
+        },
+        hold_info: Hold_Info
+    }]
 });
 
 const Proprietor = mongoose.model("Proprietor", proprietorSchema);
