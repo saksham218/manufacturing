@@ -1,16 +1,20 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/material'
 
-const computeContent = (item, key) => {
+const computeContent = (obj, key) => {
+    const value = obj[key]
     if (key === 'item') {
-        return `${item[key].design_number}-${item[key].description}`
+        return `${value.design_number}-${value.description}`
     }
     else if (key === 'date') {
-        const date = new Date(item[key])
+        const date = new Date(value)
         return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
     }
+    else if (key === 'worker') {
+        return `${value.worker_id}-${value.name}`
+    }
     else {
-        return item[key]
+        return value
     }
 }
 
@@ -19,7 +23,7 @@ const filterKeys = (keys) => {
     return keys.filter((key) => !notRequired.includes(key))
 }
 
-const ViewNestedTable = ({ data, firstNonEmptyIndex }) => {
+const ViewNestedTable = ({ data, groupKeys, firstNonEmptyIndex }) => {
     console.log(data)
     console.log(data[0])
     let keys = Object.keys(data[firstNonEmptyIndex]['items'][0])
@@ -31,7 +35,10 @@ const ViewNestedTable = ({ data, firstNonEmptyIndex }) => {
             <Table component={Paper} >
                 <TableHead>
                     <TableRow>
-                        <TableCell>Worker</TableCell>
+                        {groupKeys.map((key) => (
+                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                        ))
+                        }
                         {keys.map((key) => (
                             <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))}
@@ -42,10 +49,18 @@ const ViewNestedTable = ({ data, firstNonEmptyIndex }) => {
                         <React.Fragment>
                             {group.items.map((item, index) => (
                                 <TableRow>
-                                    {index === 0 && <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>}
-                                    {keys.map((key) => {
-                                        return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
-                                    })}
+                                    {
+                                        index === 0 &&
+                                        groupingKeys.map((key) => {
+                                            return <TableCell rowSpan={group.items.length}>{computeContent(group, key)}</TableCell>
+                                        })
+                                    }
+                                    {/* <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>} */}
+                                    {
+                                        keys.map((key) => {
+                                            return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
+                                        })
+                                    }
                                 </TableRow>
                             ))}
                         </React.Fragment>

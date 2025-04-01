@@ -392,7 +392,7 @@ export const acceptFromManager = async (req, res) => {
         ]);
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.proprietor || !req.proprietor.proprietor_id.equals(manager.proprietor.proprietor_id)) return res.status(401).json({ message: "Access Denied" });
 
         const worker = await Worker.findOne({ worker_id: worker_id, manager: manager._id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
@@ -427,6 +427,7 @@ export const acceptFromManager = async (req, res) => {
             return res.status(400).json({ message: "Final remarks are required if deduction is made by proprietor" });
         }
 
+        const current_date = new Date();
 
         manager.submissions[sWorkerIndex].items[sItemIndex].quantity -= Number(accept_quantity);
         if (manager.submissions[sWorkerIndex].items[sItemIndex].quantity === 0) {
@@ -438,23 +439,23 @@ export const acceptFromManager = async (req, res) => {
         }
 
 
-        let ahWorkerIndex = manager.accepted_history.findIndex((w) => w.worker.equals(worker._id));
-        if (ahWorkerIndex === -1) {
-            manager.accepted_history.push({ worker: worker._id, items: [] });
-            ahWorkerIndex = manager.accepted_history.length - 1;
+        let ahIndex = manager.accepted_history.findIndex((w) => (w.worker.equals(worker._id) && isSameDay(w.date, current_date)));
+        if (ahIndex === -1) {
+            manager.accepted_history.push({ worker: worker._id, date: current_date, items: [] });
+            ahIndex = manager.accepted_history.length - 1;
         }
 
         if (Number(deduction) !== 0 || final_remarks !== "") {
-            manager.accepted_history[ahWorkerIndex].items.push({ item: item._id, quantity: Number(accept_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, date: new Date(), is_adhoc: is_adhoc });
+            manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(accept_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
         }
         else {
 
-            const ahItemIndex = manager.accepted_history[ahWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc));
+            const ahItemIndex = manager.accepted_history[ahIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc));
             if (ahItemIndex === -1) {
-                manager.accepted_history[ahWorkerIndex].items.push({ item: item._id, quantity: Number(accept_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, date: new Date() });
+                manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(accept_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
             }
             else {
-                manager.accepted_history[ahWorkerIndex].items[ahItemIndex].quantity += Number(accept_quantity);
+                manager.accepted_history[ahIndex].items[ahItemIndex].quantity += Number(accept_quantity);
             }
         }
 
@@ -469,7 +470,7 @@ export const acceptFromManager = async (req, res) => {
 
         if (Number(deduction) !== 0) {
             worker.due_amount -= (Number(accept_quantity) * Number(deduction));
-            worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: accept_quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: new Date(), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc });
+            worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: accept_quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: current_date, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc });
             await worker.save();
         }
 
@@ -482,4 +483,8 @@ export const acceptFromManager = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Something went wrong" });
     }
+}
+
+const isSameDay = (d1, d2) => {
+    return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
 }
