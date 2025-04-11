@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import _ from "lodash";
 
 import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
@@ -140,50 +141,186 @@ export const issueToManager = async (req, res) => {
     const manager_id = req.params.manager_id;
     console.log("issue to manager manager_id: ", manager_id);
     const { design_number, quantity, underprocessing_value, general_price, remarks } = req.body;
-
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    const proprietor_id = req.proprietor.proprietor_id;
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
-        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) {
-            console.log(req.proprietor.proprietor_id);
+        if (proprietor_id !== manager.proprietor.proprietor_id) {
+            console.log(proprietor_id);
             console.log(manager.proprietor.proprietor_id);
             return res.status(401).json({ message: "Access Denied" });
         }
 
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+
+        if (Number(quantity) <= 0) return res.status(400).json({ message: "Quantity should be positive" });
+
         if (item.price !== Number(general_price)) return res.status(400).json({ message: "General price doesn't match" });
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
         manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, general_price: general_price, remarks_from_proprietor: remarks, date: dateObj });
 
-        // const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id));
+        // const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id) && dueunderprocessing_value === Number(underprocessing_value) && dueItem.remarks_from_proprietor === remarks);
         // if (df_index === -1) {
-        //     manager.due_forward.push({ item: item._id, quantity: quantity, });
+        //     manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
         // }
         // else {
         //     manager.due_forward[df_index].quantity += Number(quantity);
         // }
 
-        manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+        // manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
 
         if (remarks === "") {
             const td_index = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));
             if (td_index === -1) {
-                manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+                manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: "" });
             }
             else {
                 manager.total_due[td_index].quantity += Number(quantity);
             }
+
+            const df_index = manager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));
+
+            if (df_index === -1) {
+                manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: "" });
+            }
+            else {
+                manager.due_forward[df_index].quantity += Number(quantity);
+            }
+
         }
         else {
             manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+            manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
         }
 
         // console.log("manager: ", manager);
         await manager.save();
         return res.status(200).json({ result: manager });
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
+export const issueOnHoldItemsToManager = async (req, res) => {
+    console.log(req.body);
+    const new_manager_id = req.params.manager_id;
+    console.log("issue on hold items to manager manager_id: ", new_manager_id);
+    console.log("proprietor: ", req.proprietor);
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    const proprietor_id = req.params.proprietor_id;
+    const { design_number, quantity, new_price, new_underprocessing_value, new_remarks_from_proprietor, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker_id, manager_id, hold_info } = req.body;
+    try {
+
+        const newManager = await Manager.findOne({ manager_id: new_manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' }, { id: 0, password: 0 });
+        if (!newManager) return res.status(404).json({ message: "Manager doesn't exist" });
+
+        if (newManager.proprietor.proprietor_id !== proprietor_id) {
+            console.log(req.proprietor.proprietor_id);
+            console.log(newManager.proprietor.proprietor_id);
+            return res.status(401).json({ message: "Access Denied" });
+        }
+
+        const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { id: 0, password: 0 });
+        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
+
+        const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' }, { id: 0, password: 0 });
+        if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
+
+        if (proprietor_id !== manager.proprietor.proprietor_id) {
+            console.log(req.proprietor.proprietor_id);
+            console.log(manager.proprietor.proprietor_id);
+            return res.status(401).json({ message: "Access Denied" });
+        }
+
+        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor', populate: { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' } });
+        if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
+
+        if (proprietor_id !== worker.manager.proprietor.proprietor_id) {
+            console.log(proprietor_id);
+            console.log(worker.manager.proprietor.proprietor_id);
+            return res.status(401).json({ message: "Access Denied" });
+        }
+
+        if (worker.manager.manager_id !== manager_id) {
+            return res.status(404).json({ message: `Worker: ${worker_id} doesn't belong to manager: ${manager_id}` });
+        }
+
+        const item = await Item.findOne({ design_number: design_number, proprietor: proprietor._id });
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" });
+
+        if (Number(quantity) <= 0) return res.status(400).json({ message: "Quantity should be positive" });
+
+        if (Number(new_price) <= 0) return res.status(400).json({ message: "New price should be positive" });
+
+        if (Number(new_underprocessing_value) <= 0) return res.status(400).json({ message: "New underprocessing value should be positive" });
+
+        const current_date = new Date();
+
+        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh, hold_info)));
+        if (oHIndex === -1) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}` });
+        }
+
+        proprietor.on_hold[oHIndex].quantity -= Number(quantity);
+        if (proprietor.on_hold[oHIndex].quantity === 0) {
+            proprietor.on_hold.splice(oHIndex, 1);
+        }
+
+        const new_hold_info = {
+            is_hold: true,
+            price: Number(price),
+            partial_payment: Number(partial_payment),
+            underprocessing_value: Number(underprocessing_value),
+            remarks_from_proprietor: remarks_from_proprietor,
+            deduction_from_manager: Number(deduction_from_manager),
+            remarks_from_manager: remarks_from_manager,
+            is_adhoc: is_adhoc,
+            hold_date: current_date,
+            holding_remarks: holding_remarks,
+            put_on_hold_by: put_on_hold_by,
+            manager: manager._id,
+            worker: worker._id,
+            prev_hold_info: proprietor.on_hold[oHIndex].hold_info
+
+        }
+
+        newManager.issue_history.push({ item: item._id, quantity: quantity, price: Number(new_price), underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, date: current_date, hold_info: new_hold_info });
+
+
+        if (new_remarks_from_proprietor === "") {
+            const td_index = newManager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && isSameHoldInfo(dueItem, new_hold_info)));
+            if (td_index === -1) {
+                newManager.total_due.push({ item: item._id, price: new_price, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: "", hold_info: new_hold_info });
+            }
+            else {
+                newManager.total_due[td_index].quantity += Number(quantity);
+            }
+
+            const df_index = newManager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && isSameHoldInfo(dueItem, new_hold_info)));
+
+            if (df_index === -1) {
+                newManager.due_forward.push({ item: item._id, price: new_price, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: "", hold_info: new_hold_info });
+            }
+            else {
+                newManager.due_forward[df_index].quantity += Number(quantity);
+            }
+
+        }
+        else {
+            newManager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
+            newManager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
+        }
+
+        await newManager.save();
+        await proprietor.save();
+        return res.status(200).json({ result: newManager });
 
     }
     catch (error) {
@@ -384,6 +521,8 @@ export const acceptFromManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log(`accept from manager manager_id: ${manager_id}`);
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    const proprietor_id = req.params.proprietor_id;
     const { worker_id, design_number, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_forfeit } = req.body;
 
     try {
@@ -392,7 +531,7 @@ export const acceptFromManager = async (req, res) => {
         ]);
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        if (!req.proprietor || !req.proprietor.proprietor_id.equals(manager.proprietor.proprietor_id)) return res.status(401).json({ message: "Access Denied" });
+        if (proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
 
         const worker = await Worker.findOne({ worker_id: worker_id, manager: manager._id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
@@ -508,4 +647,9 @@ export const acceptFromManager = async (req, res) => {
 
 const isSameDay = (d1, d2) => {
     return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+}
+
+
+const isSameHoldInfo = (item, hold_info) => {
+    return _.isEqual(item.hold_info, hold_info);
 }

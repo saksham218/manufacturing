@@ -33,7 +33,7 @@ const proprietorSchema = new mongoose.Schema({
         deduction_from_manager: Number,
         remarks_from_manager: String,
         hold_date: Date,
-        holding_remakrs: String,
+        holding_remarks: String,
         is_adhoc: {
             type: Boolean,
             default: false

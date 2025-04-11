@@ -31,6 +31,7 @@ const managerSchema = new mongoose.Schema({
             general_price: Number,
             remarks_from_proprietor: String,
             date: Date,
+            price: Number,
             hold_info: Hold_Info
         }],
         default: []

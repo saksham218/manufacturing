@@ -92,7 +92,7 @@ export const putItemsOnHold = async (req, res) => {
 
         if (req.proprietor && req.proprietor.proprietor_id && req.proprietor.proprietor_id !== proprietor_id) {
             console.log(req.proprietor);
-            console.log(manager.proprietor);
+            console.log(manager.proprietor.proprietor_id);
             return res.status(401).json({ message: "Access Denied" });
         }
 
@@ -110,15 +110,16 @@ export const putItemsOnHold = async (req, res) => {
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) ||
-            (req.manager && req.manager.manager_id && req.manager.manager_id !== worker.manager.manager_id) ||
+        if ((req.manager && req.manager.manager_id && req.manager.manager_id !== worker.manager.manager_id) ||
             (req.proprietor && req.proprietor.proprietor_id && req.proprietor.proprietor_id !== worker.manager.proprietor.proprietor_id)) {
             // console.log(req.manager);
             // console.log(req.proprietor);
             return res.status(401).json({ message: "Access Denied" });
         }
 
-        const item = await Item.findOne({ design_number: design_number, proprietor: proprietor });
+        if (req.proprietor && req.proprietor.proprietor_id && worker.manager.manager_id !== manager_id) return res.status(404).json({ message: `Worker: ${worker_id} doesn't belong to manager: ${manager_id}` });
+
+        const item = await Item.findOne({ design_number: design_number, proprietor: proprietor._id });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
         if (Number(quantity) <= 0) {

@@ -23,7 +23,7 @@ const filterKeys = (keys) => {
     return keys.filter((key) => !notRequired.includes(key))
 }
 
-const ViewNestedTable = ({ data, groupKeys, firstNonEmptyIndex }) => {
+const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex }) => {
     console.log(data)
     console.log(data[0])
     let keys = Object.keys(data[firstNonEmptyIndex]['items'][0])
@@ -35,7 +35,7 @@ const ViewNestedTable = ({ data, groupKeys, firstNonEmptyIndex }) => {
             <Table component={Paper} >
                 <TableHead>
                     <TableRow>
-                        {groupKeys.map((key) => (
+                        {groupingKeys.map((key) => (
                             <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))
                         }
