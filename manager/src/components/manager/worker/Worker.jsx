@@ -72,7 +72,7 @@ const Worker = ({ manager }) => {
                     <Route path={`/view`} element={<ViewWorker />} />
                     <Route path={`/issue`} element={<Issue manager={manager} />} />
                     <Route path={`/submit`} element={<Submit manager={manager} />} />
-                    <Route path={`/submitadhoc`} element={<SubmitAdhoc manager={manager} />} />
+                    {/* <Route path={`/submitadhoc`} element={<SubmitAdhoc manager={manager} />} /> */}
                     <Route path={`/payment`} element={<Payment />} />
                     <Route path={`/addworker`} element={<AddWorker manager={manager} />} />
 

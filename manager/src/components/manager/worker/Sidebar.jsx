@@ -40,9 +40,9 @@ const Sidebar = ({ match, setIsAddWorker }) => {
                     <ListItem className={option === "submit" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/submit`); setOption("submit"); }}>
                         <ListItemText primary="Submit" />
                     </ListItem>
-                    <ListItem className={option === "submitadhoc" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/submitadhoc`); setOption("submitadhoc"); }}>
+                    {/* <ListItem className={option === "submitadhoc" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/submitadhoc`); setOption("submitadhoc"); }}>
                         <ListItemText primary="Submit Adhoc" />
-                    </ListItem>
+                    </ListItem> */}
                     <ListItem className={option === "payment" ? "selected" : ""} onClick={() => { setIsAddWorker(false); navigate(`${match.pathnameBase}/payment`); setOption("payment"); }}>
                         <ListItemText primary="Payment" />
                     </ListItem>
