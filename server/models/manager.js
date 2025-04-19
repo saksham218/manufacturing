@@ -130,7 +130,11 @@ const managerSchema = new mongoose.Schema({
                     type: Boolean,
                     default: false
                 },
-                hold_info: Hold_Info
+                hold_info: Hold_Info,
+                to_hold: {
+                    type: Boolean,
+                    default: false
+                }
             }],
         }],
         default: []

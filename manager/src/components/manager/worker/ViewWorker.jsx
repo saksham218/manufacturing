@@ -7,6 +7,39 @@ import dayjs from 'dayjs'
 import { getWorkerDetails } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
 import { useWorker } from './workerContext/WorkerContext'
+import { workerDetailsViewConfig } from '../../constants/ViewConstants';
+
+const getWorkerData = async (worker_id) => {
+    try {
+        const res = await getWorkerDetails(worker_id)
+        console.log(res.data.result)
+        return res.data.result
+
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+
+const getDisplayData = (chosenRange, chosenDetail, workerInfo, viewConfigData) => {
+    var displayData = workerInfo[chosenDetail]
+    if (displayData && viewConfigData.is_dated) {
+        const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
+        const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
+        console.log("start: ", start)
+        console.log("end:", end)
+        displayData = displayData.filter((d) => {
+            const dateObj = new Date(d.date)
+            const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
+            const date = dayjs(dateString, 'DD/MM/YYYY');
+            console.log("date: ", date)
+            return (!date.isBefore(start) && !date.isAfter(end));
+        });
+    }
+    console.log(displayData)
+    return displayData
+
+}
 
 const ViewWorker = () => {
 
@@ -18,45 +51,14 @@ const ViewWorker = () => {
     const [range, setRange] = useState({ start: todayString, end: todayString })
     const [total, setTotal] = useState(0)
 
-    const details = ['due_items', 'issue_history', 'submit_history', 'deductions_from_proprietor', 'payment_history', 'custom_prices']
+    const details = Object.keys(workerDetailsViewConfig)
+    console.log(details)
     const [detail, setDetail] = useState(details[0])
 
     const [workerDetails, setWorkerDetails] = useState({})
     const [data, setData] = useState([])
 
-
-
-    const getWorkerData = async (worker_id) => {
-        try {
-            const res = await getWorkerDetails(worker_id)
-            console.log(res.data.result)
-            return res.data.result
-
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
-
-    const getDisplayData = (chosenRange, chosenDetail, workerInfo) => {
-        var displayData = workerInfo[chosenDetail]
-        if (displayData && (chosenDetail === "issue_history" || chosenDetail === "submit_history" || chosenDetail === "payment_history")) {
-            const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
-            const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
-            console.log("start: ", start)
-            console.log("end:", end)
-            displayData = displayData.filter((d) => {
-                const dateObj = new Date(d.date)
-                const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
-                const date = dayjs(dateString, 'DD/MM/YYYY');
-                console.log("date: ", date)
-                return (!date.isBefore(start) && !date.isAfter(end));
-            });
-        }
-        console.log(displayData)
-        return displayData
-
-    }
+    const [viewConfig, setViewConfig] = useState({})
 
     // useEffect(() => {
     //     getWorkersData();
@@ -82,9 +84,11 @@ const ViewWorker = () => {
 
     useEffect(() => {
         let isMounted = true;
-        const displayData = getDisplayData(range, detail, workerDetails);
+        const viewConfigData = workerDetailsViewConfig[detail]
+        const displayData = getDisplayData(range, detail, workerDetails, viewConfigData);
         if (isMounted) {
             setData(displayData)
+            setViewConfig(viewConfigData)
         }
 
         return () => { isMounted = false }
@@ -102,7 +106,7 @@ const ViewWorker = () => {
                 <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails.due_amount}</Typography>
             </Box>
             <Box style={{ padding: "10px" }}>
-                {(detail === "issue_history" || detail === "submit_history" || detail === "payment_history") ?
+                {viewConfig.is_dated ?
                     <Box style={{ display: "flex" }}>
                         <Box >
                             <Typography>From:</Typography>

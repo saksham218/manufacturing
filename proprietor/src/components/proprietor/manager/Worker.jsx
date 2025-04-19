@@ -7,6 +7,40 @@ import dayjs from 'dayjs'
 import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
 import { useManager } from './managerContext/ManagerContext'
+import { workerDetailsViewConfig } from '../../constants/ViewConstants';
+
+const getWorkersData = async (manager_id) => {
+    try {
+        const res = await getWorkers(manager_id)
+        console.log(res.data)
+        return res.data
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+
+const getItemsData = async (proprietor_id) => {
+    try {
+        const res = await getItems(proprietor_id)
+        console.log(res.data)
+        return res.data
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+
+const getWorkerData = async (worker_id) => {
+    try {
+        const res = await getWorkerDetails(worker_id)
+        console.log(res.data)
+        return res.data.result
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
 
 
 const Worker = ({ proprietor }) => {
@@ -30,46 +64,17 @@ const Worker = ({ proprietor }) => {
     const [price, setPrice] = useState("")
     const [customPrice, setCustomPrice] = useState({ design_number: "", price: "" })
 
-    const details = ['due_items', 'issue_history', 'submit_history', 'deductions_from_proprietor', 'payment_history', 'custom_prices']
+    const details = Object.keys(workerDetailsViewConfig)
+    console.log(details)
     const [detail, setDetail] = useState(details[0])
 
-    const getWorkersData = async () => {
-        try {
-            const res = await getWorkers(manager.manager_id)
-            console.log(res.data)
-            return res.data
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
+    const [viewConfig, setViewConfig] = useState({})
 
-
-    const getItemsData = async () => {
-        try {
-            const res = await getItems(proprietor.proprietor_id)
-            console.log(res.data)
-            return res.data
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
-
-    const getWorkerData = async (worker_id) => {
-        try {
-            const res = await getWorkerDetails(worker_id)
-            console.log(res.data)
-            return res.data.result
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
 
     const setDisplayData = (chosenRange, chosenDetail, workerInfo) => {
+        const viewConfigData = workerDetailsViewConfig[chosenDetail]
         var displayData = workerInfo ? workerInfo[chosenDetail] : null
-        if (displayData && (chosenDetail === "issue_history" || chosenDetail === "submit_history" || chosenDetail === "payment_history")) {
+        if (displayData && viewConfigData.is_dated) {
             const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
             const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
             console.log("start: ", start)
@@ -84,12 +89,14 @@ const Worker = ({ proprietor }) => {
         }
         console.log(displayData)
         setData(displayData)
+        console.log(viewConfigData)
+        setViewConfig(viewConfigData)
     }
 
     useEffect(() => {
         console.log("get items")
         console.log(manager)
-        getItemsData().then((itemsData) => {
+        getItemsData(proprietor.proprietor_id).then((itemsData) => {
             setItems(itemsData)
         });
     }, [])
@@ -104,7 +111,7 @@ const Worker = ({ proprietor }) => {
         setWorkerDetails({})
         setData([]);
         setWorkers([])
-        getWorkersData().then((workersData) => {
+        getWorkersData(manager.manager_id).then((workersData) => {
             if (isMounted) {
                 setWorkers(workersData)
             }
@@ -124,12 +131,14 @@ const Worker = ({ proprietor }) => {
         let isMounted = true;
         setCustomPrice({ design_number: "", price: "" })
         setPrice("")
-        getWorkerData(worker.worker_id).then((workerData) => {
+        if (worker) {
+            getWorkerData(worker.worker_id).then((workerData) => {
 
-            if (isMounted) {
-                setWorkerDetails(workerData)
-            }
-        })
+                if (isMounted) {
+                    setWorkerDetails(workerData)
+                }
+            })
+        }
 
         return () => { isMounted = false }
     }, [worker])
@@ -201,7 +210,7 @@ const Worker = ({ proprietor }) => {
                         <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails?.due_amount}</Typography>
                     </Box>
                     <Box style={{ padding: "10px" }}>
-                        {(detail === "issue_history" || detail === "submit_history" || detail === "payment_history") ?
+                        {viewConfig.is_dated ?
                             <Box style={{ display: "flex" }}>
                                 <Box >
                                     <Typography>From:</Typography>

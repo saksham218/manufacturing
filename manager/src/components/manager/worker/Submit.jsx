@@ -71,7 +71,7 @@ const Submit = ({ manager }) => {
             setMaxQuantity(0)
             setMaxDeduction(0)
             setCurrentWorkerPrice("")
-            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc })
+            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
             getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc).then((itemsData) => {
 
                 if (isMounted) {
@@ -89,7 +89,6 @@ const Submit = ({ manager }) => {
 
         let isMounted = true;
 
-
         if (itemIndex !== "" && items.length > 0) {
 
             if (isAdhoc) {
@@ -102,7 +101,8 @@ const Submit = ({ manager }) => {
                     underprocessing_value: "",
                     remarks_from_proprietor: "",
                     remarks: "",
-                    is_adhoc: isAdhoc
+                    is_adhoc: isAdhoc,
+                    to_hold: toHold
                 })
 
                 setMaxQuantity(Infinity)
@@ -127,7 +127,8 @@ const Submit = ({ manager }) => {
                         underprocessing_value: items[itemIndex].underprocessing_value,
                         remarks_from_proprietor: items[itemIndex].remarks_from_proprietor,
                         remarks: "",
-                        is_adhoc: isAdhoc
+                        is_adhoc: isAdhoc,
+                        to_hold: toHold
                     })
 
                     setMaxQuantity(items[itemIndex].quantity)
@@ -141,7 +142,7 @@ const Submit = ({ manager }) => {
 
         return () => { isMounted = false }
 
-    }, [itemIndex, items, isAdhoc])
+    }, [itemIndex, items])
 
 
     const onItemSelect = async (e) => {
@@ -163,10 +164,10 @@ const Submit = ({ manager }) => {
     const onSubmit = async (e) => {
         e.preventDefault()
         try {
-            const res = await submitFromWorker(submission, worker.worker_id)
+            const res = await submitFromWorker({ ...submission, is_adhoc: isAdhoc, to_hold: toHold }, worker.worker_id)
             console.log(res.data)
 
-            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc })
+            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
             const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc);
             setItems(itemsData);
             setItemIndex("");
@@ -177,17 +178,12 @@ const Submit = ({ manager }) => {
         }
     }
 
-    const onIsAdhocChange = (e) => {
-        setIsAdhoc(e.target.checked);
-    }
-
-
     return (
         <div>
-            <FormGroup style={{ width: "750px", padding: "20px" }}>
+            <FormGroup style={{ padding: "20px" }}>
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <div style={{ display: 'flex' }}>
-                    <Box style={{ width: "400px", marginRight: "20px" }}>
+                    <Box style={{ marginRight: "20px" }}>
                         <InputLabel>Item</InputLabel>
                         <Select style={{ width: "400px" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
                             {items?.map((item) => (
@@ -200,15 +196,16 @@ const Submit = ({ manager }) => {
                         </Select>
                     </Box>
 
-                    <FormControlLabel control={<Checkbox checked={isAdhoc} onChange={onIsAdhocChange} />} label="Submit Adhoc" />
+                    <FormControlLabel control={<Checkbox checked={isAdhoc} onChange={(e) => { setIsAdhoc(e.target.checked) }} />} label="Submit Adhoc" />
+                    <FormControlLabel control={<Checkbox checked={toHold} onChange={(e) => { setToHold(e.target.checked) }} />} label="To Hold" />
                 </div>
 
                 {/* </FormControl> */}
 
-
-                {/* <FormControl style={{ padding: "15px" }}> */}
-                {/* <InputLabel>Price</InputLabel>
-                <Select value={submission.price} onChange={(e) => { setSubmission({ ...submission, price: e.target.value }); console.log(submission); setMax(prices[prices.findIndex((p) => p.price === e.target.value)].quantity); console.log(max) }}>
+                <div style={{ width: "500px", display: "flex", flexDirection: "column" }}>
+                    {/* <FormControl style={{ padding: "15px" }}> */}
+                    {/* <InputLabel>Price</InputLabel>
+                    <Select value={submission.price} onChange={(e) => { setSubmission({ ...submission, price: e.target.value }); console.log(submission); setMax(prices[prices.findIndex((p) => p.price === e.target.value)].quantity); console.log(max) }}>
                     {
                         prices.map((p) => {
                             return (
@@ -217,64 +214,66 @@ const Submit = ({ manager }) => {
 
                         })
                     }
-                </Select> */}
-                {/* </FormControl> */}
-                {isAdhoc && <Typography>Current Price: {currentWorkerPrice}</Typography>}
-                {isAdhoc ?
+                    </Select> */}
+                    {/* </FormControl> */}
+                    {isAdhoc && <Typography>Current Price: {currentWorkerPrice}</Typography>}
+                    {isAdhoc ?
+                        <FormControl style={{ marginTop: "10px" }}>
+                            <InputLabel>Price</InputLabel>
+                            <Input disabled={submission.design_number === ""} inputProps={{ min: 0 }} type="number" value={submission.price} onChange={onPriceChange} onWheel={(e) => { e.target.blur(); }} />
+                        </FormControl>
+                        :
+                        <Typography>Price: {itemIndex !== "" && items[itemIndex].price}</Typography>
+                    }
+
+                    {!isAdhoc &&
+                        <>
+                            <Typography>Underprocessing Value: {itemIndex !== "" && items[itemIndex].underprocessing_value}</Typography>
+                            <Typography>Remarks From Proprietor: {itemIndex !== "" && items[itemIndex].remarks_from_proprietor}</Typography>
+                            <Typography style={{ marginTop: "20px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
+                        </>
+                    }
+
                     <FormControl style={{ marginTop: "10px" }}>
-                        <InputLabel>Price</InputLabel>
-                        <Input disabled={submission.design_number === ""} inputProps={{ min: 0 }} type="number" value={submission.price} onChange={onPriceChange} onWheel={(e) => { e.target.blur(); }} />
+
+                        <InputLabel>Quantity</InputLabel>
+                        <Input disabled={submission.price === "" || submission.design_number === ""} inputProps={{ min: 1, max: maxQuantity }} type="number" value={submission.quantity}
+                            onChange={(e) => { setSubmission({ ...submission, quantity: e.target.value }); console.log(submission); }}
+                            onWheel={(e) => { e.target.blur(); }}
+                        />
                     </FormControl>
-                    :
-                    <Typography>Price: {itemIndex !== "" && items[itemIndex].price}</Typography>
-                }
 
-                {!isAdhoc &&
-                    <>
-                        <Typography>Underprocessing Value: {itemIndex !== "" && items[itemIndex].underprocessing_value}</Typography>
-                        <Typography>Remarks From Proprietor: {itemIndex !== "" && items[itemIndex].remarks_from_proprietor}</Typography>
-                        <Typography style={{ marginTop: "20px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
-                    </>
-                }
+                    {!toHold && <FormControl style={{ marginTop: "25px" }}>
+                        <InputLabel>Deduction</InputLabel>
+                        <Input disabled={submission.price === ""} inputProps={{ min: 0, max: maxDeduction }} type="number" value={submission.deduction} onChange={(e) => { setSubmission({ ...submission, deduction: e.target.value }); console.log(submission); }} onWheel={(e) => { e.target.blur(); }} />
+                    </FormControl>}
 
-                <FormControl style={{ marginTop: "10px" }}>
+                    <FormControl style={{ marginTop: "15px" }}>
+                        <InputLabel>Remarks</InputLabel>
+                        <Input disabled={(submission.price === "" || submission.design_number === "")} value={submission.remarks} onChange={(e) => { setSubmission({ ...submission, remarks: e.target.value }); console.log(submission); }} />
+                    </FormControl>
 
-                    <InputLabel>Quantity</InputLabel>
-                    <Input disabled={submission.price === ""} inputProps={{ min: 1, max: maxQuantity }} type="number" value={submission.quantity}
-                        onChange={(e) => { setSubmission({ ...submission, quantity: e.target.value }); console.log(submission); }}
-                        onWheel={(e) => { e.target.blur(); }}
-                    />
-                </FormControl>
+                    {isAdhoc &&
+                        <>
+                            <FormControl style={{ marginTop: "15px" }}>
+                                <InputLabel>Underprocessing Value</InputLabel>
+                                <Input disabled={(submission.price === "" || submission.design_number === "")} type="number" value={submission.underprocessing_value} onChange={(e) => { setSubmission({ ...submission, underprocessing_value: e.target.value }) }} />
+                            </FormControl>
 
-                <FormControl style={{ marginTop: "25px" }}>
-                    <InputLabel>Deduction</InputLabel>
-                    <Input disabled={submission.price === ""} inputProps={{ min: 0, max: maxDeduction }} type="number" value={submission.deduction} onChange={(e) => { setSubmission({ ...submission, deduction: e.target.value }); console.log(submission); }} onWheel={(e) => { e.target.blur(); }} />
-                </FormControl>
-
-                <FormControl style={{ marginTop: "15px" }}>
-                    <InputLabel>Remarks</InputLabel>
-                    <Input disabled={submission.price === ""} value={submission.remarks} onChange={(e) => { setSubmission({ ...submission, remarks: e.target.value }); console.log(submission); }} />
-                </FormControl>
-
-                {isAdhoc &&
-                    <>
-                        <FormControl style={{ marginTop: "15px" }}>
-                            <InputLabel>Underprocessing Value</InputLabel>
-                            <Input disabled={submission.price === ""} type="number" value={submission.underprocessing_value} onChange={(e) => { setSubmission({ ...submission, underprocessing_value: e.target.value }) }} />
-                        </FormControl>
-
-                        <FormControl style={{ marginTop: "15px" }}>
-                            <InputLabel>Remarks From Proprietor</InputLabel>
-                            <Input disabled={submission.price === ""} value={submission.remarks_from_proprietor} onChange={(e) => { setSubmission({ ...submission, remarks_from_proprietor: e.target.value }) }} />
-                        </FormControl>
-                    </>
-                }
+                            <FormControl style={{ marginTop: "15px" }}>
+                                <InputLabel>Remarks From Proprietor</InputLabel>
+                                <Input disabled={(submission.price === "" || submission.design_number === "")} value={submission.remarks_from_proprietor} onChange={(e) => { setSubmission({ ...submission, remarks_from_proprietor: e.target.value }) }} />
+                            </FormControl>
+                        </>
+                    }
 
 
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                    disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0"
-                        || submission.quantity > maxQuantity || submission.deduction > maxDeduction
-                        || ((submission.deduction !== "0" && submission.deduction !== "") && submission.remarks === "")}>Submit</Button>
+                    <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
+                        disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0"
+                            || submission.quantity > maxQuantity || submission.deduction > maxDeduction
+                            || (submission.price === "" || submission.price === "0")
+                            || (((submission.deduction !== "0" && submission.deduction !== "") || toHold) && submission.remarks === "")}>Submit</Button>
+                </div>
             </FormGroup>
 
         </div >

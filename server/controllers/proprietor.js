@@ -69,13 +69,19 @@ export const loginProprietor = async (req, res) => {
 export const putItemsOnHold = async (req, res) => {
     const manager_id = req.params.manager_id;
     console.log("put items on hold manager_id: ", manager_id);
-    console.log("manager:", req.manager);
     console.log("proprietor:", req.proprietor);
-    if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) || (req.manager && req.manager.manager_id && manager_id !== req.manager.manager_id)) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    const proprietor_id = req.proprietor.proprietor_id;
+    console.log("proprietor_id: ", proprietor_id);
 
-    const { worker_id, design_number, quantity, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, holding_remarks, is_adhoc } = req.body;
+    const { worker_id, design_number, quantity, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, holding_remarks, is_adhoc, to_hold } = req.body;
 
     try {
+
+        const proprietor = await Proprietor.findOne({ proprietor_id }, { id: 0, password: 0 });
+
+        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
+
         const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 })
             .populate([
                 { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' },
@@ -88,20 +94,7 @@ export const putItemsOnHold = async (req, res) => {
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        const proprietor_id = manager.proprietor.proprietor_id;
-
-        if (req.proprietor && req.proprietor.proprietor_id && req.proprietor.proprietor_id !== proprietor_id) {
-            console.log(req.proprietor);
-            console.log(manager.proprietor.proprietor_id);
-            return res.status(401).json({ message: "Access Denied" });
-        }
-
-        const proprietor = await Proprietor.findOne({ proprietor_id }, { id: 0, password: 0 })
-            .populate([
-                {}
-            ]);
-
-        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
+        if (manager.proprietor.proprietor_id !== proprietor_id) return res.status(401).json({ message: "Access Denied" });
 
         const worker = await Worker.findOne({ worker_id }, { id: 0, password: 0 })
             .populate([
@@ -110,14 +103,11 @@ export const putItemsOnHold = async (req, res) => {
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        if ((req.manager && req.manager.manager_id && req.manager.manager_id !== worker.manager.manager_id) ||
-            (req.proprietor && req.proprietor.proprietor_id && req.proprietor.proprietor_id !== worker.manager.proprietor.proprietor_id)) {
-            // console.log(req.manager);
-            // console.log(req.proprietor);
+        if ((proprietor_id !== worker.manager.proprietor.proprietor_id)) {
             return res.status(401).json({ message: "Access Denied" });
         }
 
-        if (req.proprietor && req.proprietor.proprietor_id && worker.manager.manager_id !== manager_id) return res.status(404).json({ message: `Worker: ${worker_id} doesn't belong to manager: ${manager_id}` });
+        if (worker.manager.manager_id !== manager_id) return res.status(404).json({ message: `Worker: ${worker_id} doesn't belong to manager: ${manager_id}` });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: proprietor._id });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
@@ -139,48 +129,36 @@ export const putItemsOnHold = async (req, res) => {
             return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor} not due at manager: ${manager_id}` });
         }
 
-        let put_on_hold_by = "";
-
-        if (req.manager && req.manager.manager_id) {
-            put_on_hold_by = "manager";
-            const dbWorkerIndex = manager.due_backward.findIndex((db) => db.worker.equals(worker._id));
-            if (dbWorkerIndex === -1) return res.status(404).json({ message: `no goods due backward for worker: ${worker_id}` });
-
-            const dbItemIndex = manager.due_backward[dbIndex].items.findIndex((i) => i.to_hold === true && i.item.equals(item._id) && Number(i.quantity) >= Number(quantity) && Number(i.price) === Number(price) && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && Number(i.deduction_from_manager) === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.is_adhoc === is_adhoc);
-            if (dbItemIndex === -1) return res.status(404).json({ message: `to hold, ${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
-
-            manager.due_backward[dbWorkerIndex].items[dbItemIndex].quantity -= Number(quantity);
-            if (manager.due_backward[dbWorkerIndex].items[dbItemIndex].quantity === 0) {
-                manager.due_backward[dbWorkerIndex].items.splice(dbItemIndex, 1);
-            }
-            if (manager.due_backward[dbWorkerIndex].items.length === 0) {
-                manager.due_backward.splice(dbWorkerIndex, 1);
-            }
+        const sWorkerIndex = manager.submissions.findIndex((w) => w.worker.equals(worker._id));
+        if (sWorkerIndex === -1) {
+            return res.status(404).json({ message: `no goods made by worker: ${worker_id} are submitted by ${manager_id}` });
         }
 
-        if (req.proprietor && req.proprietor.proprietor_id) {
-            put_on_hold_by = "proprietor";
-            const sWorkerIndex = manager.submissions.findIndex((w) => w.worker.equals(worker._id));
-            if (sWorkerIndex === -1) {
-                return res.status(404).json({ message: `no goods made by worker: ${worker_id} are in submissions` });
-            }
+        const sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => i.item.equals(item._id) && Number(i.quantity) >= Number(quantity) && Number(i.price) === Number(price) && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && Number(i.deduction_from_manager) === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.is_adhoc === is_adhoc);
+        if (sItemIndex === -1) return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not submiited by manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
 
-            const sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => i.item.equals(item._id) && Number(i.quantity) >= Number(quantity) && Number(i.price) === Number(price) && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && Number(i.deduction_from_manager) === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.is_adhoc === is_adhoc);
-            if (sItemIndex === -1) return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not submiited by manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
-
-            manager.submissions[sWorkerIndex].items[sItemIndex].quantity -= Number(quantity);
-            if (manager.submissions[sWorkerIndex].items[sItemIndex].quantity === 0) {
-                manager.submissions[sWorkerIndex].items.splice(sItemIndex, 1);
-            }
-            if (manager.submissions[sWorkerIndex].items.length === 0) {
-                manager.submissions.splice(sWorkerIndex, 1);
-            }
+        manager.submissions[sWorkerIndex].items[sItemIndex].quantity -= Number(quantity);
+        if (manager.submissions[sWorkerIndex].items[sItemIndex].quantity === 0) {
+            manager.submissions[sWorkerIndex].items.splice(sItemIndex, 1);
         }
-
+        if (manager.submissions[sWorkerIndex].items.length === 0) {
+            manager.submissions.splice(sWorkerIndex, 1);
+        }
 
         manager.total_due[tdIndex].quantity -= Number(quantity);
         if (manager.total_due[tdIndex].quantity === 0) {
             manager.total_due.splice(tdIndex, 1);
+        }
+
+        let put_on_hold_by = "";
+
+        if (to_hold) {
+            put_on_hold_by = "manager";
+            worker.due_amount += (Number(partial_payment) * Number(quantity));
+        }
+        else {
+            put_on_hold_by = "proprietor";
+            worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
         }
 
         const current_date = new Date();
@@ -200,7 +178,6 @@ export const putItemsOnHold = async (req, res) => {
             is_adhoc: is_adhoc
         });
 
-        worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
 
         const manHoldIndex = manager.on_hold_history.findIndex((h) => h.worker.equals(worker._id) && isSameDay(h.hold_date, current_date));
         if (manHoldIndex === -1) {
@@ -259,13 +236,8 @@ export const putItemsOnHold = async (req, res) => {
         await manager.save();
         await worker.save();
 
-        if (req.manager && req.manager.manager_id) {
-            return res.status(200).json({ result: manager });
-        }
+        return res.status(200).json({ result: proprietor });
 
-        if (req.proprietor && req.proprietor.proprietor_id) {
-            return res.status(200).json({ result: proprietor });
-        }
 
     } catch (error) {
         res.status(500).json({ message: "Something went wrong" });

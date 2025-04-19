@@ -4,21 +4,9 @@ import { Table, TableHead, TableRow, TableCell, Paper, Button, FormControl, Inpu
 import { useEffect } from 'react'
 import { getSubmissions, acceptFromManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
+import { computeContent, computeBackgroundColor } from '../../utils/viewUtils'
 
-const keys = ['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'date']
-
-const computeContent = (item, key) => {
-    if (key === 'item') {
-        return `${item[key].design_number}-${item[key].description}`
-    }
-    else if (key === 'date') {
-        const date = new Date(item[key])
-        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
-    }
-    else {
-        return item[key]
-    }
-}
+const keys = ['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor']
 
 const Accept = () => {
 
@@ -105,9 +93,9 @@ const Accept = () => {
                                 <TableRow>
                                     {index === 0 && <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>}
                                     {keys.map((key) => {
-                                        return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
+                                        return <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>{computeContent(item, key)}</TableCell>
                                     })}
-                                    <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>
+                                    <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>
 
                                         <Input type="number" placeholder="accept quantity" inputProps={{ min: 0, max: item.quantity }} style={{ marginTop: "10px", width: "150px" }} value={item.accept_quantity}
                                             onChange={(e) => { const submissionsData = submissions; submissionsData[groupIndex].items[index].accept_quantity = e.target.value; setSubmissions([...submissionsData]) }}

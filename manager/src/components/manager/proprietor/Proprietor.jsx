@@ -1,9 +1,10 @@
 import React from 'react'
 import { Routes, Route, Navigate, useMatch } from 'react-router-dom'
 
-import SubmitItems from './SubmitItems'
+
 import ExpenseRequest from './ExpenseRequest'
 import Sidebar from './Sidebar'
+import SubmitItems from './submitItems/SubmitItems'
 
 
 const Proprietor = ({ manager }) => {

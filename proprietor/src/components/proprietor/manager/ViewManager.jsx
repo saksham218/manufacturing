@@ -8,6 +8,19 @@ import { getManager } from '../../../api'
 import ViewTable from '../../layouts/ViewTable'
 import ViewNestedTable from '../../layouts/ViewNestedTable';
 import { useManager } from './managerContext/ManagerContext'
+import { managerDetailsViewConfig } from '../../constants/ViewConstants'
+
+const getManagerData = async (manager_id) => {
+    try {
+        const res = await getManager(manager_id)
+        console.log(res.data)
+        return res.data
+
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
 
 const ViewManager = () => {
 
@@ -19,8 +32,8 @@ const ViewManager = () => {
     const [range, setRange] = useState({ start: todayString, end: todayString })
     const [total, setTotal] = useState(0)
 
-    const details = ['total_due', 'due_forward', 'due_backward', 'submissions', 'issue_history', 'accepted_history', 'expense_requests']
-
+    const details = Object.keys(managerDetailsViewConfig)
+    console.log(details)
     const [detail, setDetail] = useState(details[0])
 
     const [managerDetails, setManagerDetails] = useState({})
@@ -28,23 +41,15 @@ const ViewManager = () => {
 
     const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(0)
 
-    const getManagerData = async () => {
-        try {
-            const res = await getManager(manager.manager_id)
-            console.log(res.data)
-            return res.data
+    const [viewConfig, setViewConfig] = useState({})
 
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
 
     const setDisplayData = (r, d, mD) => {
+        const viewConfigData = managerDetailsViewConfig[d]
         var displayData = mD[d];
-        var fNEI = 0;
+        var fNEI = -1;
         console.log(displayData)
-        if (displayData && (d === "issue_history" || d === "expense_requests")) {
+        if (displayData && viewConfigData.is_dated) {
             const start = dayjs(r.start, 'DD/MM/YYYY')
             const end = dayjs(r.end, 'DD/MM/YYYY')
             console.log("start: ", start)
@@ -58,29 +63,16 @@ const ViewManager = () => {
             });
         }
 
-        if (displayData && d === "accepted_history") {
-            const start = dayjs(r.start, 'DD/MM/YYYY')
-            const end = dayjs(r.end, 'DD/MM/YYYY')
-            console.log("start: ", start)
-            console.log("end:", end)
-            displayData = displayData.map((dt) => {
-                const items = dt.items.filter((item) => {
-                    const dateObj = new Date(item.date)
-                    const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
-                    const date = dayjs(dateString, 'DD/MM/YYYY');
-                    return (!date.isBefore(start) && !date.isAfter(end));
-                })
-                return { ...dt, items: items };
-            })
-
+        if (displayData && viewConfigData.is_grouped) {
             fNEI = displayData.findIndex((dt) => dt.items.length > 0)
         }
 
         console.log(fNEI)
         setFirstNonEmptyIndex(fNEI)
         console.log(displayData)
-        console.log(managerDetails)
         setData(displayData)
+        console.log(viewConfigData)
+        setViewConfig(viewConfigData)
     }
 
 
@@ -90,11 +82,13 @@ const ViewManager = () => {
 
         console.log("get manager")
         console.log(manager)
-        getManagerData().then((managerData) => {
-            if (managerData && isMounted) {
-                setManagerDetails(managerData)
-            }
-        });
+        if (manager && manager.manager_id) {
+            getManagerData(manager.manager_id).then((managerData) => {
+                if (managerData && isMounted) {
+                    setManagerDetails(managerData)
+                }
+            });
+        }
 
         return () => { isMounted = false }
     }, [manager])
@@ -115,7 +109,7 @@ const ViewManager = () => {
                 <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails?.due_amount}</Typography>
             </Box>
             <Box style={{ padding: "10px" }}>
-                {(detail === "issue_history" || detail === "accepted_history" || detail === "expense_requests") ?
+                {viewConfig?.is_dated ?
                     <Box style={{ display: "flex" }}>
                         <Box >
                             <Typography>From:</Typography>
@@ -131,7 +125,8 @@ const ViewManager = () => {
                         </Box>
                     </Box> : null}
                 <Typography>Total: {total}</Typography>
-                {(data && data.length > 0 && (firstNonEmptyIndex !== -1)) ? ((detail === "due_backward" || detail === "submissions" || detail === "accepted_history") ? <ViewNestedTable data={data} firstNonEmptyIndex={firstNonEmptyIndex} /> : <ViewTable data={data} />)
+
+                {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} firstNonEmptyIndex={firstNonEmptyIndex} /> : <ViewTable data={data} />)
                     : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
             </Box>
         </div>

@@ -1,23 +1,7 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper } from '@mui/material'
 
-const computeContent = (item, key) => {
-    if (key === 'item') {
-        return `${item[key].design_number}-${item[key].description}`
-    }
-    else if (key === 'date' || key === 'deduction_date') {
-        const date = new Date(item[key])
-        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
-    }
-    else {
-        return item[key]
-    }
-}
-
-const filterKeys = (keys) => {
-    const notRequired = ['_id', 'is_adhoc']
-    return keys.filter((key) => !notRequired.includes(key))
-}
+import { computeContent, computeBackgroundColor, filterKeys } from '../utils/viewUtils'
 
 const ViewTable = ({ data }) => {
     console.log(data)
@@ -40,7 +24,7 @@ const ViewTable = ({ data }) => {
                     {data.map((row) => (
                         <TableRow>
                             {keys.map((key) => {
-                                return <TableCell style={{ 'backgroundColor': row?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(row, key)}</TableCell>
+                                return <TableCell style={{ 'backgroundColor': computeBackgroundColor(row) }}>{computeContent(row, key)}</TableCell>
                             })}
                         </TableRow>
                     ))}

@@ -334,7 +334,7 @@ export const submitToProprietor = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("submit to proprietor manager_id: ", manager_id);
-    const { worker_id, design_number, submit_quantity, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc } = req.body;
+    const { worker_id, design_number, submit_quantity, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold } = req.body;
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
 
@@ -367,9 +367,9 @@ export const submitToProprietor = async (req, res) => {
             return res.status(404).json({ message: `no goods due backward for worker: ${worker_id}` });
         }
         else {
-            const dbItemIndex = manager.due_backward[dbWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc)));
+            const dbItemIndex = manager.due_backward[dbWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc) && (i.to_hold === to_hold)));
             if (dbItemIndex === -1) {
-                return res.status(404).json({ message: `${submit_quantity} of ${design_number} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
+                return res.status(404).json({ message: `${submit_quantity} of ${design_number}, to_hold: ${to_hold} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
             }
             else {
                 manager.due_backward[dbWorkerIndex].items[dbItemIndex].quantity -= Number(submit_quantity);
@@ -384,6 +384,7 @@ export const submitToProprietor = async (req, res) => {
             }
         }
 
+        const current_date = new Date();
 
         // manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
 
@@ -393,18 +394,18 @@ export const submitToProprietor = async (req, res) => {
             sWorkerIndex = manager.submissions.length - 1;
         }
 
-        if (Number(deduction_from_manager) !== 0 || remarks_from_manager !== "" || remarks_from_proprietor !== "") {
-            manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: new Date(), is_adhoc: is_adhoc });
+        // if (Number(deduction_from_manager) !== 0 || remarks_from_manager !== "" || remarks_from_proprietor !== "" || to_hold) {
+        //     manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold });
+        // }
+        // else {
+        let sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && is_adhoc === i.is_adhoc && to_hold === i.to_hold));
+        if (sItemIndex === -1) {
+            manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold });
         }
         else {
-            let sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && is_adhoc === i.is_adhoc));
-            if (sItemIndex === -1) {
-                manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: new Date(), is_adhoc: is_adhoc });
-            }
-            else {
-                manager.submissions[sWorkerIndex].items[sItemIndex].quantity += Number(submit_quantity);
-            }
+            manager.submissions[sWorkerIndex].items[sItemIndex].quantity += Number(submit_quantity);
         }
+        // }
 
         // console.log("manager: ", manager);
         await manager.save();

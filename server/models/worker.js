@@ -63,6 +63,10 @@ const workerSchema = new mongoose.Schema({
             remarks_from_manager: String,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
+            held_by_manager: {
+                type: Boolean,
+                default: false
+            },
             date: Date,
             is_adhoc: {
                 type: Boolean,

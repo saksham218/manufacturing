@@ -1,29 +1,9 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/material'
 
-const computeContent = (obj, key) => {
-    const value = obj[key]
-    if (key === 'item') {
-        return `${value.design_number}-${value.description}`
-    }
-    else if (key === 'date') {
-        const date = new Date(value)
-        return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
-    }
-    else if (key === 'worker') {
-        return `${value.worker_id}-${value.name}`
-    }
-    else {
-        return value
-    }
-}
+import { computeContent, computeBackgroundColor, filterKeys } from '../utils/viewUtils'
 
-const filterKeys = (keys) => {
-    const notRequired = ['_id', 'is_adhoc']
-    return keys.filter((key) => !notRequired.includes(key))
-}
-
-const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex }) => {
+const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex, additionalComponents }) => {
     console.log(data)
     console.log(data[0])
     let keys = Object.keys(data[firstNonEmptyIndex]['items'][0])
@@ -42,6 +22,12 @@ const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex }) => {
                         {keys.map((key) => (
                             <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))}
+                        {
+                            additionalComponents &&
+                            additionalComponents.map((component) => (
+                                <TableCell>{component.label.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                            ))
+                        }
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -58,7 +44,20 @@ const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex }) => {
                                     {/* <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>} */}
                                     {
                                         keys.map((key) => {
-                                            return <TableCell style={{ 'backgroundColor': item?.is_adhoc ? 'yellow' : 'white' }}>{computeContent(item, key)}</TableCell>
+                                            return <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>{computeContent(item, key)}</TableCell>
+                                        })
+                                    }
+                                    {
+                                        additionalComponents &&
+                                        additionalComponents.map((component) => {
+
+                                            return (
+                                                <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>
+
+                                                    <component.component item={item} group={group} {...component.props} />
+
+                                                </TableCell>
+                                            )
                                         })
                                     }
                                 </TableRow>
