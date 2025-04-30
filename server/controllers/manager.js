@@ -53,7 +53,12 @@ export const getManager = async (req, res) => {
                 { path: 'due_backward.items.item', model: 'Item', select: 'design_number description' },
                 { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'submissions.items.item', model: 'Item', select: 'design_number description' },
-                { path: 'total_due.item', model: 'Item', select: 'design_number description' }]);
+                { path: 'total_due.item', model: 'Item', select: 'design_number description' },
+                { path: 'forfeited_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'forfeited_history.items.item', model: 'Item', select: 'design_number description' },
+                { path: 'on_hold_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'on_hold_history.items.item', model: 'Item', select: 'design_number description' },
+            ]);
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
@@ -523,11 +528,18 @@ export const acceptFromManager = async (req, res) => {
     const manager_id = req.params.manager_id;
     console.log(`accept from manager manager_id: ${manager_id}`);
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
-    const proprietor_id = req.params.proprietor_id;
-    const { worker_id, design_number, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_forfeit } = req.body;
+    const proprietor_id = req.proprietor.proprietor_id;
+    const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_hold } = req.body;
 
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }).select('submissions accepted_history total_due proprietor due_amount').populate([
+        if (!(["hold", "forfeit", "accept"].includes(action))) {
+            return res.status(400).json({ message: "Action should be either hold, forfeit or accept" });
+        }
+
+        const proprietor = await Proprietor.findOne({ proprietor_id }, { id: 0, password: 0 });
+        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
+
+        const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 }).populate([
             { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' }
         ]);
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
@@ -560,27 +572,18 @@ export const acceptFromManager = async (req, res) => {
             return res.status(400).json({ message: "Accept/Forfeiture quantity should be positive" });
         }
 
+        let hmIndex = -1;
+
+        if (to_hold) {
+            hmIndex = worker.held_by_manager.findIndex((h) => (h.item.equals(item._id) && h.quantity >= Number(quantity) && h.price === Number(price) && h.remarks_from_manager === remarks_from_manager && h.remarks_from_proprietor === remarks_from_proprietor && Number(h.underprocessing_value) === Number(underprocessing_value) && h.is_adhoc === is_adhoc));
+            if (hmIndex === -1) {
+                return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not held by manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
+            }
+        }
+
         const current_date = new Date();
 
-        if (to_forfeit) {
-
-            if (final_remarks === "") {
-                return res.status(400).json({ message: "Final remarks are required if forfeiture is made by proprietor" });
-            }
-
-            let fhIndex = manager.forfeited_history.findIndex((f) => (f.worker.equals(worker._id) && isSameDay(f.forfeiture_date, current_date)));
-            if (fhIndex === -1) {
-                manager.forfeited_history.push({ worker: worker._id, forfeiture_date: current_date, items: [] });
-                fhIndex = manager.forfeited_history.length - 1;
-            }
-
-            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
-
-            worker.due_amount -= (Number(quantity) * (Number(underprocessing_value) + (Number(price) - Number(deduction_from_manager))));
-            worker.forfeited_history.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, deduction_from_manager: deduction_from_manager, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
-            await worker.save();
-        }
-        else {
+        if (action === "accept") {
 
             if (Number(deduction) > (Number(manager.submissions[sWorkerIndex].items[sItemIndex].price) - Number(manager.submissions[sWorkerIndex].items[sItemIndex].deduction_from_manager))) {
                 return res.status(400).json({ message: "Deduction can't be more than the price (remaining after deduction_from_manager)" });
@@ -596,28 +599,102 @@ export const acceptFromManager = async (req, res) => {
                 ahIndex = manager.accepted_history.length - 1;
             }
 
-            if (Number(deduction) !== 0 || final_remarks !== "") {
+            // if (Number(deduction) !== 0 || final_remarks !== "") {
+            //     manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+            // }
+            // else {
+
+            const ahItemIndex = manager.accepted_history[ahIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc));
+            if (ahItemIndex === -1) {
                 manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
             }
             else {
-
-                const ahItemIndex = manager.accepted_history[ahIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc));
-                if (ahItemIndex === -1) {
-                    manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
-                }
-                else {
-                    manager.accepted_history[ahIndex].items[ahItemIndex].quantity += Number(quantity);
-                }
+                manager.accepted_history[ahIndex].items[ahItemIndex].quantity += Number(quantity);
             }
-
-            manager.due_amount += (1.1 * (Number(price) - Number(deduction) - Number(deduction_from_manager)) * Number(quantity));
+            // }
 
             if (Number(deduction) !== 0) {
-                worker.due_amount -= (Number(quantity) * Number(deduction));
                 worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: current_date, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc });
-                await worker.save();
             }
 
+            if (to_hold) {
+                worker.due_amount += (Number(quantity) * (Number(price) - Number(deduction)));
+                manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
+            }
+            else {
+                worker.due_amount -= (Number(quantity) * Number(deduction));
+                manager.due_amount += (1.1 * (Number(price) - Number(deduction) - Number(deduction_from_manager)) * Number(quantity));
+            }
+        }
+        else if (action === "forfeit") {
+            if (final_remarks === "") {
+                return res.status(400).json({ message: "Final remarks are required if forfeiture is made by proprietor" });
+            }
+
+            let fhIndex = manager.forfeited_history.findIndex((f) => (f.worker.equals(worker._id) && isSameDay(f.forfeiture_date, current_date)));
+            if (fhIndex === -1) {
+                manager.forfeited_history.push({ worker: worker._id, forfeiture_date: current_date, items: [] });
+                fhIndex = manager.forfeited_history.length - 1;
+            }
+
+            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+
+            worker.forfeited_history.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, deduction_from_manager: deduction_from_manager, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+
+            if (to_hold) {
+                worker.due_amount -= (Number(quantity) * Number(underprocessing_value));
+            }
+            else {
+                worker.due_amount -= (Number(quantity) * (Number(underprocessing_value) + (Number(price) - Number(deduction_from_manager))));
+            }
+
+            manager.due_amount -= (Number(underprocessing_value) * Number(quantity));
+
+        }
+        else if (action === "hold") {
+
+            if (Number(partial_payment) < 0 || Number(partial_payment) > (Number(price) - Number(deduction_from_manager))) {
+                return res.status(400).json({ message: "Partial payment should be non-negative and less than or equal to price minus deduction from manager" });
+            }
+
+            if (final_remarks === "") {
+                return res.status(400).json({ message: "Holding remarks should not be empty" });
+            }
+
+            let put_on_hold_by = "";
+            if (to_hold) {
+                put_on_hold_by = "manager";
+                worker.due_amount += (Number(partial_payment) * Number(quantity));
+            }
+            else {
+                put_on_hold_by = "proprietor";
+                worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
+            }
+
+            worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, hold_date: current_date, put_on_hold_by: put_on_hold_by, holding_remarks: final_remarks, is_adhoc: is_adhoc });
+
+            manager.due_amount += (1.1 * Number(partial_payment) * Number(quantity));
+
+            let manHoldIndex = manager.on_hold_history.findIndex((h) => h.worker.equals(worker._id) && isSameDay(h.hold_date, current_date));
+
+            if (manHoldIndex === -1) {
+                manager.on_hold_history.push({ worker: worker._id, hold_date: current_date, items: [] });
+                manHoldIndex = manager.on_hold_history.length - 1;
+            }
+
+            manager.on_hold_history[manHoldIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc });
+
+            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id });
+
+            await proprietor.save();
+
+        }
+
+        if (to_hold) {
+            worker.held_by_manager[hmIndex].quantity -= Number(quantity);
+            if (worker.held_by_manager[hmIndex].quantity === 0) {
+                worker.held_by_manager.splice(hmIndex, 1);
+            }
         }
 
         manager.submissions[sWorkerIndex].items[sItemIndex].quantity -= Number(quantity);
@@ -635,9 +712,8 @@ export const acceptFromManager = async (req, res) => {
         }
 
         await manager.save();
+        await worker.save();
         return res.status(200).json({ result: manager });
-
-
 
     }
     catch (error) {

@@ -36,7 +36,7 @@ export const getItems = async (req, res) => {
 
 export const createItem = async (req, res) => {
     console.log(req.body)
-    const { design_number, description, price } = req.body
+    const { design_number, description, price, underprocessing_value } = req.body
     const proprietor_id = req.params.proprietor_id
     console.log("proprietor_id: ", proprietor_id)
 
@@ -51,7 +51,7 @@ export const createItem = async (req, res) => {
 
         if (oldItem) return res.status(400).json({ message: "Item already exists" })
 
-        const newItem = new Item({ design_number, description, price, proprietor: proprietor._id, createdOn: Date.now() })
+        const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, createdOn: Date.now() })
 
 
         await newItem.save()

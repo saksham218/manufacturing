@@ -37,7 +37,7 @@ export const managerDetailsViewConfig = {
     "forfeited_history": {
         "is_dated": true,
         "is_grouped": true,
-        "grouping_keys": ["worker", "foreiture_date"]
+        "grouping_keys": ["worker", "forfeiture_date"]
     },
     "on_hold_history": {
         "is_dated": true,
@@ -68,7 +68,10 @@ export const workerDetailsViewConfig = {
     },
     "on_hold_history": {
         "is_dated": true
-    }
+    },
+    "held_by_manager": {
+        "is_dated": false
+    },
 }
 
 export const proprietorDetailsViewConfig = {

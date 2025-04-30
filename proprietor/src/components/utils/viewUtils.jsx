@@ -5,7 +5,8 @@ export const computeContent = (item, key) => {
     else if (key === 'item') {
         return `${item[key].design_number}-${item[key].description}`
     }
-    else if (key === 'date' || key === 'deduction_date') {
+    else if (key.includes('date')) {
+        console.log(`${key}:${item[key]}`)
         const date = new Date(item[key])
         return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
     }
@@ -15,7 +16,7 @@ export const computeContent = (item, key) => {
 }
 
 export const computeBackgroundColor = (item) => {
-    if (item?.is_adhoc && (item?.to_hold || item?.held_by_manager)) {
+    if (item?.is_adhoc && item?.to_hold) {
         return 'pink'
     }
 

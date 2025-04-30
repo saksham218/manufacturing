@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { Input, InputLabel, FormControl, FormGroup, Button } from '@mui/material'
 import { addWorker } from '../../../api'
 
-const AddWorker = ({ manager }) => {
+const AddWorker = ({ manager, setWorkersList }) => {
 
     const [newWorker, setNewWorker] = useState({ name: "", contact_number: "", address: "", worker_id: "" })
 
@@ -13,8 +13,8 @@ const AddWorker = ({ manager }) => {
         console.log(newWorker)
         const res = await addWorker(newWorker, manager.manager_id)
         console.log(res)
+        setWorkersList();
         setNewWorker({ name: "", contact_number: "", address: "", worker_id: "" })
-
 
     }
     return (

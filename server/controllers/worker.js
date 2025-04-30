@@ -266,8 +266,14 @@ export const submitFromWorker = async (req, res) => {
             }
         }
 
+        if (to_hold && Number(deduction) !== 0)
+            return res.status(400).json({ message: "Deduction not allowed for hold" });
+
         if (Number(deduction) > Number(price))
             return res.status(400).json({ message: "Deduction cannot be more than price" });
+
+        if (Number(underprocessing_value) <= 0)
+            return res.status(400).json({ message: "Underprocessing value should be positive" });
 
         if (Number(quantity) === 0)
             return res.status(400).json({ message: "Quantity cannot be 0" });
@@ -319,9 +325,19 @@ export const submitFromWorker = async (req, res) => {
         if (!to_hold) {
             worker.due_amount += ((Number(price) - Number(deduction)) * Number(quantity))
         }
+        else {
+            const hmIndex = worker.held_by_manager.findIndex((hm) => (hm.item.equals(item._id) && Number(hm.price) === Number(price) && hm.remarks_from_manager === remarks && hm.remarks_from_proprietor === remarks_from_proprietor && Number(hm.underprocessing_value) === Number(underprocessing_value) && hm.is_adhoc === is_adhoc));
+            if (hmIndex === -1) {
+                worker.held_by_manager.push({ item: item._id, quantity: quantity, price: price, remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc });
+            }
+            else {
+                worker.held_by_manager[hmIndex].quantity += Number(quantity);
+            }
+        }
+
 
         const dateObj = new Date();
-        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj, is_adhoc: is_adhoc ? true : false, held_by_manager: to_hold });
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj, is_adhoc: is_adhoc ? true : false });
 
 
         // console.log("manager: ", manager);
@@ -386,6 +402,9 @@ export const getWorker = async (req, res) => {
             { path: 'issue_history.item', model: 'Item', select: 'design_number description' },
             { path: 'submit_history.item', model: 'Item', select: 'design_number description' },
             { path: 'deductions_from_proprietor.item', model: 'Item', select: 'design_number description' },
+            { path: 'held_by_manager.item', model: 'Item', select: 'design_number description' },
+            { path: 'forfeited_history.item', model: 'Item', select: 'design_number description' },
+            { path: 'on_hold_history.item', model: 'Item', select: 'design_number description' },
         ])
 
         console.log("worker manager", worker.manager);

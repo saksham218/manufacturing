@@ -5,7 +5,7 @@ import { Navigate } from 'react-router'
 import Sidebar from './Sidebar'
 import ViewManager from './ViewManager'
 import Issue from './Issue'
-import Accept from './Accept'
+import Accept from './accept/Accept'
 import Worker from './Worker'
 import Payment from './Payment'
 import AddManager from './AddManager'
@@ -13,7 +13,17 @@ import { MenuItem, Select, Typography, Box } from '@mui/material'
 import { getManagers } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 
+const getManagersData = async (proprietor_id) => {
+    try {
+        const res = await getManagers(proprietor_id)
+        console.log(res.data)
+        return res.data
 
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
 
 const Manager = ({ proprietor }) => {
 
@@ -22,23 +32,15 @@ const Manager = ({ proprietor }) => {
     const [managers, setManagers] = useState([])
     const { manager, setManager } = useManager()
 
-    const getManagersData = async () => {
-        try {
-            const res = await getManagers(proprietor.proprietor_id)
-            console.log(res.data)
-            return res.data
-
-        }
-        catch (err) {
-            console.log(err)
-        }
+    const setManagersList = () => {
+        getManagersData(proprietor.proprietor_id).then((managersData) => {
+            setManagers(managersData)
+        });
     }
 
     useEffect(() => {
         console.log("get managers")
-        getManagersData().then((managersData) => {
-            setManagers(managersData)
-        });
+        setManagersList();
     }, [])
 
     useEffect(() => {
@@ -74,7 +76,7 @@ const Manager = ({ proprietor }) => {
                     <Route path={`/accept`} element={<Accept />} />
                     <Route path={`/worker`} element={<Worker proprietor={proprietor} />} />
                     <Route path={`/payment`} element={<Payment />} />
-                    <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} />} />
+                    <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} setManagersList={setManagersList} />} />
                 </Routes>
             </div>
 

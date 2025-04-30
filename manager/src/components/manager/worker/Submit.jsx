@@ -98,7 +98,7 @@ const Submit = ({ manager }) => {
                     quantity: "",
                     price: "",
                     deduction: "",
-                    underprocessing_value: "",
+                    underprocessing_value: items[itemIndex].underprocessing_value ? items[itemIndex].underprocessing_value : "",
                     remarks_from_proprietor: "",
                     remarks: "",
                     is_adhoc: isAdhoc,
@@ -143,6 +143,14 @@ const Submit = ({ manager }) => {
         return () => { isMounted = false }
 
     }, [itemIndex, items])
+
+    useEffect(() => {
+        setSubmission({
+            ...submission,
+            deduction: "",
+            remarks: ""
+        })
+    }, [toHold])
 
 
     const onItemSelect = async (e) => {
@@ -257,7 +265,7 @@ const Submit = ({ manager }) => {
                         <>
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel>Underprocessing Value</InputLabel>
-                                <Input disabled={(submission.price === "" || submission.design_number === "")} type="number" value={submission.underprocessing_value} onChange={(e) => { setSubmission({ ...submission, underprocessing_value: e.target.value }) }} />
+                                <Input disabled={(submission.design_number === "")} inputProps={{ min: 0 }} type="number" value={submission.underprocessing_value} onChange={(e) => { setSubmission({ ...submission, underprocessing_value: e.target.value }) }} />
                             </FormControl>
 
                             <FormControl style={{ marginTop: "15px" }}>
@@ -272,6 +280,7 @@ const Submit = ({ manager }) => {
                         disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0"
                             || submission.quantity > maxQuantity || submission.deduction > maxDeduction
                             || (submission.price === "" || submission.price === "0")
+                            || (submission.underprocessing_value === "" || submission.underprocessing_value === "0" || Number(submission.underprocessing_value) === 0)
                             || (((submission.deduction !== "0" && submission.deduction !== "") || toHold) && submission.remarks === "")}>Submit</Button>
                 </div>
             </FormGroup>

@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { Input, InputLabel, FormControl, FormGroup, Button } from '@mui/material'
 import { addManager } from '../../../api'
 
-const AddManager = ({ proprietor }) => {
+const AddManager = ({ proprietor, setManagersList }) => {
 
     const [newManager, setNewManager] = useState({ name: "", contact_number: "", address: "", manager_id: "", password: "" })
     const [confirmPassword, setConfirmPassword] = useState("")
@@ -13,6 +13,7 @@ const AddManager = ({ proprietor }) => {
         console.log(newManager)
         const res = await addManager(newManager, proprietor.proprietor_id)
         console.log(res)
+        setManagersList();
         setNewManager({ name: "", contact_number: "", address: "", manager_id: "", password: "" })
         setConfirmPassword("")
 

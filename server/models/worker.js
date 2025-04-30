@@ -63,10 +63,6 @@ const workerSchema = new mongoose.Schema({
             remarks_from_manager: String,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
-            held_by_manager: {
-                type: Boolean,
-                default: false
-            },
             date: Date,
             is_adhoc: {
                 type: Boolean,
@@ -148,6 +144,25 @@ const workerSchema = new mongoose.Schema({
                 type: String,
                 enum: ['manager', 'proprietor']
             },
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            },
+            hold_info: Hold_Info
+        }],
+        default: []
+    },
+    held_by_manager: {
+        type: [{
+            item: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Item'
+            },
+            quantity: Number,
+            price: Number,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
+            remarks_from_manager: String,
             is_adhoc: {
                 type: Boolean,
                 default: false

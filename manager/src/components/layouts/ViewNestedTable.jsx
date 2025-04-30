@@ -1,5 +1,5 @@
-import React from 'react'
-import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/material'
+import React, { useState, useEffect } from 'react'
+import { Table, TableHead, TableRow, TableCell, Paper, TableBody, Divider } from '@mui/material'
 
 import { computeContent, computeBackgroundColor, filterKeys } from '../utils/viewUtils'
 
@@ -68,6 +68,11 @@ const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex, additionalCom
                                     }
                                 </TableRow>
                             ))}
+                            <TableRow>
+                                <TableCell colSpan={groupingKeys?.length + keys?.length + (additionalComponents ? additionalComponents?.length : 0)} style={{ padding: 0 }}>
+                                    <Divider style={{ backgroundColor: 'black', height: '3px', }} />
+                                </TableCell>
+                            </TableRow>
                         </React.Fragment>
                     ))}
                 </TableBody>

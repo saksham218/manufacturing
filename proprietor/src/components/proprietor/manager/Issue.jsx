@@ -5,6 +5,17 @@ import { getItems, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 
 
+const getItemsData = async (proprietor_id) => {
+    try {
+        const res = await getItems(proprietor_id)
+        console.log(res.data)
+        return res.data
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+
 const Issue = ({ proprietor }) => {
 
     const { manager } = useManager()
@@ -12,21 +23,10 @@ const Issue = ({ proprietor }) => {
     const [issue, setIssue] = useState({ design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "" })
     const [items, setItems] = useState([])
 
-    const getItemsData = async () => {
-        try {
-            const res = await getItems(proprietor.proprietor_id)
-            console.log(res.data)
-            return res.data
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
-
     useEffect(() => {
         console.log("get items")
         console.log(proprietor)
-        getItemsData().then((itemsData) => {
+        getItemsData(proprietor.proprietor_id).then((itemsData) => {
             setItems(itemsData)
         });
     }, [proprietor])
@@ -47,7 +47,7 @@ const Issue = ({ proprietor }) => {
         <div>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
                 <InputLabel>Item</InputLabel>
-                <Select value={issue.design_number} onChange={(e) => { const index = items.findIndex((i) => { return e.target.value === i.design_number; }); setIssue({ ...issue, design_number: e.target.value, general_price: items[index].price, quantity: "", underprocessing_value: "", thread_raw_material: "", remarks: "" }); console.log(issue); }}>
+                <Select value={issue.design_number} onChange={(e) => { const index = items.findIndex((i) => { return e.target.value === i.design_number; }); setIssue({ ...issue, design_number: e.target.value, general_price: items[index].price, quantity: "", underprocessing_value: items[index].underprocessing_value, thread_raw_material: "", remarks: "" }); console.log(issue); }}>
                     {items.map((item) => (
                         <MenuItem value={item.design_number}>{item.design_number}-{item.description}</MenuItem>
                     ))}
@@ -56,7 +56,7 @@ const Issue = ({ proprietor }) => {
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Quantity</InputLabel>
                     <Input type="number" value={issue.quantity}
-                        inputProps={{ min: "0" }}
+                        inputProps={{ min: 0 }}
                         onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }}
                         onWheel={(e) => { e.target.blur(); }}
                     />
@@ -64,7 +64,7 @@ const Issue = ({ proprietor }) => {
                 <FormControl style={{ marginTop: "15px" }}>
                     <InputLabel>Underprocessing Value</InputLabel>
                     <Input type="number" value={issue.underprocessing_value}
-                        inputProps={{ min: "0" }}
+                        inputProps={{ min: 0 }}
                         onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }}
                         onWheel={(e) => { e.target.blur() }} />
                 </FormControl>

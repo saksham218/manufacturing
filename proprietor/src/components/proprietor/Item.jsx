@@ -8,7 +8,7 @@ import { createItem, getItems } from '../../api/index.js'
 
 const Item = ({ proprietor }) => {
 
-    const [newItem, setNewItem] = useState({ design_number: "", description: "", price: "" })
+    const [newItem, setNewItem] = useState({ design_number: "", description: "", price: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
 
     const onSubmit = async (e) => {
@@ -22,7 +22,7 @@ const Item = ({ proprietor }) => {
             console.log(res)
             // setItems(...items, res.data.result)
             getItemsData();
-            setNewItem({ design_number: "", description: "", price: "" })
+            setNewItem({ design_number: "", description: "", price: "", underprocessing_value: "" })
         }
         catch (err) {
             console.log(err)
@@ -59,12 +59,17 @@ const Item = ({ proprietor }) => {
                 </FormControl>
                 <FormControl style={{ padding: "15px" }}>
                     <InputLabel>Price</InputLabel>
-                    <Input type="number" value={newItem.price} onChange={(e) => { setNewItem({ ...newItem, price: e.target.value }); console.log(newItem); }} />
+                    <Input type="number" inputProps={{ min: 0 }} value={newItem.price} onChange={(e) => { setNewItem({ ...newItem, price: e.target.value }); console.log(newItem); }} />
+                </FormControl>
+                <FormControl style={{ padding: "15px" }}>
+                    <InputLabel>Under Processing Value</InputLabel>
+                    <Input type="number" inputProps={{ min: 0 }} value={newItem.underprocessing_value} onChange={(e) => { setNewItem({ ...newItem, underprocessing_value: e.target.value }); console.log(newItem); }} />
                 </FormControl>
                 <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
                     disabled={newItem.design_number === "" ||
                         newItem.description === "" ||
-                        newItem.price === ""}
+                        newItem.price === "" ||
+                        newItem.underprocessing_value === ""}
 
                     onClick={onSubmit}>Add</Button>
             </FormGroup>
@@ -75,6 +80,7 @@ const Item = ({ proprietor }) => {
                             <TableCell>Design Number</TableCell>
                             <TableCell>Description</TableCell>
                             <TableCell>Price</TableCell>
+                            <TableCell>Under Processing Value</TableCell>
                             <TableCell>Created On</TableCell>
                         </TableRow>
                     </TableHead>
@@ -85,6 +91,7 @@ const Item = ({ proprietor }) => {
                                 <TableCell>{item.design_number}</TableCell>
                                 <TableCell>{item.description}</TableCell>
                                 <TableCell>{item.price}</TableCell>
+                                <TableCell>{item.underprocessing_value}</TableCell>
                                 <TableCell>{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</TableCell>
                             </TableRow>
                         )

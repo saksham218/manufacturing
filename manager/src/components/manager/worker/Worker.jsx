@@ -9,9 +9,18 @@ import Submit from './Submit'
 import Payment from './Payment'
 import AddWorker from './AddWorker'
 import { getWorkers } from '../../../api'
-import SubmitAdhoc from './SubmitAdhoc'
 import { useWorker } from './workerContext/WorkerContext'
 
+const getWorkersData = async (manager_id) => {
+    try {
+        const res = await getWorkers(manager_id)
+        console.log(res.data)
+        return res.data
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
 
 const Worker = ({ manager }) => {
     // var workers = [];
@@ -20,24 +29,16 @@ const Worker = ({ manager }) => {
 
     console.log("worker: ", worker)
 
-    const getWorkersData = async () => {
-        try {
-            const res = await getWorkers(manager.manager_id)
-            console.log(res.data)
-            return res.data
-        }
-        catch (err) {
-            console.log(err)
-        }
+    const setWorkersList = () => {
+        getWorkersData(manager.manager_id).then((workersData) => {
+            setWorkers(workersData)
+        });
     }
 
     useEffect(() => {
 
-
         console.log("get workers")
-        getWorkersData().then((workersData) => {
-            setWorkers(workersData)
-        });
+        setWorkersList();
 
     }, [])
 
@@ -74,7 +75,7 @@ const Worker = ({ manager }) => {
                     <Route path={`/submit`} element={<Submit manager={manager} />} />
                     {/* <Route path={`/submitadhoc`} element={<SubmitAdhoc manager={manager} />} /> */}
                     <Route path={`/payment`} element={<Payment />} />
-                    <Route path={`/addworker`} element={<AddWorker manager={manager} />} />
+                    <Route path={`/addworker`} element={<AddWorker manager={manager} setWorkersList={setWorkersList} />} />
 
                 </Routes>
             </div>
