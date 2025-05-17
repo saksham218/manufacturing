@@ -1,11 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import _ from "lodash";
 
 import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
+import { isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -58,7 +58,7 @@ export const getManager = async (req, res) => {
                 { path: 'forfeited_history.items.item', model: 'Item', select: 'design_number description' },
                 { path: 'on_hold_history.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'on_hold_history.items.item', model: 'Item', select: 'design_number description' },
-            ]);
+            ]).lean();
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
@@ -68,7 +68,10 @@ export const getManager = async (req, res) => {
             return res.status(401).json({ message: "Access Denied" });
         }
 
-        res.status(200).json(manager);
+        const managerPrepared = await prepare(managerPopulatePaths, manager, true)
+        console.log(JSON.stringify(managerPrepared))
+
+        res.status(200).json(managerPrepared);
     }
     catch (error) {
         console.log(error)
@@ -219,11 +222,11 @@ export const issueOnHoldItemsToManager = async (req, res) => {
     console.log("issue on hold items to manager manager_id: ", new_manager_id);
     console.log("proprietor: ", req.proprietor);
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
-    const proprietor_id = req.params.proprietor_id;
+    const proprietor_id = req.proprietor.proprietor_id;
     const { design_number, quantity, new_price, new_underprocessing_value, new_remarks_from_proprietor, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker_id, manager_id, hold_info } = req.body;
     try {
 
-        const newManager = await Manager.findOne({ manager_id: new_manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' }, { id: 0, password: 0 });
+        const newManager = await Manager.findOne({ manager_id: new_manager_id }, { id: 0, password: 0 }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!newManager) return res.status(404).json({ message: "Manager doesn't exist" });
 
         if (newManager.proprietor.proprietor_id !== proprietor_id) {
@@ -235,7 +238,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { id: 0, password: 0 });
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
 
-        const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' }, { id: 0, password: 0 });
+        const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
         if (proprietor_id !== manager.proprietor.proprietor_id) {
@@ -293,7 +296,6 @@ export const issueOnHoldItemsToManager = async (req, res) => {
             manager: manager._id,
             worker: worker._id,
             prev_hold_info: proprietor.on_hold[oHIndex].hold_info
-
         }
 
         newManager.issue_history.push({ item: item._id, quantity: quantity, price: Number(new_price), underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, date: current_date, hold_info: new_hold_info });
@@ -722,11 +724,4 @@ export const acceptFromManager = async (req, res) => {
     }
 }
 
-const isSameDay = (d1, d2) => {
-    return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
-}
 
-
-const isSameHoldInfo = (item, hold_info) => {
-    return _.isEqual(item.hold_info, hold_info);
-}

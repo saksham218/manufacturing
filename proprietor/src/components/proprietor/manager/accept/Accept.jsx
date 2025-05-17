@@ -66,7 +66,7 @@ const Accept = () => {
 
     return (
         (submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
-            <ViewNestedTable data={submissions} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} firstNonEmptyIndex={firstNonEmptyIndex} additionalComponents={[acceptFormComponent]} />
+            <ViewNestedTable data={submissions} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
             :
             <Typography>No Data for Submissions</Typography>
     )

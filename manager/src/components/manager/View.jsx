@@ -122,7 +122,7 @@ const View = ({ manager }) => {
                     </Box> : null}
                 <Typography>Total: {total}</Typography>
 
-                {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} firstNonEmptyIndex={firstNonEmptyIndex} /> : <ViewTable data={data} />)
+                {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} keys={viewConfig.keys} /> : <ViewTable data={data} keys={viewConfig.keys} />)
                     : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
             </Box>
         </div>

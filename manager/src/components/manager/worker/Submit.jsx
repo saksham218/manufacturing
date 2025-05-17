@@ -188,7 +188,7 @@ const Submit = ({ manager }) => {
 
     return (
         <div>
-            <FormGroup style={{ padding: "20px" }}>
+            <FormGroup style={{ width: "500px", padding: "20px" }}>
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <div style={{ display: 'flex' }}>
                     <Box style={{ marginRight: "20px" }}>

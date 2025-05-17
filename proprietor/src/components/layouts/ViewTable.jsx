@@ -2,10 +2,9 @@ import { Table, TableHead, TableRow, TableCell, Paper, TableBody } from '@mui/ma
 import React from 'react'
 import { computeBackgroundColor, computeContent, filterKeys } from '../utils/viewUtils'
 
-const ViewTable = ({ data }) => {
+const ViewTable = ({ data, keys }) => {
     console.log(data)
     console.log(data[0])
-    let keys = Object.keys(data[0])
 
     keys = filterKeys(keys)
 

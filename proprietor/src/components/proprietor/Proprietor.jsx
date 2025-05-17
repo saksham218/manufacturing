@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
-import { useMatch, useParams } from 'react-router'
-import { Router, Routes, Route, Navigate } from 'react-router-dom'
+import React from 'react'
+import { useMatch } from 'react-router'
+import { Routes, Route, Navigate } from 'react-router-dom'
 
 
 import Header from './Header'
 import Navbar from './Navbar'
 import Manager from './manager/Manager'
-import Item from './Item'
+import Item from './items/Item'
 import { ManagerProvider } from './manager/managerContext/ManagerContext'
 
 
@@ -34,7 +34,7 @@ const Proprietor = () => {
                         <Manager proprietor={proprietor} />
                     </ManagerProvider>
                 } />
-                <Route path={`/item`} element={<Item proprietor={proprietor} />} />
+                <Route path={`/item/*`} element={<Item proprietor={proprietor} />} />
             </Routes>
 
 

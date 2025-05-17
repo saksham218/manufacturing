@@ -226,7 +226,7 @@ const Worker = ({ proprietor }) => {
                                 </Box>
                             </Box> : null}
                         <Typography style={{ paddingTop: "40px", paddingLeft: "20px" }}>Total: {total}</Typography>
-                        {(data && data.length > 0) ? <ViewTable data={data} />
+                        {(data && data.length > 0) ? <ViewTable data={data} keys={viewConfig.keys} />
                             : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
                     </Box>
                 </Box>

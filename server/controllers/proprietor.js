@@ -66,5 +66,34 @@ export const loginProprietor = async (req, res) => {
     }
 };
 
+export const getOnHoldItems = async (req, res) => {
+    const { proprietor_id } = req.params;
+    console.log(req.proprietor);
+    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) {
+        return res.status(401).json({ message: "Access Denied" });
+    }
+    try {
+
+        const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { on_hold: 1 })
+            .populate([
+                { path: 'on_hold.item', model: 'Item', select: 'design_number description' },
+                { path: 'on_hold.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'on_hold.manager', model: 'Manager', select: 'name manager_id' }
+            ]);
+
+        console.log(proprietor);
+
+        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
+
+        const onHoldItems = proprietor.on_hold;
+
+        res.status(200).json(onHoldItems);
+
+    } catch (error) {
+        res.status(500).json({ message: "Something went wrong" });
+        console.log(error);
+    }
+};
+
 
 

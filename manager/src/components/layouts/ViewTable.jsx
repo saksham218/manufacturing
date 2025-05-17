@@ -1,15 +1,11 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper } from '@mui/material'
 
-import { computeContent, computeBackgroundColor, filterKeys } from '../utils/viewUtils'
+import { computeContent, computeBackgroundColor } from '../utils/viewUtils'
 
-const ViewTable = ({ data }) => {
+const ViewTable = ({ data, keys }) => {
     console.log(data)
     console.log(data[0])
-    let keys = Object.keys(data[0])
-
-    keys = filterKeys(keys)
-
 
     return (
         <div style={{ paddingTop: "20px" }}>

@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody, Divider } from '@mui/material'
 
-import { computeContent, computeBackgroundColor, filterKeys } from '../utils/viewUtils'
+import { computeContent, computeBackgroundColor } from '../utils/viewUtils'
 
-
-const ViewNestedTable = ({ data, groupingKeys, firstNonEmptyIndex, additionalComponents }) => {
+const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => {
     console.log(data)
     console.log(groupingKeys)
-    console.log(firstNonEmptyIndex)
-    console.log(data[firstNonEmptyIndex])
-    let keys = Object.keys(data[firstNonEmptyIndex]['items'][0])
-
-    keys = filterKeys(keys)
+    console.log(keys)
+    console.log(additionalComponents)
 
     return (
         <div style={{ paddingTop: "20px" }}>

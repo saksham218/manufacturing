@@ -9,6 +9,7 @@ import proprietorRoutes from './routes/proprietor.js';
 import itemRoutes from './routes/item.js';
 import managerRoutes from './routes/manager.js';
 import workerRoutes from './routes/worker.js';
+import mongoCache from './cache/mongocache.js';
 
 
 const app = express();
@@ -41,6 +42,13 @@ const CONNECTION_URL = process.env.MONGODB_URL
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(CONNECTION_URL)
-    .then(() => app.listen(PORT, () => console.log(`Server running on port: ${PORT}`)))
+    .then(() => app.listen(PORT, () => {
+        console.log(`Server running on port: ${PORT}`);
+        mongoCache.initialize()
+            .then(() => console.log('MongoCache initialized'))
+            .catch((error) => console.log('MongoCache initialization error:', error.message));
+
+
+    }))
     .catch((error) => console.log(error.message))
 

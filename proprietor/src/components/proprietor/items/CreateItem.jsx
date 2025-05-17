@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Input, InputLabel, FormControl, FormGroup, Button, Table, TableHead, TableRow, TableCell, TableContainer, Paper } from '@mui/material'
 
-import { createItem, getItems } from '../../api/index.js'
+import { createItem, getItems } from '../../../api/index.js'
 
-
-
-
-const Item = ({ proprietor }) => {
+const CreateItem = ({ proprietor }) => {
 
     const [newItem, setNewItem] = useState({ design_number: "", description: "", price: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
@@ -102,4 +99,4 @@ const Item = ({ proprietor }) => {
     )
 }
 
-export default Item
+export default CreateItem

@@ -45,7 +45,7 @@ const SubmitItems = ({ manager }) => {
 
     return (
         (dueBackward && dueBackward.length > 0 && firstNonEmptyIndex !== -1) ?
-            <ViewNestedTable data={dueBackward} groupingKeys={managerDetailsViewConfig["due_backward"].grouping_keys} firstNonEmptyIndex={firstNonEmptyIndex} additionalComponents={[submitItemsFormComponent]} />
+            <ViewNestedTable data={dueBackward} groupingKeys={managerDetailsViewConfig["due_backward"].grouping_keys} keys={managerDetailsViewConfig['due_backward'].keys} additionalComponents={[submitItemsFormComponent]} />
             :
             <Typography>No Data for Due Backward</Typography>
     )
