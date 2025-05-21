@@ -4,6 +4,7 @@ import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Ty
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 import { computeBackgroundColor } from '../../utils/viewUtils'
+import HoldInfo from '../../layouts/HoldInfo'
 
 
 const getItemsData = async (proprietor_id) => {
@@ -77,10 +78,7 @@ const Issue = ({ proprietor }) => {
 
     }
 
-    useEffect(() => {
-        console.log("get items")
-        console.log(proprietor)
-
+    const resetIssue = () => {
         setEmptyIssue();
         setItemIndex("");
         setMaxQuantity("");
@@ -93,6 +91,12 @@ const Issue = ({ proprietor }) => {
             })
             setItems(indexedItemsData)
         });
+    }
+
+    useEffect(() => {
+        console.log("get items")
+        console.log(proprietor)
+        resetIssue();
     }, [proprietor, issueHoldItems])
 
 
@@ -128,7 +132,7 @@ const Issue = ({ proprietor }) => {
 
                 return newIssue;
             })
-            setMaxQuantity(issueHoldItems ? items[itemIndex].quantity : "");
+            setMaxQuantity(issueHoldItems ? items[itemIndex].quantity : Infinity);
         }
         else {
             setEmptyIssue();
@@ -150,7 +154,7 @@ const Issue = ({ proprietor }) => {
             const res = await issueToManagerFun(issue, manager.manager_id)
             console.log(res.data)
 
-            setEmptyIssue();
+            resetIssue();
         }
         catch (err) {
             console.log(err)
@@ -188,7 +192,7 @@ const Issue = ({ proprietor }) => {
                                 />
                             </FormControl>
                             <FormControl style={{ marginTop: "15px" }}>
-                                <InputLabel>Underprocessing Value</InputLabel>
+                                <InputLabel shrink={!!issue.underprocessing_value}>Underprocessing Value</InputLabel>
                                 <Input type="number" value={issue.underprocessing_value}
                                     inputProps={{ min: 0 }}
                                     onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }}
@@ -213,6 +217,7 @@ const Issue = ({ proprietor }) => {
                                 <Typography>Remarks from Manager: {issue.remarks_from_manager}</Typography>
                                 <Typography>Put on Hold By: {issue.put_on_hold_by}</Typography>
                                 <Typography>Holding Remarks: {issue.holding_remarks}</Typography>
+                                {issue.hold_info && <HoldInfo holdInfo={issue.hold_info} />}
                             </div>
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel shrink={!!issue.new_price}>New Price</InputLabel>
@@ -237,13 +242,13 @@ const Issue = ({ proprietor }) => {
                                     onWheel={(e) => { e.target.blur() }} />
                             </FormControl>
                             <FormControl style={{ marginTop: "15px" }}>
-                                <InputLabel>New Remarks</InputLabel>
+                                <InputLabel shrink={!!issue.new_remarks_from_proprietor}>New Remarks</InputLabel>
                                 <Input value={issue.new_remarks_from_proprietor} onChange={(e) => { setIssue({ ...issue, new_remarks_from_proprietor: e.target.value }); console.log(issue); }} />
                             </FormControl>
                         </>}
                     <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                        disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
-                            issue.underprocessing_value === "" || issue.underprocessing_value === "0"}>Issue</Button>
+                        disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" || Number(issue.quantity) > maxQuantity ||
+                            issue.underprocessing_value === "" || issue.underprocessing_value === "0" || (issueHoldItems && (issue.new_price === "" || issue.new_underprocessing_value === ""))}>Issue</Button>
                 </div>
             </FormGroup>
 

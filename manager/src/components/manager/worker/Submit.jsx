@@ -3,6 +3,7 @@ import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Ty
 
 import { getItemsForSubmit, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
+import HoldInfo from '../../layouts/HoldInfo'
 
 const getItemsData = async (proprietor_id, worker_id, isAdhoc) => {
     try {
@@ -102,7 +103,8 @@ const Submit = ({ manager }) => {
                     remarks_from_proprietor: "",
                     remarks: "",
                     is_adhoc: isAdhoc,
-                    to_hold: toHold
+                    to_hold: toHold,
+                    hold_info: {}
                 })
 
                 setMaxQuantity(Infinity)
@@ -128,7 +130,8 @@ const Submit = ({ manager }) => {
                         remarks_from_proprietor: items[itemIndex].remarks_from_proprietor,
                         remarks: "",
                         is_adhoc: isAdhoc,
-                        to_hold: toHold
+                        to_hold: toHold,
+                        hold_info: items[itemIndex].hold_info
                     })
 
                     setMaxQuantity(items[itemIndex].quantity)
@@ -136,6 +139,8 @@ const Submit = ({ manager }) => {
                     setMaxDeduction(items[itemIndex].price)
                 }
             }
+        } else {
+            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
         }
 
         console.log(submission);
@@ -238,6 +243,7 @@ const Submit = ({ manager }) => {
                         <>
                             <Typography>Underprocessing Value: {itemIndex !== "" && items[itemIndex].underprocessing_value}</Typography>
                             <Typography>Remarks From Proprietor: {itemIndex !== "" && items[itemIndex].remarks_from_proprietor}</Typography>
+                            {submission?.hold_info && <HoldInfo holdInfo={submission.hold_info} />}
                             <Typography style={{ marginTop: "20px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
                         </>
                     }

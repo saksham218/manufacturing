@@ -5,7 +5,7 @@ import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
-import { isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
+import { depopulateHoldInfo, isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -69,7 +69,7 @@ export const getManager = async (req, res) => {
         }
 
         const managerPrepared = await prepare(managerPopulatePaths, manager, true)
-        console.log(JSON.stringify(managerPrepared))
+        // console.log(JSON.stringify(managerPrepared))
 
         res.status(200).json(managerPrepared);
     }
@@ -271,14 +271,9 @@ export const issueOnHoldItemsToManager = async (req, res) => {
 
         const current_date = new Date();
 
-        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh, hold_info)));
+        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, hold_info)));
         if (oHIndex === -1) {
             return res.status(404).json({ message: `${quantity} of ${design_number} not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}` });
-        }
-
-        proprietor.on_hold[oHIndex].quantity -= Number(quantity);
-        if (proprietor.on_hold[oHIndex].quantity === 0) {
-            proprietor.on_hold.splice(oHIndex, 1);
         }
 
         const new_hold_info = {
@@ -298,22 +293,28 @@ export const issueOnHoldItemsToManager = async (req, res) => {
             prev_hold_info: proprietor.on_hold[oHIndex].hold_info
         }
 
+        proprietor.on_hold[oHIndex].quantity -= Number(quantity);
+
+        if (proprietor.on_hold[oHIndex].quantity === 0) {
+            proprietor.on_hold.splice(oHIndex, 1);
+        }
+
         newManager.issue_history.push({ item: item._id, quantity: quantity, price: Number(new_price), underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, date: current_date, hold_info: new_hold_info });
 
 
         if (new_remarks_from_proprietor === "") {
-            const td_index = newManager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && isSameHoldInfo(dueItem, new_hold_info)));
+            const td_index = newManager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && dueItem.price === Number(new_price) && isSameHoldInfo(dueItem.hold_info, new_hold_info)));
             if (td_index === -1) {
-                newManager.total_due.push({ item: item._id, price: new_price, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: "", hold_info: new_hold_info });
+                newManager.total_due.push({ item: item._id, price: Number(new_price), quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: "", hold_info: new_hold_info });
             }
             else {
                 newManager.total_due[td_index].quantity += Number(quantity);
             }
 
-            const df_index = newManager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && isSameHoldInfo(dueItem, new_hold_info)));
+            const df_index = newManager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(new_underprocessing_value) && dueItem.price === Number(new_price) && isSameHoldInfo(dueItem.hold_info, new_hold_info)));
 
             if (df_index === -1) {
-                newManager.due_forward.push({ item: item._id, price: new_price, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: "", hold_info: new_hold_info });
+                newManager.due_forward.push({ item: item._id, price: Number(new_price), quantity: quantity, underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: "", hold_info: new_hold_info });
             }
             else {
                 newManager.due_forward[df_index].quantity += Number(quantity);
@@ -321,8 +322,8 @@ export const issueOnHoldItemsToManager = async (req, res) => {
 
         }
         else {
-            newManager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
-            newManager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
+            newManager.total_due.push({ item: item._id, price: Number(new_price), quantity: quantity, underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
+            newManager.due_forward.push({ item: item._id, price: Number(new_price), quantity: quantity, underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info });
         }
 
         await newManager.save();
@@ -341,7 +342,7 @@ export const submitToProprietor = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("submit to proprietor manager_id: ", manager_id);
-    const { worker_id, design_number, submit_quantity, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold } = req.body;
+    const { worker_id, design_number, submit_quantity, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold, hold_info } = req.body;
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
 
@@ -369,12 +370,13 @@ export const submitToProprietor = async (req, res) => {
         //     }
         // }
 
+        const preparedHoldInfo = await depopulateHoldInfo(hold_info)
         const dbWorkerIndex = manager.due_backward.findIndex((w) => w.worker.equals(worker._id));
         if (dbWorkerIndex === -1) {
             return res.status(404).json({ message: `no goods due backward for worker: ${worker_id}` });
         }
         else {
-            const dbItemIndex = manager.due_backward[dbWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc) && (i.to_hold === to_hold)));
+            const dbItemIndex = manager.due_backward[dbWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc) && (i.to_hold === to_hold) && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
             if (dbItemIndex === -1) {
                 return res.status(404).json({ message: `${submit_quantity} of ${design_number}, to_hold: ${to_hold} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
             }
@@ -405,9 +407,9 @@ export const submitToProprietor = async (req, res) => {
         //     manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold });
         // }
         // else {
-        let sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && is_adhoc === i.is_adhoc && to_hold === i.to_hold));
+        let sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && is_adhoc === i.is_adhoc && to_hold === i.to_hold && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
         if (sItemIndex === -1) {
-            manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold });
+            manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold, hold_info: preparedHoldInfo });
         }
         else {
             manager.submissions[sWorkerIndex].items[sItemIndex].quantity += Number(submit_quantity);
@@ -513,11 +515,12 @@ export const getSubmissions = async (req, res) => {
             { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' },
             { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
             { path: 'submissions.items.item', model: 'Item', select: 'design_number description' }
-        ]);
+        ]).lean();
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
         if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
-        res.status(200).json(manager.submissions);
+        const peparedManager = await prepare(managerPopulatePaths, manager, true)
+        res.status(200).json(peparedManager.submissions);
     }
     catch (error) {
         console.log(error)
@@ -525,13 +528,14 @@ export const getSubmissions = async (req, res) => {
     }
 }
 
+//add hold info
 export const acceptFromManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log(`accept from manager manager_id: ${manager_id}`);
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
-    const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_hold } = req.body;
+    const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_hold, hold_info } = req.body;
 
     try {
         if (!(["hold", "forfeit", "accept"].includes(action))) {
@@ -555,7 +559,10 @@ export const acceptFromManager = async (req, res) => {
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
-        const tdIndex = manager.total_due.findIndex((td) => (td.item.equals(item._id) && td.quantity >= Number(quantity) && td.remarks_from_proprietor === remarks_from_proprietor && Number(td.underprocessing_value) === Number(underprocessing_value) && td.is_adhoc === is_adhoc));
+
+        const preparedHoldInfo = await depopulateHoldInfo(hold_info)
+
+        const tdIndex = manager.total_due.findIndex((td) => (td.item.equals(item._id) && td.quantity >= Number(quantity) && td.remarks_from_proprietor === remarks_from_proprietor && Number(td.underprocessing_value) === Number(underprocessing_value) && td.is_adhoc === is_adhoc && isSameHoldInfo(td.hold_info, preparedHoldInfo)));
         if (tdIndex === -1) {
             return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor} not due at manager: ${manager_id}` });
         }
@@ -565,19 +572,19 @@ export const acceptFromManager = async (req, res) => {
             return res.status(404).json({ message: `no goods made by worker: ${worker_id} are in submissions` });
         }
 
-        const sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.is_adhoc === is_adhoc));
+        const sItemIndex = manager.submissions[sWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.is_adhoc === is_adhoc && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
         if (sItemIndex === -1) {
             return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not submiited by manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
         }
 
         if (Number(quantity) <= 0) {
-            return res.status(400).json({ message: "Accept/Forfeiture quantity should be positive" });
+            return res.status(400).json({ message: "Accept/Forfeit/Hold quantity should be positive" });
         }
 
         let hmIndex = -1;
 
         if (to_hold) {
-            hmIndex = worker.held_by_manager.findIndex((h) => (h.item.equals(item._id) && h.quantity >= Number(quantity) && h.price === Number(price) && h.remarks_from_manager === remarks_from_manager && h.remarks_from_proprietor === remarks_from_proprietor && Number(h.underprocessing_value) === Number(underprocessing_value) && h.is_adhoc === is_adhoc));
+            hmIndex = worker.held_by_manager.findIndex((h) => (h.item.equals(item._id) && h.quantity >= Number(quantity) && h.price === Number(price) && h.remarks_from_manager === remarks_from_manager && h.remarks_from_proprietor === remarks_from_proprietor && Number(h.underprocessing_value) === Number(underprocessing_value) && h.is_adhoc === is_adhoc && isSameHoldInfo(h.hold_info, preparedHoldInfo)));
             if (hmIndex === -1) {
                 return res.status(404).json({ message: `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not held by manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
             }
@@ -606,9 +613,9 @@ export const acceptFromManager = async (req, res) => {
             // }
             // else {
 
-            const ahItemIndex = manager.accepted_history[ahIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc));
+            const ahItemIndex = manager.accepted_history[ahIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && i.deduction_from_proprietor === Number(deduction) && i.final_remarks_from_proprietor === final_remarks && i.is_adhoc === is_adhoc && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
             if (ahItemIndex === -1) {
-                manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+                manager.accepted_history[ahIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_proprietor: Number(deduction), final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
             }
             else {
                 manager.accepted_history[ahIndex].items[ahItemIndex].quantity += Number(quantity);
@@ -616,7 +623,7 @@ export const acceptFromManager = async (req, res) => {
             // }
 
             if (Number(deduction) !== 0) {
-                worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: current_date, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc });
+                worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: current_date, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
             }
 
             if (to_hold) {
@@ -639,9 +646,9 @@ export const acceptFromManager = async (req, res) => {
                 fhIndex = manager.forfeited_history.length - 1;
             }
 
-            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            worker.forfeited_history.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, deduction_from_manager: deduction_from_manager, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc });
+            worker.forfeited_history.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, deduction_from_manager: deduction_from_manager, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
             if (to_hold) {
                 worker.due_amount -= (Number(quantity) * Number(underprocessing_value));
@@ -673,7 +680,7 @@ export const acceptFromManager = async (req, res) => {
                 worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
             }
 
-            worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, hold_date: current_date, put_on_hold_by: put_on_hold_by, holding_remarks: final_remarks, is_adhoc: is_adhoc });
+            worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, hold_date: current_date, put_on_hold_by: put_on_hold_by, holding_remarks: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
             manager.due_amount += (1.1 * Number(partial_payment) * Number(quantity));
 
@@ -684,11 +691,9 @@ export const acceptFromManager = async (req, res) => {
                 manHoldIndex = manager.on_hold_history.length - 1;
             }
 
-            manager.on_hold_history[manHoldIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc });
+            manager.on_hold_history[manHoldIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id });
-
-            await proprietor.save();
+            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id, hold_info: preparedHoldInfo });
 
         }
 
@@ -715,6 +720,7 @@ export const acceptFromManager = async (req, res) => {
 
         await manager.save();
         await worker.save();
+        await proprietor.save();
         return res.status(200).json({ result: manager });
 
     }

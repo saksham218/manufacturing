@@ -2,7 +2,7 @@ export const managerDetailsViewConfig = {
     "issue_history": {
         "is_dated": true,
         "is_grouped": false,
-        "keys": ["item", "quantity", "underprocessing_value", "general_price", "remarks_from_proprietor", "date", "price", "hold_info"]
+        "keys": ["item", "quantity", "price", "underprocessing_value", "general_price", "remarks_from_proprietor", "date", "hold_info"]
     },
     "accepted_history": {
         "is_dated": true,
@@ -13,7 +13,7 @@ export const managerDetailsViewConfig = {
     "due_forward": {
         "is_dated": false,
         "is_grouped": false,
-        "keys": ["item", "quantity", "underprocessing_value", "remarks_from_proprietor", "hold_info"]
+        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "hold_info"]
     },
     "due_backward": {
         "is_dated": false,
@@ -30,7 +30,7 @@ export const managerDetailsViewConfig = {
     "total_due": {
         "is_dated": false,
         "is_grouped": false,
-        "keys": ["item", "quantity", "underprocessing_value", "remarks_from_proprietor", "hold_info"]
+        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "hold_info"]
     },
     "payment_history": {
         "is_dated": true,

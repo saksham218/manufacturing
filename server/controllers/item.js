@@ -2,6 +2,7 @@ import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
+import { managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
 
 export const getItems = async (req, res) => {
 
@@ -70,14 +71,15 @@ export const getItemsForIssue = async (req, res) => {
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" })
 
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id })
+        const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, proprietor: 1 }).lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
         const items = await Item.find({ proprietor: manager.proprietor })
 
+        const peparedManager = await prepare(managerPopulatePaths, manager, true)
+
         const itemsForIssue = []
-        console.log(manager.due_forward)
         // items.forEach((item) => {
         //     const index = manager.due_forward.findIndex((df) => {
         //         console.log(df.item)
@@ -93,9 +95,9 @@ export const getItemsForIssue = async (req, res) => {
         // })
 
         items.forEach((item) => {
-            manager.due_forward.forEach((df) => {
+            peparedManager.due_forward.forEach((df) => {
                 if (df.item.equals(item._id) && df.quantity > 0) {
-                    itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, underprocessing_value: df.underprocessing_value, thread_raw_material: df.thread_raw_material, remarks_from_proprietor: df.remarks_from_proprietor })
+                    itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, hold_info: df.hold_info, price: df.price })
                 }
             })
         })
@@ -112,13 +114,17 @@ export const getItemsForSubmit = async (req, res) => {
     const worker_id = req.params.worker_id
     console.log("get items for submit worker_id: ", worker_id)
     try {
-        const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' })
+        const worker = await Worker.findOne({ worker_id: worker_id }, { due_items: 1, manager: 1 }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' }).lean()
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" })
 
         if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" })
 
         const items = await Item.find({ proprietor: worker.manager.proprietor })
+
+        const peparedWorker = await prepare(workerPopulatePaths, worker, true)
+
+        // console.log("due_items", peparedWorker.due_items)
 
         const itemsForSubmit = []
         // items.forEach((item) => {
@@ -129,9 +135,9 @@ export const getItemsForSubmit = async (req, res) => {
         // })
 
         items.forEach((item) => {
-            worker.due_items.forEach((di) => {
+            peparedWorker.due_items.forEach((di) => {
                 if (di.item.equals(item._id) && di.quantity > 0) {
-                    itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor })
+                    itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor, hold_info: di.hold_info })
                 }
             })
         })
@@ -152,9 +158,12 @@ export const getItemsForFinalSubmit = async (req, res) => {
         const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward').populate([
             { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },
             { path: 'due_backward.items.item', model: 'Item', select: 'design_number description' }
-        ])
+        ]).lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
+
+        const peparedManager = await prepare(managerPopulatePaths, manager, true)
+        // console.log("peparedManager", peparedManager)
 
         // const items = await Item.find({ proprietor: manager.proprietor })
 
@@ -176,7 +185,7 @@ export const getItemsForFinalSubmit = async (req, res) => {
 
         // return res.status(200).json(itemsForFinalSubmit)
 
-        return res.status(200).json(manager.due_backward)
+        return res.status(200).json(peparedManager.due_backward)
     }
     catch (err) {
         console.log(err)

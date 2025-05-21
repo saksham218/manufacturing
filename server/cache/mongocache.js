@@ -46,7 +46,7 @@ class MongoCache {
 
     this.initialized = true;
 
-    console.log("MongoCache initialized with data:", this.cache);
+    // console.log("MongoCache initialized with data:", this.cache);
 
   }
 
@@ -62,10 +62,10 @@ class MongoCache {
 
     const cacheSection = this.cache.get(sectionKey);
     if (cacheSection.has(cacheKey)) {
-      console.log(`Cache hit for key: ${cacheKey}`);
+      // console.log(`Cache hit for key: ${cacheKey}`);
       return cacheSection.get(cacheKey);
     } else {
-      console.log(`Cache miss for key: ${cacheKey}`);
+      // console.log(`Cache miss for key: ${cacheKey}`);
       const config = cacheConfig[sectionKey];
       const data = await config.model.findOne({ [config.cacheKey]: cacheKey }, config.projection).lean();
       if (data) {

@@ -81,7 +81,7 @@ export const getOnHoldItems = async (req, res) => {
                 { path: 'on_hold.manager', model: 'Manager', select: 'name manager_id' }
             ]);
 
-        console.log(proprietor);
+        // console.log(proprietor);
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
 

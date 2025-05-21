@@ -43,7 +43,8 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                 deduction: deduction,
                 final_remarks: finalRemarks,
                 is_adhoc: item.is_adhoc,
-                to_hold: item.to_hold
+                to_hold: item.to_hold,
+                hold_info: item.hold_info
             }
             console.log(accepted)
 

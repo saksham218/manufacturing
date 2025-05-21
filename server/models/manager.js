@@ -75,7 +75,8 @@ const managerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             // thread_raw_material: String,
             remarks_from_proprietor: String,
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            price: Number
         }],
         default: []
     },
@@ -152,7 +153,8 @@ const managerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            price: Number
         }],
         default: []
     },

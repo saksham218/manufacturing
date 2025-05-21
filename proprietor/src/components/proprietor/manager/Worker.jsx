@@ -111,6 +111,8 @@ const Worker = ({ proprietor }) => {
         setWorkerDetails({})
         setData([]);
         setWorkers([])
+
+        if (!manager) return;
         getWorkersData(manager.manager_id).then((workersData) => {
             if (isMounted) {
                 setWorkers(workersData)

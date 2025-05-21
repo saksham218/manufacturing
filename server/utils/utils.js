@@ -1,8 +1,5 @@
 import _ from "lodash";
 
-import Worker from "../models/worker.js";
-import Manager from "../models/manager.js";
-import Item from "../models/item.js";
 import mongoCache from "../cache/mongocache.js";
 
 const depopulateObject = (obj) => {
@@ -15,12 +12,35 @@ const depopulateObject = (obj) => {
 const populateKeys = ['worker', 'manager'];
 
 export const isSameDay = (d1, d2) => {
+    if (!(d1 instanceof Date)) d1 = new Date(d1);
+    if (!(d2 instanceof Date)) d2 = new Date(d2);
     return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
 }
 
 
-export const isSameHoldInfo = (item, hold_info) => {
-    return _.isEqual(item.hold_info, hold_info);
+export const isSameHoldInfo = (hold_info1, hold_info2) => {
+    console.log("(from array) hold_info1: ", hold_info1);
+    console.log("hold_info2: ", hold_info2);
+    console.log("hi");
+
+    if (!hold_info1 && !hold_info2) return true;
+    if (!hold_info1 || !hold_info2) return false;
+    const result = hold_info1.is_hold === hold_info2.is_hold
+        && Number(hold_info1.price) === Number(hold_info2.price)
+        && Number(hold_info1.partial_payment) === Number(hold_info2.partial_payment)
+        && Number(hold_info1.underprocessing_value) === Number(hold_info2.underprocessing_value)
+        && hold_info1.remarks_from_proprietor === hold_info2.remarks_from_proprietor
+        && Number(hold_info1.deduction_from_manager) === Number(hold_info2.deduction_from_manager)
+        && hold_info1.remarks_from_manager === hold_info2.remarks_from_manager
+        && hold_info1.is_adhoc === hold_info2.is_adhoc
+        && isSameDay(hold_info1.hold_date, hold_info2.hold_date)
+        && hold_info1.put_on_hold_by === hold_info2.put_on_hold_by
+        && hold_info1.holding_remarks === hold_info2.holding_remarks
+        && hold_info1.worker.equals(hold_info2.worker)
+        && hold_info1.manager.equals(hold_info2.manager)
+        && isSameHoldInfo(hold_info1.prev_hold_info, hold_info2.prev_hold_info);
+    console.log("result: ", result);
+    return result;
 }
 
 export const managerPopulatePaths = {
@@ -71,7 +91,7 @@ export const prepare = async (paths, obj, pOrdp) => {
         if (obj[path]) {
             obj[path] = await Promise.all(_.map(obj[path], async data => {
                 if (paths[path].subpaths) {
-                    const response = await prepare(path.subpaths, data, pOrdp)
+                    const response = await prepare(paths[path].subpaths, data, pOrdp)
                     return response;
                 }
                 else {
@@ -93,13 +113,13 @@ export const prepare = async (paths, obj, pOrdp) => {
 
 
 export const populateHoldInfo = async (hold_info) => {
-    console.log("populate hold_info: ", hold_info);
+    // console.log("populate hold_info: ", hold_info);
     if (!hold_info || !hold_info.is_hold) {
         return hold_info;
     }
 
     for (const key of populateKeys) {
-        console.log("populating: ", key)
+        // console.log("populating: ", key)
 
         hold_info[key] = await mongoCache.get(key, hold_info[key].toString());
     }
@@ -108,7 +128,7 @@ export const populateHoldInfo = async (hold_info) => {
         hold_info['prev_hold_info'] = await populateHoldInfo(hold_info.prev_hold_info)
     }
 
-    console.log("populated: ", hold_info)
+    // console.log("populated: ", hold_info)
     return hold_info;
 }
 
@@ -119,12 +139,13 @@ export const depopulateHoldInfo = async (hold_info) => {
     }
 
     for (const key of populateKeys) {
-        console.log("depopulating: ", key)
+        // console.log("depopulating: ", key)
         if (key in hold_info) {
-            const cacheResponse = await mongoCache.get(key, hold_info[key]['_id'].toString());
+            console.log("hold_info[key]: ", hold_info[key])
+            const cacheResponse = await mongoCache.get(key, hold_info[key]['_id']);
             if (cacheResponse) {
                 hold_info[key] = depopulateObject(cacheResponse);
-                console.log(typeof hold_info[key])
+                // console.log(typeof hold_info[key])
             }
         }
     }

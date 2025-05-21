@@ -20,6 +20,7 @@ const SubmitItemsForm = ({ item, group, getItemsData, manager }) => {
                 remarks_from_proprietor: item.remarks_from_proprietor,
                 is_adhoc: item.is_adhoc,
                 to_hold: item.to_hold,
+                hold_info: item.hold_info
             }
             console.log(submission)
             const res = await submitToProprietor(submission, manager.manager_id)
