@@ -1,7 +1,7 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper } from '@mui/material'
 
-import { computeContent, computeBackgroundColor } from '../utils/viewUtils'
+import { computeContent } from '../utils/viewUtils'
 
 const ViewTable = ({ data, keys }) => {
     console.log(data)
@@ -20,7 +20,7 @@ const ViewTable = ({ data, keys }) => {
                     {data.map((row) => (
                         <TableRow>
                             {keys.map((key) => {
-                                return <TableCell style={{ 'backgroundColor': computeBackgroundColor(row) }}>{computeContent(row, key)}</TableCell>
+                                return <TableCell>{computeContent(row, key)}</TableCell>
                             })}
                         </TableRow>
                     ))}

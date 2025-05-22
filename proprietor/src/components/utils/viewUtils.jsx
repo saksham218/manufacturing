@@ -1,4 +1,5 @@
 import HoldInfo from "../layouts/HoldInfo"
+import { Chip, Stack } from "@mui/material"
 
 export const computeContent = (item, key) => {
     if (key === 'worker') {
@@ -15,8 +16,21 @@ export const computeContent = (item, key) => {
         const date = new Date(item[key])
         return `${date.getDate() < 10 ? ("0" + date.getDate()) : date.getDate()}/${date.getMonth() < 9 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)}/${date.getFullYear()}`
     }
-    else if (key === 'hold_info') {
-        return item[key]?.is_hold ? <HoldInfo holdInfo={item[key]} /> : ""
+    else if (key === 'info') {
+
+        return (
+            <Stack direction="column" spacing={1}>
+                {!!item['is_adhoc'] && <Chip label="Adhoc" size="small" style={{
+                    backgroundColor: 'yellow',
+                    color: 'black'
+                }} />}
+                {!!item['to_hold'] && <Chip label="Hold" size="small" style={{
+                    backgroundColor: 'orange',
+                    color: 'black'
+                }} />}
+                {item['hold_info']?.is_hold ? <HoldInfo holdInfo={item['hold_info']} size="small" /> : ""}
+            </Stack>
+        )
     }
     else {
         return item[key]

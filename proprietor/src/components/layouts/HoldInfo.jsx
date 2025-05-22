@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import ViewTable from './ViewTable'
-import { Box, Button, Modal, Typography } from '@mui/material'
+import { Box, Chip, Modal, Typography } from '@mui/material'
 import { holdInfoViewConfig } from '../constants/ViewConstants'
 
 const getHoldList = (holdInfo) => {
@@ -20,7 +20,7 @@ const getHoldList = (holdInfo) => {
     return holdList
 }
 
-const HoldInfo = ({ holdInfo }) => {
+const HoldInfo = ({ holdInfo, size }) => {
 
     const [holdList, setHoldList] = useState([])
     const [open, setOpen] = useState(false)
@@ -35,7 +35,7 @@ const HoldInfo = ({ holdInfo }) => {
 
     return (
         <div>
-            <Button onClick={() => setOpen(true)}>View Hold Info</Button>
+            <Chip label="Hold Info" onClick={() => setOpen(true)} size={size} color="primary" />
             <Modal
                 open={open}
                 onClose={() => setOpen(false)}

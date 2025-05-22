@@ -1,7 +1,7 @@
 import React from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody, Divider } from '@mui/material'
 
-import { computeContent, computeBackgroundColor } from '../utils/viewUtils'
+import { computeContent } from '../utils/viewUtils'
 
 const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => {
     console.log(data)
@@ -14,13 +14,16 @@ const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => 
             <Table component={Paper} >
                 <TableHead>
                     <TableRow>
-                        {groupingKeys.map((key) => (
-                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
-                        ))
+                        {
+                            groupingKeys.map((key) => (
+                                <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                            ))
                         }
-                        {keys.map((key) => (
-                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
-                        ))}
+                        {
+                            keys.map((key) => (
+                                <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                            ))
+                        }
                         {
                             additionalComponents &&
                             additionalComponents.map((component) => (
@@ -43,7 +46,7 @@ const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => 
                                     {/* <TableCell rowSpan={group.items.length} >{group.worker.worker_id}-{group.worker.name}</TableCell>} */}
                                     {
                                         keys.map((key) => {
-                                            return <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>{computeContent(item, key)}</TableCell>
+                                            return <TableCell >{computeContent(item, key)}</TableCell>
                                         })
                                     }
                                     {
@@ -51,7 +54,7 @@ const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => 
                                         additionalComponents.map((component) => {
 
                                             return (
-                                                <TableCell style={{ 'backgroundColor': computeBackgroundColor(item) }}>
+                                                <TableCell >
 
                                                     <component.component item={item} group={group} {...component.props} />
 
