@@ -10,7 +10,7 @@ export const addWorker = async (req, res) => {
     console.log("add worker manager_id: ", manager_id);
     const { name, contact_number, address, worker_id } = req.body;
 
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id });
@@ -31,7 +31,7 @@ export const getWorkers = async (req, res) => {
     const manager_id = req.params.manager_id;
     console.log("get workers manager_id: ", manager_id);
 
-    if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) || (req.manager && req.manager.manager_id && manager_id !== req.manager.manager_id)) return res.status(401).json({ message: "Access Denied" });
+    if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) || (req.manager && req.manager.manager_id && manager_id !== req.manager.manager_id)) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
@@ -40,7 +40,7 @@ export const getWorkers = async (req, res) => {
         if (req.proprietor && req.proprietor.proprietor_id && manager.proprietor.proprietor_id !== req.proprietor.proprietor_id) {
             console.log(req.proprietor);
             console.log(manager.proprietor);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
         const workers = await Worker.find({ manager: manager._id }, { name: 1, worker_id: 1, _id: 0 });
         if (!workers) return res.status(404).json({ message: "No workers exist" });
@@ -62,7 +62,7 @@ export const recordPayment = async (req, res) => {
     try {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
-        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
         const [day, month, year] = date.split('/').map(Number);
         const dateObj = new Date(year, month - 1, day);
         worker.due_amount -= amount;
@@ -84,7 +84,7 @@ export const getPayments = async (req, res) => {
     try {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
-        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
         res.status(200).json({ payment_history: worker.payment_history, due_amount: worker.due_amount });
     }
     catch (error) {
@@ -105,7 +105,7 @@ export const issueToWorker = async (req, res) => {
 
 
         const manager = await Manager.findOne({ _id: worker.manager });
-        if (!req.manager || req.manager.manager_id !== manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.manager || req.manager.manager_id !== manager.manager_id) return res.status(403).json({ message: "Access Denied" });
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
 
@@ -175,7 +175,7 @@ export const getPriceForIssue = async (req, res) => {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor due_forward' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
@@ -215,7 +215,7 @@ export const getPricesForSubmitAdhoc = async (req, res) => {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
@@ -240,7 +240,7 @@ export const submitFromWorker = async (req, res) => {
     console.log(req.body);
     const worker_id = req.params.worker_id;
     console.log("submit from worker worker_id: ", worker_id);
-    if (!req.manager || !req.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.manager || !req.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
     const manager_id = req.manager.manager_id;
     const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value, is_adhoc, to_hold, hold_info } = req.body;
 
@@ -251,13 +251,13 @@ export const submitFromWorker = async (req, res) => {
         const manager = await Manager.findOne({ manager_id: manager_id }, { password: 0 });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        if (manager_id !== manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (manager_id !== manager.manager_id) return res.status(403).json({ message: "Access Denied" });
 
         const worker = await Worker.findOne({ worker_id: worker_id })
             .populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        if (manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" });
+        if (manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
@@ -372,7 +372,7 @@ export const addCustomPrice = async (req, res) => {
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: '_id proprietor', populate: { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' } });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
         console.log(worker);
-        if (req.proprietor && req.proprietor.proprietor_id !== worker.manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (req.proprietor && req.proprietor.proprietor_id !== worker.manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
 
         const item = await Item.findOne({ design_number: design_number, proprietor: worker.manager.proprietor._id });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
@@ -420,7 +420,7 @@ export const getWorker = async (req, res) => {
             (req.proprietor && req.proprietor.proprietor_id && req.proprietor.proprietor_id !== worker.manager.proprietor.proprietor_id)) {
             // console.log(req.manager);
             // console.log(req.proprietor);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });

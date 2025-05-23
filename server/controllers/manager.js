@@ -13,7 +13,7 @@ export const addManager = async (req, res) => {
     console.log("proprietor_id: ", proprietor_id);
     const { name, contact_number, address, manager_id, password } = req.body;
 
-    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id });
@@ -40,7 +40,7 @@ export const getManager = async (req, res) => {
     console.log("get manager manager_id: ", manager_id);
     console.log("manager:", req.manager);
     console.log("proprietor:", req.proprietor);
-    if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) || (req.manager && req.manager.manager_id && manager_id !== req.manager.manager_id)) return res.status(401).json({ message: "Access Denied" });
+    if (((!req.manager || !req.manager.manager_id) && (!req.proprietor || !req.proprietor.proprietor_id)) || (req.manager && req.manager.manager_id && manager_id !== req.manager.manager_id)) return res.status(403).json({ message: "Access Denied" });
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }, { id: 0, password: 0 })
             .populate([
@@ -65,7 +65,7 @@ export const getManager = async (req, res) => {
         if (req.proprietor && req.proprietor.proprietor_id && manager.proprietor.proprietor_id !== req.proprietor.proprietor_id) {
             console.log(req.proprietor);
             console.log(manager.proprietor);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         const managerPrepared = await prepare(managerPopulatePaths, manager, true)
@@ -85,7 +85,7 @@ export const getManagers = async (req, res) => {
     const proprietor_id = req.params.proprietor_id;
     console.log("get managers proprietor_id: ", proprietor_id);
 
-    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
 
@@ -111,7 +111,7 @@ export const recordPayment = async (req, res) => {
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
-        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
         const [day, month, year] = date.split('/').map(Number);
         const dateObj = new Date(year, month - 1, day);
         manager.payment_history.push({ amount: amount, date: dateObj, remarks: remarks });
@@ -134,7 +134,7 @@ export const getPayments = async (req, res) => {
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
-        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
         return res.status(200).json({ payment_history: manager.payment_history, due_amount: manager.due_amount });
     }
     catch (error) {
@@ -149,7 +149,7 @@ export const issueToManager = async (req, res) => {
     const manager_id = req.params.manager_id;
     console.log("issue to manager manager_id: ", manager_id);
     const { design_number, quantity, underprocessing_value, general_price, remarks } = req.body;
-    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
@@ -157,7 +157,7 @@ export const issueToManager = async (req, res) => {
         if (proprietor_id !== manager.proprietor.proprietor_id) {
             console.log(proprietor_id);
             console.log(manager.proprietor.proprietor_id);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
@@ -221,7 +221,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
     const new_manager_id = req.params.manager_id;
     console.log("issue on hold items to manager manager_id: ", new_manager_id);
     console.log("proprietor: ", req.proprietor);
-    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
     const { design_number, quantity, new_price, new_underprocessing_value, new_remarks_from_proprietor, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker_id, manager_id, hold_info } = req.body;
     try {
@@ -232,7 +232,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         if (newManager.proprietor.proprietor_id !== proprietor_id) {
             console.log(req.proprietor.proprietor_id);
             console.log(newManager.proprietor.proprietor_id);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { id: 0, password: 0 });
@@ -244,7 +244,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         if (proprietor_id !== manager.proprietor.proprietor_id) {
             console.log(req.proprietor.proprietor_id);
             console.log(manager.proprietor.proprietor_id);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         const worker = await Worker.findOne({ worker_id: worker_id }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor', populate: { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' } });
@@ -253,7 +253,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         if (proprietor_id !== worker.manager.proprietor.proprietor_id) {
             console.log(proprietor_id);
             console.log(worker.manager.proprietor.proprietor_id);
-            return res.status(401).json({ message: "Access Denied" });
+            return res.status(403).json({ message: "Access Denied" });
         }
 
         if (worker.manager.manager_id !== manager_id) {
@@ -344,7 +344,7 @@ export const submitToProprietor = async (req, res) => {
     console.log("submit to proprietor manager_id: ", manager_id);
     const { worker_id, design_number, submit_quantity, price, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold, hold_info } = req.body;
 
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id });
@@ -434,7 +434,7 @@ export const raiseExpenseRequest = async (req, res) => {
     console.log(`raise expense request manager_id: ${manager_id}`);
     const { amount, remarks } = req.body;
 
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id });
@@ -490,7 +490,7 @@ export const getPricesForFinalSubmit = async (req, res) => {
     const design_number = req.params.design_number;
     console.log(`get prices for final submit manager_id: ${manager_id} design_number: ${design_number}`);
 
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id });
@@ -518,7 +518,7 @@ export const getSubmissions = async (req, res) => {
         ]).lean();
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
-        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
         const peparedManager = await prepare(managerPopulatePaths, manager, true)
         res.status(200).json(peparedManager.submissions);
     }
@@ -533,7 +533,7 @@ export const acceptFromManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log(`accept from manager manager_id: ${manager_id}`);
-    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+    if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
     const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_hold, hold_info } = req.body;
 
@@ -550,7 +550,7 @@ export const acceptFromManager = async (req, res) => {
         ]);
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
 
-        if (proprietor_id !== manager.proprietor.proprietor_id) return res.status(401).json({ message: "Access Denied" });
+        if (proprietor_id !== manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
 
         const worker = await Worker.findOne({ worker_id: worker_id, manager: manager._id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });

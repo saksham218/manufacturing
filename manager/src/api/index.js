@@ -18,6 +18,18 @@ service.interceptors.request.use((config) => {
     return Promise.reject(error)
 })
 
+//api promises, go to logout page when invalid token
+service.interceptors.response.use((response) => {
+    return response
+}, (error) => {
+    if (error.response.status === 401) {
+        localStorage.removeItem('manager_token')
+        localStorage.removeItem('manager')
+        window.location.href = '/login'
+    }
+    return Promise.reject(error)
+})
+
 export const loginManager = (manager) => service.post('/manager/login', manager)
 export const addWorker = (newWorker, manager_id) => service.post(`/worker/${manager_id}/addworker`, newWorker)
 export const getWorkers = (manager_id) => service.get(`/worker/${manager_id}/getworkers`)

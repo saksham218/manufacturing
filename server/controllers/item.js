@@ -10,7 +10,7 @@ export const getItems = async (req, res) => {
     console.log("get items proprietor_id: ", proprietor_id)
     console.log("manager:", req.manager);
     console.log("proprietor:", req.proprietor);
-    if ((!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) && (!req.manager || !req.manager.manager_id)) return res.status(401).json({ message: "Access Denied" })
+    if ((!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) && (!req.manager || !req.manager.manager_id)) return res.status(403).json({ message: "Access Denied" })
 
     try {
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
@@ -21,7 +21,7 @@ export const getItems = async (req, res) => {
             const manager = await Manager.findOne({ manager_id: req.manager.manager_id })
             console.log("manager founds:", manager)
             if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
-            if (!manager.proprietor.equals(proprietor._id)) return res.status(401).json({ message: "Access Denied" })
+            if (!manager.proprietor.equals(proprietor._id)) return res.status(403).json({ message: "Access Denied" })
         }
 
 
@@ -41,7 +41,7 @@ export const createItem = async (req, res) => {
     const proprietor_id = req.params.proprietor_id
     console.log("proprietor_id: ", proprietor_id)
 
-    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(401).json({ message: "Access Denied" })
+    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(403).json({ message: "Access Denied" })
     try {
 
         const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
@@ -68,7 +68,7 @@ export const getItemsForIssue = async (req, res) => {
     const manager_id = req.params.manager_id
     console.log("get items for issue manager_id: ", manager_id)
 
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" })
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
 
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, proprietor: 1 }).lean()
@@ -118,7 +118,7 @@ export const getItemsForSubmit = async (req, res) => {
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" })
 
-        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(401).json({ message: "Access Denied" })
+        if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" })
 
         const items = await Item.find({ proprietor: worker.manager.proprietor })
 
@@ -153,7 +153,7 @@ export const getItemsForSubmit = async (req, res) => {
 export const getItemsForFinalSubmit = async (req, res) => {
     const manager_id = req.params.manager_id
     console.log("get items for final submit manager_id: ", manager_id)
-    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(401).json({ message: "Access Denied" })
+    if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
     try {
         const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward').populate([
             { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },

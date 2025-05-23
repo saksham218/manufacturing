@@ -70,7 +70,7 @@ export const getOnHoldItems = async (req, res) => {
     const { proprietor_id } = req.params;
     console.log(req.proprietor);
     if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) {
-        return res.status(401).json({ message: "Access Denied" });
+        return res.status(403).json({ message: "Access Denied" });
     }
     try {
 

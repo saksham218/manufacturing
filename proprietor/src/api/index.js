@@ -20,6 +20,17 @@ service.interceptors.request.use(
     }
 )
 
+service.interceptors.response.use((response) => {
+    return response
+}, (error) => {
+    if (error.response.status === 401) {
+        localStorage.removeItem('proprietor_token')
+        localStorage.removeItem('proprietor')
+        window.location.href = '/login'
+    }
+    return Promise.reject(error)
+})
+
 export const createProprietor = (newProprietor) => service.post('/proprietor/newproprietor', newProprietor)
 export const loginProprietor = (proprietor) => service.post('/proprietor/login', proprietor)
 export const getItems = (proprietor_id) => service.get(`/item/${proprietor_id}/getitems`)
