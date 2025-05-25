@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom'
 import { Typography, FormGroup, FormControl, InputLabel, Input, Button } from '@mui/material'
 
 import { createProprietor } from '../api/index.js'
-
+import CustomButton from './layouts/CustomButton'
 
 
 const Signup = () => {
@@ -55,13 +55,16 @@ const Signup = () => {
                     <InputLabel>Confirm Password</InputLabel>
                     <Input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); console.log(confirmPassword) }} />
                 </FormControl>
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                    disabled={newProprietor.proprietor_id === "" ||
-                        newProprietor.name === "" ||
-                        newProprietor.password === "" ||
-                        confirmPassword !== newProprietor.password}
+                <CustomButton buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px" } }}
+                    isInputValid={newProprietor.proprietor_id !== "" &&
+                        newProprietor.name !== "" &&
+                        newProprietor.password !== "" &&
+                        confirmPassword === newProprietor.password}
 
-                    onClick={onSubmit}>Signup</Button>
+                    onClick={onSubmit}
+                    successMessage="Signup successful"
+                    errorMessage="Signup failed"
+                >Signup</CustomButton>
 
             </FormGroup>
 

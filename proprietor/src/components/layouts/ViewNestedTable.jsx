@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody, Divider } from '@mui/material'
 
 import { computeContent } from '../utils/viewUtils'
+import { hash } from '../utils/viewUtils'
 
 const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => {
     console.log(data)
@@ -53,6 +54,7 @@ const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => 
                             {group.items.map((item, itemIndex) => (
                                 <TableRow
                                     onClick={() => { handleRowClick(groupIndex, itemIndex) }}
+                                    key={hash(item)}
                                 >
 
                                     {

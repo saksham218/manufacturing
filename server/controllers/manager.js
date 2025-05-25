@@ -378,6 +378,7 @@ export const submitToProprietor = async (req, res) => {
         else {
             const dbItemIndex = manager.due_backward[dbWorkerIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc) && (i.to_hold === to_hold) && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
             if (dbItemIndex === -1) {
+                console.log("not found hold info", preparedHoldInfo)
                 return res.status(404).json({ message: `${submit_quantity} of ${design_number}, to_hold: ${to_hold} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
             }
             else {
@@ -693,7 +694,7 @@ export const acceptFromManager = async (req, res) => {
 
             manager.on_hold_history[manHoldIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id, hold_info: preparedHoldInfo });
+            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id, hold_info: preparedHoldInfo, hold_date: current_date });
 
         }
 

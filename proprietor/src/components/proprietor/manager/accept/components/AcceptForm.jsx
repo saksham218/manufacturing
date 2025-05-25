@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Button, FormControl, FormGroup, Input, InputLabel, MenuItem, Select } from '@mui/material'
+import { FormControl, FormGroup, Input, InputLabel, MenuItem, Select } from '@mui/material'
 
 import { acceptFromManager } from '../../../../../api'
-import { act } from 'react'
+import CustomButton from '../../../../layouts/CustomButton'
 
 const actions = [
     {
@@ -28,38 +28,35 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
     const [actionIndex, setActionIndex] = useState(0)
 
     const onSubmit = async () => {
-        try {
-            const accepted = {
-                action: actions[actionIndex].name,
-                worker_id: group.worker.worker_id,
-                design_number: item.item.design_number,
-                quantity: quantity,
-                price: item.price,
-                partial_payment: partialPayment,
-                deduction_from_manager: item.deduction_from_manager,
-                remarks_from_manager: item.remarks_from_manager,
-                underprocessing_value: item.underprocessing_value,
-                remarks_from_proprietor: item.remarks_from_proprietor,
-                deduction: deduction,
-                final_remarks: finalRemarks,
-                is_adhoc: item.is_adhoc,
-                to_hold: item.to_hold,
-                hold_info: item.hold_info
-            }
-            console.log(accepted)
 
-            const res = await acceptFromManager(accepted, manager.manager_id)
-            console.log(res.data)
-            setQuantity("")
-            setDeduction("")
-            setFinalRemarks("")
-            setPartialPayment("")
-            setActionIndex(0)
-            reloadSubmissionsData();
+        const accepted = {
+            action: actions[actionIndex].name,
+            worker_id: group.worker.worker_id,
+            design_number: item.item.design_number,
+            quantity: quantity,
+            price: item.price,
+            partial_payment: partialPayment,
+            deduction_from_manager: item.deduction_from_manager,
+            remarks_from_manager: item.remarks_from_manager,
+            underprocessing_value: item.underprocessing_value,
+            remarks_from_proprietor: item.remarks_from_proprietor,
+            deduction: deduction,
+            final_remarks: finalRemarks,
+            is_adhoc: item.is_adhoc,
+            to_hold: item.to_hold,
+            hold_info: item.hold_info
         }
-        catch (err) {
-            console.log(err)
-        }
+        console.log(accepted)
+
+        const res = await acceptFromManager(accepted, manager.manager_id)
+        console.log(res.data)
+        setQuantity("")
+        setDeduction("")
+        setFinalRemarks("")
+        setPartialPayment("")
+        setActionIndex(0)
+        reloadSubmissionsData();
+
     }
 
     useEffect(() => {
@@ -71,7 +68,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
 
     return (
         <>
-            <FormGroup>
+            <FormGroup onClick={(e) => { e.stopPropagation() }}>
                 <FormControl >
                     <InputLabel>Action</InputLabel>
                     <Select value={actionIndex} onChange={(e) => { setActionIndex(e.target.value) }} style={{ marginTop: "10px", width: "150px" }}>
@@ -122,14 +119,18 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                 </FormControl>
 
 
-                <Button variant="contained" color="primary" style={{ marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" }}
-                    disabled={Number(quantity) < 1 || Number(quantity) > Number(item.quantity) ||
-                        Number(deduction) > (Number(item.price) - Number(item.deduction_from_manager)) || Number(partialPayment) > (Number(item.price) - Number(item.deduction_from_manager)) ||
-                        (Number(deduction) > 0 || actions[actionIndex].name === "hold" || actions[actionIndex].name === "forfeit") && finalRemarks === ""}
+                <CustomButton
+                    buttonProps={{ variant: "contained", color: "primary", style: { marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" } }}
+                    isInputValid={Number(quantity) > 0 && Number(quantity) <= Number(item.quantity) &&
+                        Number(deduction) <= (Number(item.price) - Number(item.deduction_from_manager)) && Number(partialPayment) <= (Number(item.price) - Number(item.deduction_from_manager)) &&
+                        ((Number(deduction) === 0 && actions[actionIndex].name !== "hold" && actions[actionIndex].name !== "forfeit") || finalRemarks !== "")}
                     onClick={onSubmit}
+                    successMessage="Action successful"
+                    errorMessage="Action failed"
                 >
                     Done
-                </Button>
+                </CustomButton>
+
             </FormGroup >
         </>
     )

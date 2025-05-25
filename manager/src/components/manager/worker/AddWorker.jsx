@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
 
-import { Input, InputLabel, FormControl, FormGroup, Button } from '@mui/material'
+import { Input, InputLabel, FormControl, FormGroup } from '@mui/material'
 import { addWorker } from '../../../api'
+import CustomButton from '../../layouts/CustomButton'
 
 const AddWorker = ({ manager, setWorkersList }) => {
 
     const [newWorker, setNewWorker] = useState({ name: "", contact_number: "", address: "", worker_id: "" })
 
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
+    const onSubmit = async () => {
         console.log(newWorker)
         const res = await addWorker(newWorker, manager.manager_id)
         console.log(res)
@@ -37,14 +37,17 @@ const AddWorker = ({ manager, setWorkersList }) => {
                     <Input value={newWorker.worker_id} onChange={(e) => { setNewWorker({ ...newWorker, worker_id: e.target.value }); console.log(newWorker); }} />
                 </FormControl>
 
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                    disabled={newWorker.name === "" ||
-                        newWorker.contact_number === "" ||
-                        newWorker.address === "" ||
-                        newWorker.worker_id === ""
+                <CustomButton
+                    buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px" } }}
+                    isInputValid={newWorker.name !== "" &&
+                        newWorker.contact_number !== "" &&
+                        newWorker.address !== "" &&
+                        newWorker.worker_id !== ""
                     }
-
-                    onClick={onSubmit}>Add</Button>
+                    onClick={onSubmit}
+                    successMessage="Worker added successfully"
+                    errorMessage="Failed to add worker"
+                >Add</CustomButton>
             </FormGroup></div>
     )
 }

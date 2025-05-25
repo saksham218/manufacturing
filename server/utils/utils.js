@@ -24,7 +24,9 @@ export const isSameHoldInfo = (hold_info1, hold_info2) => {
     console.log("hi");
 
     if (!hold_info1 && !hold_info2) return true;
+    if ((hold_info1 && hold_info1.is_hold === false && !hold_info2) || (hold_info2 && hold_info2.is_hold === false && !hold_info1)) return true;
     if (!hold_info1 || !hold_info2) return false;
+    if (hold_info1.is_hold === false && hold_info2.is_hold === false) return true;
     const result = hold_info1.is_hold === hold_info2.is_hold
         && Number(hold_info1.price) === Number(hold_info2.price)
         && Number(hold_info1.partial_payment) === Number(hold_info2.partial_payment)

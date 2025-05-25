@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Button, FormControl, FormGroup, Input, InputLabel, Paper, Table, TableCell, TableRow, TableHead, Box, Typography } from '@mui/material'
+import { FormControl, FormGroup, Input, InputLabel, Paper, Table, TableCell, TableRow, TableHead, Box, Typography } from '@mui/material'
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { recordPayment, getPayments } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
+import CustomButton from '../../layouts/CustomButton'
 
 const Payment = () => {
 
@@ -75,8 +76,11 @@ const Payment = () => {
                             <InputLabel>Remarks</InputLabel>
                             <Input value={payment.remarks} onChange={(e) => { setPayment({ ...payment, remarks: e.target.value }); console.log(payment); }} />
                         </FormControl>
-                        <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                            disabled={payment.amount === "" || payment.remarks === ""}>Record</Button>
+                        <CustomButton buttonProps={{ style: { width: "100px", marginLeft: "100px", marginTop: "10px" }, variant: "contained", color: "primary" }} onClick={onSubmit}
+                            isInputValid={payment.amount !== "" && payment.remarks !== ""}
+                            successMessage="Payment recorded successfully"
+                            errorMessage="Failed to record payment"
+                        >Record</CustomButton>
                     </FormGroup>
                 </Box>
                 <Box style={{ width: "600px", padding: "20px" }}>

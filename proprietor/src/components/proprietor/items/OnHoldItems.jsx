@@ -3,7 +3,7 @@ import { Typography } from '@mui/material'
 
 import ViewTable from '../../layouts/ViewTable'
 import { getOnHoldItems } from '../../../api'
-import { managerDetailsViewConfig } from '../../constants/ViewConstants'
+import { proprietorDetailsViewConfig } from '../../constants/ViewConstants'
 
 const getOnHoldItemsData = async (proprietor_id) => {
     try {
@@ -32,7 +32,7 @@ const OnHoldItems = ({ proprietor }) => {
 
     return (
         <div>
-            {(data && data.length > 0) ? <ViewTable data={data} keys={managerDetailsViewConfig['on_hold_items'].keys} /> : <Typography>No Items on Hold</Typography>}
+            {(data && data.length > 0) ? <ViewTable data={data} keys={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>}
         </div>
     )
 }

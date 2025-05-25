@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
 
-import { Input, InputLabel, FormControl, FormGroup, Button } from '@mui/material'
+import { Input, InputLabel, FormControl, FormGroup } from '@mui/material'
 import { addManager } from '../../../api'
+import CustomButton from '../../layouts/CustomButton'
 
 const AddManager = ({ proprietor, setManagersList }) => {
 
     const [newManager, setNewManager] = useState({ name: "", contact_number: "", address: "", manager_id: "", password: "" })
     const [confirmPassword, setConfirmPassword] = useState("")
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
+    const onSubmit = async () => {
         console.log(newManager)
         const res = await addManager(newManager, proprietor.proprietor_id)
         console.log(res)
@@ -45,16 +45,19 @@ const AddManager = ({ proprietor, setManagersList }) => {
                     <InputLabel>Confirm Password</InputLabel>
                     <Input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); console.log(confirmPassword); }} />
                 </FormControl>
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                    disabled={newManager.name === "" ||
-                        newManager.contact_number === "" ||
-                        newManager.address === "" ||
-                        newManager.manager_id === "" ||
-                        newManager.password === "" ||
-                        confirmPassword !== newManager.password
+                <CustomButton buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px" } }}
+                    isInputValid={newManager.name !== "" &&
+                        newManager.contact_number !== "" &&
+                        newManager.address !== "" &&
+                        newManager.manager_id !== "" &&
+                        newManager.password !== "" &&
+                        confirmPassword === newManager.password
                     }
 
-                    onClick={onSubmit}>Add</Button>
+                    onClick={onSubmit}
+                    successMessage="Manager added successfully"
+                    errorMessage="Failed to add manager"
+                >Add</CustomButton>
             </FormGroup></div>
     )
 }

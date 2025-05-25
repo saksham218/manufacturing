@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, TextField, FormControlLabel, Checkbox, Box } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box } from '@mui/material'
 
 import { getItemsForSubmit, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
 import HoldInfo from '../../layouts/HoldInfo'
+import CustomButton from '../../layouts/CustomButton'
 
 const getItemsData = async (proprietor_id, worker_id, isAdhoc) => {
     try {
@@ -174,21 +175,17 @@ const Submit = ({ manager }) => {
     }
 
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
-        try {
-            const res = await submitFromWorker({ ...submission, is_adhoc: isAdhoc, to_hold: toHold }, worker.worker_id)
-            console.log(res.data)
+    const onSubmit = async () => {
 
-            setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
-            const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc);
-            setItems(itemsData);
-            setItemIndex("");
-            setCurrentWorkerPrice("");
-        }
-        catch (err) {
-            console.log(err)
-        }
+        const res = await submitFromWorker({ ...submission, is_adhoc: isAdhoc, to_hold: toHold }, worker.worker_id)
+        console.log(res.data)
+
+        setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
+        const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc);
+        setItems(itemsData);
+        setItemIndex("");
+        setCurrentWorkerPrice("");
+
     }
 
     return (
@@ -282,12 +279,17 @@ const Submit = ({ manager }) => {
                     }
 
 
-                    <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                        disabled={submission.design_number === "" || submission.quantity === "" || submission.quantity === "0"
-                            || submission.quantity > maxQuantity || submission.deduction > maxDeduction
-                            || (submission.price === "" || submission.price === "0")
-                            || (submission.underprocessing_value === "" || submission.underprocessing_value === "0" || Number(submission.underprocessing_value) === 0)
-                            || (((submission.deduction !== "0" && submission.deduction !== "") || toHold) && submission.remarks === "")}>Submit</Button>
+                    <CustomButton
+                        buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px", marginTop: "10px" } }}
+                        isInputValid={submission.design_number !== "" && submission.quantity !== "" && submission.quantity !== "0"
+                            && submission.quantity <= maxQuantity && submission.deduction <= maxDeduction
+                            && submission.price !== "" && submission.price !== "0"
+                            && submission.underprocessing_value !== "" && submission.underprocessing_value !== "0"
+                            && (((submission.deduction === "0" || submission.deduction === "") && !toHold) || submission.remarks !== "")}
+                        onClick={onSubmit}
+                        successMessage="Submit successful"
+                        errorMessage="Failed to submit"
+                    >Submit</CustomButton>
                 </div>
             </FormGroup>
 

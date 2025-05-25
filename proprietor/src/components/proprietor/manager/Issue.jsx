@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, FormControlLabel, Box, Checkbox } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox } from '@mui/material'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 import { computeBackgroundColor } from '../../utils/viewUtils'
 import HoldInfo from '../../layouts/HoldInfo'
+import CustomButton from '../../layouts/CustomButton'
 
 
 const getItemsData = async (proprietor_id) => {
@@ -147,18 +148,14 @@ const Issue = ({ proprietor }) => {
     }
 
     const onSubmit = async (e) => {
-        e.preventDefault()
-        try {
-            const issueToManagerFun = issueHoldItems ? issueOnHoldItemsToManager : issueToManager;
-            console.log(issueToManagerFun);
-            const res = await issueToManagerFun(issue, manager.manager_id)
-            console.log(res.data)
 
-            resetIssue();
-        }
-        catch (err) {
-            console.log(err)
-        }
+        const issueToManagerFun = issueHoldItems ? issueOnHoldItemsToManager : issueToManager;
+        console.log(issueToManagerFun);
+        const res = await issueToManagerFun(issue, manager.manager_id)
+        console.log(res.data)
+
+        resetIssue();
+
     }
 
     return (
@@ -246,9 +243,19 @@ const Issue = ({ proprietor }) => {
                                 <Input value={issue.new_remarks_from_proprietor} onChange={(e) => { setIssue({ ...issue, new_remarks_from_proprietor: e.target.value }); console.log(issue); }} />
                             </FormControl>
                         </>}
-                    <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                        disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" || Number(issue.quantity) > maxQuantity ||
-                            issue.underprocessing_value === "" || issue.underprocessing_value === "0" || (issueHoldItems && (issue.new_price === "" || issue.new_underprocessing_value === ""))}>Issue</Button>
+                    <CustomButton buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px", marginTop: "10px" } }}
+                        isInputValid={issue.design_number !== "" &&
+                            issue.quantity !== "" &&
+                            issue.quantity !== "0" &&
+                            Number(issue.quantity) <= maxQuantity &&
+                            issue.underprocessing_value !== "" &&
+                            issue.underprocessing_value !== "0" &&
+                            (!issueHoldItems || (issue.new_price !== "" && issue.new_underprocessing_value !== ""))}
+
+                        onClick={onSubmit}
+                        successMessage="Item issued successfully"
+                        errorMessage="Failed to issue item"
+                    >Issue</CustomButton>
                 </div>
             </FormGroup>
 

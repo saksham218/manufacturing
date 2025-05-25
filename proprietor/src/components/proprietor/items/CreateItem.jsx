@@ -1,29 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { Input, InputLabel, FormControl, FormGroup, Button, Table, TableHead, TableRow, TableCell, TableContainer, Paper } from '@mui/material'
+import { Input, InputLabel, FormControl, FormGroup, Table, TableHead, TableRow, TableCell, TableContainer, Paper } from '@mui/material'
 
 import { createItem, getItems } from '../../../api/index.js'
+import CustomButton from '../../layouts/CustomButton'
 
 const CreateItem = ({ proprietor }) => {
 
     const [newItem, setNewItem] = useState({ design_number: "", description: "", price: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
-        console.log(newItem)
+    const onSubmit = async () => {
 
-        try {
-            const submitItem = { ...newItem, proprietor_id: proprietor.proprietor_id }
-            console.log(submitItem)
-            const res = await createItem(submitItem, proprietor.proprietor_id)
-            console.log(res)
-            // setItems(...items, res.data.result)
-            getItemsData();
-            setNewItem({ design_number: "", description: "", price: "", underprocessing_value: "" })
-        }
-        catch (err) {
-            console.log(err)
-        }
+        const submitItem = { ...newItem, proprietor_id: proprietor.proprietor_id }
+        console.log(submitItem)
+        const res = await createItem(submitItem, proprietor.proprietor_id)
+        console.log(res)
+        // setItems(...items, res.data.result)
+        getItemsData();
+        setNewItem({ design_number: "", description: "", price: "", underprocessing_value: "" })
     }
 
     const getItemsData = async () => {
@@ -62,13 +56,16 @@ const CreateItem = ({ proprietor }) => {
                     <InputLabel>Under Processing Value</InputLabel>
                     <Input type="number" inputProps={{ min: 0 }} value={newItem.underprocessing_value} onChange={(e) => { setNewItem({ ...newItem, underprocessing_value: e.target.value }); console.log(newItem); }} />
                 </FormControl>
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                    disabled={newItem.design_number === "" ||
-                        newItem.description === "" ||
-                        newItem.price === "" ||
-                        newItem.underprocessing_value === ""}
+                <CustomButton buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px" } }}
+                    isInputValid={newItem.design_number !== "" &&
+                        newItem.description !== "" &&
+                        newItem.price !== "" &&
+                        newItem.underprocessing_value !== ""}
 
-                    onClick={onSubmit}>Add</Button>
+                    onClick={onSubmit}
+                    successMessage="Item added successfully"
+                    errorMessage="Failed to add item"
+                >Add</CustomButton>
             </FormGroup>
             <TableContainer component={Paper}>
                 <Table>

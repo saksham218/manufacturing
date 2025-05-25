@@ -8,6 +8,7 @@ import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../..
 import ViewTable from '../../layouts/ViewTable'
 import { useManager } from './managerContext/ManagerContext'
 import { workerDetailsViewConfig } from '../../constants/ViewConstants';
+import CustomButton from '../../layouts/CustomButton'
 
 const getWorkersData = async (manager_id) => {
     try {
@@ -159,18 +160,15 @@ const Worker = ({ proprietor }) => {
 
 
     const onSubmit = async () => {
-        try {
-            const res = await addCustomPrice(customPrice, worker.worker_id)
-            console.log(res.data)
-            const result = await getWorkerData(worker.worker_id);
-            setWorkerDetails(result)
-            setCustomPrice({ design_number: "", price: "" })
-            setPrice("")
 
-        }
-        catch (err) {
-            console.log(err)
-        }
+        const res = await addCustomPrice(customPrice, worker.worker_id)
+        console.log(res.data)
+        const result = await getWorkerData(worker.worker_id);
+        setWorkerDetails(result)
+        setCustomPrice({ design_number: "", price: "" })
+        setPrice("")
+
+
     }
 
     return (
@@ -198,8 +196,11 @@ const Worker = ({ proprietor }) => {
                             <InputLabel>Price</InputLabel>
                             <Input type="number" value={customPrice.price} onChange={(e) => setCustomPrice({ ...customPrice, price: e.target.value })} />
                         </FormControl>
-                        <Button onClick={onSubmit} variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px" }}
-                            disabled={customPrice.design_number === "" || customPrice.price === "" || customPrice.price === "0" || worker.worker_id === ""}>Add</Button>
+                        <CustomButton onClick={onSubmit} buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px" } }}
+                            isInputValid={customPrice.design_number !== "" && customPrice.price !== "" && customPrice.price !== "0" && worker.worker_id !== ""}
+                            successMessage="Custom price added successfully"
+                            errorMessage="Failed to add custom price"
+                        >Add</CustomButton>
                     </FormGroup>
                 </Box>
                 <Box style={{ width: '800px', paddingTop: '20px' }}>

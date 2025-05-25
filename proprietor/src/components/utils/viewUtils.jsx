@@ -57,3 +57,7 @@ export const filterKeys = (keys) => {
     const notRequired = ['_id', 'is_adhoc', 'to_hold']
     return keys.filter((key) => !notRequired.includes(key))
 }
+
+export const hash = (obj) => {
+    return JSON.stringify(obj)
+}

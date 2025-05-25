@@ -1,24 +1,19 @@
 import React, { useState } from 'react'
-import { FormGroup, InputLabel, Input, Button, FormControl } from '@mui/material'
+import { FormGroup, InputLabel, Input, FormControl } from '@mui/material'
 import { raiseExpenseRequest } from '../../../api'
-
+import CustomButton from '../../layouts/CustomButton'
 
 const ExpenseRequest = ({ manager }) => {
 
     const [expense, setExpense] = useState({ amount: "", remarks: "" })
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
+    const onSubmit = async () => {
         console.log(expense)
-        try {
-            const res = await raiseExpenseRequest(expense, manager.manager_id)
-            console.log(res.data)
-            setExpense({ amount: "", remarks: "" })
-        }
-        catch (err) {
-            console.log(err)
 
-        }
+        const res = await raiseExpenseRequest(expense, manager.manager_id)
+        console.log(res.data)
+        setExpense({ amount: "", remarks: "" })
+
     }
 
     return (
@@ -37,8 +32,11 @@ const ExpenseRequest = ({ manager }) => {
             </FormControl>
 
 
-            <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                disabled={expense.remarks === "" || expense.amount === "" || expense.amount === "0"}>Raise</Button>
+            <CustomButton buttonProps={{ style: { width: "100px", marginLeft: "100px", marginTop: "10px" }, variant: "contained", color: "primary" }} onClick={onSubmit}
+                isInputValid={expense.remarks !== "" && expense.amount !== "" && expense.amount !== "0"}
+                successMessage="Expense request raised successfully"
+                errorMessage="Failed to raise expense request"
+            >Raise</CustomButton>
         </FormGroup>
     )
 }

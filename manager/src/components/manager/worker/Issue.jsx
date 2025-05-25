@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography } from '@mui/material'
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
 import HoldInfo from '../../layouts/HoldInfo'
+import CustomButton from '../../layouts/CustomButton'
 
 const getPrice = async (worker_id, design_number, priceFromDF) => {
     if (Number(priceFromDF) > 0) {
@@ -112,20 +113,16 @@ const Issue = ({ manager }) => {
 
 
 
-    const onSubmit = async (e) => {
-        e.preventDefault()
-        try {
-            const res = await issueToWorker(issue, worker.worker_id)
-            console.log(res.data)
+    const onSubmit = async () => {
 
-            const itemsData = await getItemsData(manager.manager_id);
-            setItems(itemsData);
-            setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
-            setItemIndex("");
-        }
-        catch (err) {
-            console.log(err)
-        }
+        const res = await issueToWorker(issue, worker.worker_id)
+        console.log(res.data)
+
+        const itemsData = await getItemsData(manager.manager_id);
+        setItems(itemsData);
+        setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
+        setItemIndex("");
+
     }
 
     return (
@@ -155,10 +152,15 @@ const Issue = ({ manager }) => {
                 </FormControl> */}
 
                 <Typography>Remarks from Proprietor: {issue.remarks}</Typography>
-                <Button variant="contained" color="primary" style={{ width: "100px", marginLeft: "100px", marginTop: "10px" }} onClick={onSubmit}
-                    disabled={issue.design_number === "" || issue.quantity === "" || issue.quantity === "0" ||
-                        issue.underprocessing_value === "" || issue.underprocessing_value === "0" ||
-                        issue.quantity > max}>Issue</Button>
+                <CustomButton
+                    buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px", marginTop: "10px" } }}
+                    isInputValid={issue.design_number !== "" && issue.quantity !== "" && issue.quantity !== "0" &&
+                        issue.underprocessing_value !== "" && issue.underprocessing_value !== "0" &&
+                        issue.quantity <= max}
+                    onClick={onSubmit}
+                    successMessage="Issue successful"
+                    errorMessage="Failed to issue"
+                >Issue</CustomButton>
             </FormGroup>
 
         </div>
