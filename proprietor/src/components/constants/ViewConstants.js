@@ -109,6 +109,6 @@ export const holdInfoViewConfig = {
     "hold_info": {
         "is_dated": false,
         "is_grouped": false,
-        "keys": ["price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager"]
+        "keys": ["price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
     }
 }

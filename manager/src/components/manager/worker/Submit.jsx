@@ -94,6 +94,7 @@ const Submit = ({ manager }) => {
         if (itemIndex !== "" && items.length > 0) {
 
             if (isAdhoc) {
+                setCurrentWorkerPrice("")
                 setSubmission({
                     ...submission,
                     design_number: items[itemIndex].design_number,
@@ -107,7 +108,6 @@ const Submit = ({ manager }) => {
                     to_hold: toHold,
                     hold_info: {}
                 })
-
                 setMaxQuantity(Infinity)
 
                 getPrices(worker.worker_id, items[itemIndex].design_number).then((pricesData) => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip } from '@mui/material'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
@@ -28,6 +28,17 @@ const getOnHoldItemsData = async (proprietor_id) => {
     catch (err) {
         console.log(err)
     }
+}
+
+const getIssueItemsData = async (issueHoldItems, proprietor_id) => {
+    const getData = issueHoldItems ? getOnHoldItemsData : getItemsData;
+    console.log(getData);
+    const itemsData = await getData(proprietor_id);
+    let i = 0;
+    const indexedItemsData = itemsData.map((item) => {
+        return { ...item, index: i++ }
+    })
+    return indexedItemsData;
 }
 
 const Issue = ({ proprietor }) => {
@@ -83,21 +94,21 @@ const Issue = ({ proprietor }) => {
         setEmptyIssue();
         setItemIndex("");
         setMaxQuantity("");
-        const getData = issueHoldItems ? getOnHoldItemsData : getItemsData;
-        console.log(getData);
-        getData(proprietor.proprietor_id).then((itemsData) => {
-            let i = 0;
-            const indexedItemsData = itemsData.map((item) => {
-                return { ...item, index: i++ }
-            })
-            setItems(indexedItemsData)
-        });
+        setItems([]);
     }
 
     useEffect(() => {
+        let isMounted = true;
         console.log("get items")
-        console.log(proprietor)
         resetIssue();
+        getIssueItemsData(issueHoldItems, proprietor.proprietor_id).then((itemsData) => {
+            if (isMounted) {
+                setItems(itemsData)
+            }
+        })
+        return () => {
+            isMounted = false;
+        }
     }, [proprietor, issueHoldItems])
 
 
@@ -155,6 +166,9 @@ const Issue = ({ proprietor }) => {
         console.log(res.data)
 
         resetIssue();
+        getIssueItemsData(issueHoldItems, proprietor.proprietor_id).then((itemsData) => {
+            setItems(itemsData)
+        })
 
     }
 
@@ -169,7 +183,13 @@ const Issue = ({ proprietor }) => {
                             {items.map((item) => (
                                 !issueHoldItems ?
                                     <MenuItem value={item.index}>{item.design_number}-{item.description}</MenuItem>
-                                    : <MenuItem style={{ 'backgroundColor': computeBackgroundColor(item) }} value={item.index}>{item.item?.design_number}-{item.item?.description}{open ? `, Quantity Available: ${item.quantity}, Old Price: ${item.price}, Old Underprocessing Value: ${item.underprocessing_value}, Partial Payment: ${item.partial_payment}${item.holding_remarks !== "" ? ", Holding Remarks: " + item.holding_remarks : ""}` : ""}</MenuItem>
+                                    : <MenuItem value={item.index}>
+                                        <React.Fragment>
+                                            {item.item?.design_number}-{item.item?.description}
+                                            {open ? `, Quantity Available: ${item.quantity}, Old Price: ${item.price}, Old Underprocessing Value: ${item.underprocessing_value}, Partial Payment: ${item.partial_payment}${item.holding_remarks !== "" ? ", Holding Remarks: " + item.holding_remarks : ""}` : ""}
+                                        </React.Fragment>
+                                        {open && item.is_adhoc ? <Chip label="Adhoc" style={{ backgroundColor: 'yellow', marginLeft: '5px' }} /> : null}
+                                    </MenuItem>
                             ))}
                         </Select>
                     </Box>
@@ -203,7 +223,7 @@ const Issue = ({ proprietor }) => {
                         </>
                         :
                         <>
-                            <div style={{ backgroundColor: computeBackgroundColor(issue), padding: "10px", borderRadius: "5px" }}>
+                            <div style={{ padding: "10px", borderRadius: "5px" }}>
                                 <Typography>Old Price: {issue.price}</Typography>
                                 <Typography>Partial Payment: {issue.partial_payment}</Typography>
                                 <Typography>Old Underprocessing Value: {issue.underprocessing_value}</Typography>
@@ -214,7 +234,8 @@ const Issue = ({ proprietor }) => {
                                 <Typography>Remarks from Manager: {issue.remarks_from_manager}</Typography>
                                 <Typography>Put on Hold By: {issue.put_on_hold_by}</Typography>
                                 <Typography>Holding Remarks: {issue.holding_remarks}</Typography>
-                                {issue.hold_info && <HoldInfo holdInfo={issue.hold_info} />}
+                                {issue.is_adhoc && <Chip label="Adhoc" style={{ backgroundColor: 'yellow' }} />}
+                                {issue.hold_info && issue.hold_info.is_hold && <HoldInfo holdInfo={issue.hold_info} />}
                             </div>
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel shrink={!!issue.new_price}>New Price</InputLabel>
