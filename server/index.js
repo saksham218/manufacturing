@@ -16,7 +16,14 @@ const app = express();
 
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(cors())
+
+
+app.use(cors(
+    {
+        origin: ["http://localhost:4000", "http://localhost:3000"],
+        credentials: true
+    }
+))
 
 app.use('/proprietor', proprietorRoutes);
 app.use('/item', itemRoutes);
