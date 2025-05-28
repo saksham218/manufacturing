@@ -3,7 +3,7 @@ import { Input } from '@mui/material'
 import CustomButton from '../../../../layouts/CustomButton'
 import { submitToProprietor } from '../../../../../api'
 
-const SubmitItemsForm = ({ item, group, getItemsData, manager }) => {
+const SubmitItemsForm = ({ item, group, reloadDueBackward, manager }) => {
 
     const [submitQuantity, setSubmitQuantity] = useState("")
 
@@ -28,7 +28,7 @@ const SubmitItemsForm = ({ item, group, getItemsData, manager }) => {
 
         console.log(res.data)
         setSubmitQuantity("")
-        await getItemsData()
+        reloadDueBackward()
 
     }
 

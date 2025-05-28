@@ -10,7 +10,7 @@ const itemSchema = new mongoose.Schema({
         ref: 'Proprietor',
         required: true
     },
-    createdOn: { type: Date, required: true, default: Date.now },
+    created_date: { type: Date, required: true, default: Date.now },
 });
 
 const Item = mongoose.model("Item", itemSchema);

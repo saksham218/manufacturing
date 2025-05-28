@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, Box, CircularProgress } from '@mui/material'
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
@@ -47,7 +47,9 @@ const Issue = ({ manager }) => {
     const [items, setItems] = useState([])
     const [itemIndex, setItemIndex] = useState("")
     const [max, setMax] = useState(0)
-    // const [isPriceFromDF, setIsPriceFromDF] = useState(false)
+
+    const [itemsLoading, setItemsLoading] = useState(false)
+    const [priceLoading, setPriceLoading] = useState(false)
 
     const [open, setOpen] = useState(false);
 
@@ -60,16 +62,23 @@ const Issue = ({ manager }) => {
         setItems([])
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
         setItemIndex("")
+        setItemsLoading(true)
         getItemsData(manager.manager_id).then((itemsData) => {
             if (isMounted) {
+                setItemsLoading(false)
                 setItems(itemsData)
             }
 
         });
 
         return () => { isMounted = false }
-    }, [manager, worker])
+    }, [manager])
 
+    useEffect(() => {
+        setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
+        setItemIndex("")
+        setMax(0)
+    }, [worker])
 
 
     useEffect(() => {
@@ -80,9 +89,11 @@ const Issue = ({ manager }) => {
         setMax(0)
 
         if (itemIndex !== "" && items.length > 0) {
+            setPriceLoading(true)
             getPrice(worker.worker_id, items[itemIndex].design_number, Number(items[itemIndex].price)).then((price) => {
 
                 if (isMounted) {
+                    setPriceLoading(false)
                     setIssue({
                         ...issue,
                         price: price,
@@ -122,21 +133,34 @@ const Issue = ({ manager }) => {
         setItems(itemsData);
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
         setItemIndex("");
+        setMax(0)
 
     }
 
     return (
         <div>
             <FormGroup style={{ width: "500px", padding: "20px" }}>
-                <InputLabel>Item</InputLabel>
-                <Select value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
-                    {items?.map((item) => (
-                        <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}${item.underprocessing_value ? ", Underprocessing Value: " + item.underprocessing_value : ""}${item.price ? ", Price: " + item.price : ""}` : ""}</MenuItem>
-                    ))}
-                </Select>
-                <Typography>Price: {issue.price}</Typography>
-                <Typography>Underprocessing Value: {issue.underprocessing_value}</Typography>
-                {issue.hold_info ? <HoldInfo holdInfo={issue.hold_info} /> : null}
+                <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
+                    {itemsLoading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :
+                        <>
+                            <InputLabel>Item</InputLabel>
+                            <Select style={{ width: "100%" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
+                                {items?.map((item) => (
+                                    <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}${item.underprocessing_value ? ", Underprocessing Value: " + item.underprocessing_value : ""}${item.price ? ", Price: " + item.price : ""}` : ""}</MenuItem>
+                                ))}
+                            </Select>
+                        </>
+                    }
+                </Box>
+                <Box style={{ height: "60px" }}>
+                    {(priceLoading && itemIndex !== "") ? <CircularProgress style={{ marginLeft: "100px" }} /> :
+                        <>
+                            <Typography>Price: {issue.price}</Typography>
+                            <Typography>Underprocessing Value: {issue.underprocessing_value}</Typography>
+                            {issue.hold_info ? <HoldInfo holdInfo={issue.hold_info} /> : null}
+                        </>
+                    }
+                </Box>
                 <Typography style={{ marginTop: "25px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
                 <FormControl style={{ marginTop: "20px" }}>
                     <InputLabel>Quantity</InputLabel>

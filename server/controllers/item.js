@@ -52,7 +52,7 @@ export const createItem = async (req, res) => {
 
         if (oldItem) return res.status(400).json({ message: "Item already exists" })
 
-        const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, createdOn: Date.now() })
+        const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, created_on: Date.now() })
 
 
         await newItem.save()

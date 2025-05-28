@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { Input, InputLabel, FormControl, FormGroup, Table, TableHead, TableRow, TableCell, TableContainer, Paper } from '@mui/material'
+import { Input, InputLabel, FormControl, FormGroup, Table, TableHead, TableRow, TableCell, TableContainer, Paper, Typography, CircularProgress, Box } from '@mui/material'
 
 import { createItem, getItems } from '../../../api/index.js'
 import CustomButton from '../../layouts/CustomButton'
+import ViewTable from '../../layouts/ViewTable.jsx'
+import { managerDetailsViewConfig } from '../../constants/ViewConstants.js'
 
 const CreateItem = ({ proprietor }) => {
 
     const [newItem, setNewItem] = useState({ design_number: "", description: "", price: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
+    const [loading, setLoading] = useState(false)
 
     const onSubmit = async () => {
 
@@ -21,9 +24,11 @@ const CreateItem = ({ proprietor }) => {
     }
 
     const getItemsData = async () => {
+        setLoading(true)
         const res = await getItems(proprietor.proprietor_id)
         console.log(res.data)
         setItems(res.data)
+        setLoading(false)
     }
 
     useEffect(() => {
@@ -67,7 +72,7 @@ const CreateItem = ({ proprietor }) => {
                     errorMessage="Failed to add item"
                 >Add</CustomButton>
             </FormGroup>
-            <TableContainer component={Paper}>
+            {/* <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -91,7 +96,11 @@ const CreateItem = ({ proprietor }) => {
                         )
                     })}
                 </Table>
-            </TableContainer>
+            </TableContainer> */}
+            <Box style={{ width: "1000px" }}>
+                {loading ? <CircularProgress style={{ margin: "150px" }} /> :
+                    ((items && items.length > 0) ? <ViewTable data={items} keys={managerDetailsViewConfig['items'].keys} /> : <Typography>No Data for Items</Typography>)}
+            </Box>
         </div>
     )
 }

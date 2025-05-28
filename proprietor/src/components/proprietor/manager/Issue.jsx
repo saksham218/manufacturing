@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress } from '@mui/material'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
-import { computeBackgroundColor } from '../../utils/viewUtils'
 import HoldInfo from '../../layouts/HoldInfo'
 import CustomButton from '../../layouts/CustomButton'
 
@@ -56,6 +55,8 @@ const Issue = ({ proprietor }) => {
 
     const [open, setOpen] = useState(false)
 
+    const [loading, setLoading] = useState(false)
+
     const setEmptyIssue = () => {
         console.log("set empty issue, issueHoldItems: ", issueHoldItems)
         setIssue(currentIssue => {
@@ -101,15 +102,23 @@ const Issue = ({ proprietor }) => {
         let isMounted = true;
         console.log("get items")
         resetIssue();
+        setLoading(true)
         getIssueItemsData(issueHoldItems, proprietor.proprietor_id).then((itemsData) => {
             if (isMounted) {
                 setItems(itemsData)
+                setLoading(false)
             }
         })
         return () => {
             isMounted = false;
         }
     }, [proprietor, issueHoldItems])
+
+    useEffect(() => {
+        setEmptyIssue();
+        setItemIndex("");
+        setMaxQuantity("");
+    }, [manager])
 
 
     useEffect(() => {
@@ -176,22 +185,25 @@ const Issue = ({ proprietor }) => {
         <div>
             <FormGroup style={{ width: "600px", padding: "20px" }}>
                 <div style={{ display: 'flex' }}>
-                    <Box style={{ marginRight: "20px" }}>
-
-                        <InputLabel>Item</InputLabel>
-                        <Select style={{ width: "400px" }} value={itemIndex} onChange={handleItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                            {items.map((item) => (
-                                !issueHoldItems ?
-                                    <MenuItem value={item.index}>{item.design_number}-{item.description}</MenuItem>
-                                    : <MenuItem value={item.index}>
-                                        <React.Fragment>
-                                            {item.item?.design_number}-{item.item?.description}
-                                            {open ? `, Quantity Available: ${item.quantity}, Old Price: ${item.price}, Old Underprocessing Value: ${item.underprocessing_value}, Partial Payment: ${item.partial_payment}${item.holding_remarks !== "" ? ", Holding Remarks: " + item.holding_remarks : ""}` : ""}
-                                        </React.Fragment>
-                                        {open && item.is_adhoc ? <Chip label="Adhoc" style={{ backgroundColor: 'yellow', marginLeft: '5px' }} /> : null}
-                                    </MenuItem>
-                            ))}
-                        </Select>
+                    <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
+                        {loading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :
+                            <>
+                                <InputLabel>Item</InputLabel>
+                                <Select style={{ width: "100%" }} value={itemIndex} onChange={handleItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
+                                    {items.map((item) => (
+                                        !issueHoldItems ?
+                                            <MenuItem value={item.index}>{item.design_number}-{item.description}</MenuItem>
+                                            : <MenuItem value={item.index}>
+                                                <React.Fragment>
+                                                    {item.item?.design_number}-{item.item?.description}
+                                                    {open ? `, Quantity Available: ${item.quantity}, Old Price: ${item.price}, Old Underprocessing Value: ${item.underprocessing_value}, Partial Payment: ${item.partial_payment}${item.holding_remarks !== "" ? ", Holding Remarks: " + item.holding_remarks : ""}` : ""}
+                                                </React.Fragment>
+                                                {open && item.is_adhoc ? <Chip label="Adhoc" style={{ backgroundColor: 'yellow', marginLeft: '5px' }} /> : null}
+                                            </MenuItem>
+                                    ))}
+                                </Select>
+                            </>
+                        }
                     </Box>
                     <FormControlLabel control={<Checkbox checked={issueHoldItems} onChange={(e) => { setIssueHoldItems(e.target.checked) }} />} label="Issue Hold Items" />
                 </div>
@@ -213,12 +225,15 @@ const Issue = ({ proprietor }) => {
                                 <Input type="number" value={issue.underprocessing_value}
                                     inputProps={{ min: 0 }}
                                     onChange={(e) => { setIssue({ ...issue, underprocessing_value: e.target.value }); console.log(issue); }}
-                                    onWheel={(e) => { e.target.blur() }} />
+                                    onWheel={(e) => { e.target.blur() }}
+                                    disabled={issue.design_number === ""} />
                             </FormControl>
 
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel>Remarks</InputLabel>
-                                <Input value={issue.remarks} onChange={(e) => { setIssue({ ...issue, remarks: e.target.value }); console.log(issue); }} />
+                                <Input value={issue.remarks}
+                                    onChange={(e) => { setIssue({ ...issue, remarks: e.target.value }); console.log(issue); }}
+                                    disabled={issue.design_number === ""} />
                             </FormControl>
                         </>
                         :
@@ -242,7 +257,8 @@ const Issue = ({ proprietor }) => {
                                 <Input type="number" value={issue.new_price || ""}
                                     inputProps={{ min: 0 }}
                                     onChange={(e) => { setIssue({ ...issue, new_price: e.target.value }); console.log(issue); }}
-                                    onWheel={(e) => { e.target.blur(); }} />
+                                    onWheel={(e) => { e.target.blur(); }}
+                                    disabled={issue.design_number === ""} />
                             </FormControl>
                             <Typography style={{ marginTop: "15px" }}>Quantity Available: {maxQuantity}</Typography>
                             <FormControl style={{ marginTop: "5px" }}>
@@ -250,18 +266,22 @@ const Issue = ({ proprietor }) => {
                                 <Input type="number" value={issue.quantity}
                                     inputProps={{ min: 0, max: maxQuantity }}
                                     onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }}
-                                    onWheel={(e) => { e.target.blur(); }} />
+                                    onWheel={(e) => { e.target.blur(); }}
+                                    disabled={issue.design_number === ""} />
                             </FormControl>
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel>New Underprocessing Value</InputLabel>
                                 <Input type="number" value={issue.new_underprocessing_value || ""}
                                     inputProps={{ min: 0 }}
+                                    disabled={issue.design_number === ""}
                                     onChange={(e) => { setIssue({ ...issue, new_underprocessing_value: e.target.value }); console.log(issue); }}
                                     onWheel={(e) => { e.target.blur() }} />
                             </FormControl>
                             <FormControl style={{ marginTop: "15px" }}>
                                 <InputLabel shrink={!!issue.new_remarks_from_proprietor}>New Remarks</InputLabel>
-                                <Input value={issue.new_remarks_from_proprietor} onChange={(e) => { setIssue({ ...issue, new_remarks_from_proprietor: e.target.value }); console.log(issue); }} />
+                                <Input value={issue.new_remarks_from_proprietor}
+                                    onChange={(e) => { setIssue({ ...issue, new_remarks_from_proprietor: e.target.value }); console.log(issue); }}
+                                    disabled={issue.design_number === ""} />
                             </FormControl>
                         </>}
                     <CustomButton buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px", marginTop: "10px" } }}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FormControl, FormGroup, Input, InputLabel, Paper, Table, TableCell, TableRow, TableHead, Box, Typography } from '@mui/material'
+import { FormControl, FormGroup, Input, InputLabel, Paper, Table, TableCell, TableRow, TableHead, Box, Typography, CircularProgress } from '@mui/material'
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
@@ -13,17 +13,27 @@ const Payment = () => {
     const { worker } = useWorker()
 
     const today = new Date()
-    const [payment, setPayment] = useState({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
+    const emptyPayment = {
+        amount: "",
+        remarks: "",
+        date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear()
+    }
+    const [payment, setPayment] = useState(emptyPayment)
     const [payments, setPayments] = useState([])
     const [dueAmount, setDueAmount] = useState(0)
+    const [loading, setLoading] = useState(false)
 
     const getPaymentsData = async () => {
         try {
+            setLoading(true)
             const res = await getPayments(worker.worker_id)
             return res.data
         }
         catch (err) {
             console.log(err)
+        }
+        finally {
+            setLoading(false)
         }
     }
 
@@ -33,6 +43,7 @@ const Payment = () => {
 
         console.log("get payments")
         console.log(worker)
+        setPayment(emptyPayment)
         getPaymentsData().then((paymentsData) => {
             if (isMounted && paymentsData) {
                 setPayments(paymentsData.payment_history)
@@ -47,7 +58,7 @@ const Payment = () => {
     const onSubmit = async () => {
         const res = await recordPayment(payment, worker.worker_id)
         console.log(res)
-        setPayment({ amount: "", remarks: "", date: (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear() })
+        setPayment(emptyPayment)
         const paymentsData = await getPaymentsData()
         setPayments(paymentsData.payment_history)
         setDueAmount(paymentsData.due_amount)
@@ -84,30 +95,36 @@ const Payment = () => {
                     </FormGroup>
                 </Box>
                 <Box style={{ width: "600px", padding: "20px" }}>
-                    <Typography>Due Amount: {dueAmount}</Typography>
-                    <Typography>Payment History:</Typography>
-                    <Table container={Paper}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Amount</TableCell>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Remarks</TableCell>
-                            </TableRow>
-                        </TableHead>
+                    {loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
+                        <>
+                            <Typography>Due Amount: {dueAmount}</Typography>
+                            <Typography>Payment History:</Typography>
+                            <Box>
+                                <Table container={Paper}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Amount</TableCell>
+                                            <TableCell>Date</TableCell>
+                                            <TableCell>Remarks</TableCell>
+                                        </TableRow>
+                                    </TableHead>
 
-                        {payments.map((p) => {
+                                    {payments.map((p) => {
 
-                            const d = new Date(p.date);
+                                        const d = new Date(p.date);
 
-                            return (
-                                <TableRow>
-                                    <TableCell>{p.amount}</TableCell>
-                                    <TableCell>{d.getDate() < 10 ? ("0" + d.getDate()) : d.getDate()}/{d.getMonth() < 9 ? ("0" + (d.getMonth() + 1)) : (d.getMonth() + 1)}/{d.getFullYear()}</TableCell>
-                                    <TableCell>{p.remarks}</TableCell>
-                                </TableRow>);
-                        })}
+                                        return (
+                                            <TableRow>
+                                                <TableCell>{p.amount}</TableCell>
+                                                <TableCell>{d.getDate() < 10 ? ("0" + d.getDate()) : d.getDate()}/{d.getMonth() < 9 ? ("0" + (d.getMonth() + 1)) : (d.getMonth() + 1)}/{d.getFullYear()}</TableCell>
+                                                <TableCell>{p.remarks}</TableCell>
+                                            </TableRow>);
+                                    })}
 
-                    </Table>
+                                </Table>
+                            </Box>
+                        </>
+                    }
                 </Box>
             </Box>
         </div>

@@ -9,7 +9,7 @@ import Accept from './accept/Accept'
 import Worker from './Worker'
 import Payment from './Payment'
 import AddManager from './AddManager'
-import { MenuItem, Select, Typography, Box } from '@mui/material'
+import { MenuItem, Select, Typography, Box, CircularProgress } from '@mui/material'
 import { getManagers } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 
@@ -31,10 +31,17 @@ const Manager = ({ proprietor }) => {
     // var managers = [];
     const [managers, setManagers] = useState([])
     const { manager, setManager } = useManager()
+    const [loading, setLoading] = useState(false)
 
     const setManagersList = () => {
+        setLoading(true)
         getManagersData(proprietor.proprietor_id).then((managersData) => {
             setManagers(managersData)
+            const i = managersData.findIndex((mgr) => mgr?.manager_id === manager?.manager_id)
+            console.log("manager: ", manager)
+            console.log("index: ", i)
+            setManager((i !== -1) ? managersData[i] : managersData[0])
+            setLoading(false)
         });
     }
 
@@ -43,12 +50,9 @@ const Manager = ({ proprietor }) => {
         setManagersList();
     }, [])
 
-    useEffect(() => {
-        const i = managers.findIndex((mgr) => mgr?.manager_id === manager?.manager_id)
-        console.log("manager: ", manager)
-        console.log("index: ", i)
-        setManager((i !== -1) ? managers[i] : managers[0])
-    }, [managers])
+    // useEffect(() => {
+
+    // }, [managers])
 
     const [isAddManager, setIsAddManager] = useState(false)
 
@@ -61,21 +65,25 @@ const Manager = ({ proprietor }) => {
 
             <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
                 <Box style={{ display: isAddManager ? "none" : "block" }}>
-                    <Typography>Select Manager</Typography>
-                    <Select value={manager} onChange={(e) => { setManager(e.target.value); console.log(manager) }}>
-                        {managers.map((mgr) => (
-                            <MenuItem value={mgr}>{mgr.name}</MenuItem>
+                    {loading ? <CircularProgress /> : (
+                        <>
+                            <Typography>Select Manager</Typography>
+                            <Select value={manager} onChange={(e) => { setManager(e.target.value); console.log(manager) }}>
+                                {managers.map((mgr) => (
+                                    <MenuItem value={mgr}>{mgr.name}</MenuItem>
 
-                        ))}
-                    </Select>
+                                ))}
+                            </Select>
+                        </>
+                    )}
                 </Box>
                 <Routes>
                     <Route path="/" element={<Navigate to={`${match.pathnameBase}/viewmanager`} />} />
-                    <Route path={`/viewmanager`} element={<ViewManager />} />
-                    <Route path={`/issue`} element={<Issue proprietor={proprietor} />} />
-                    <Route path={`/accept`} element={<Accept />} />
-                    <Route path={`/worker`} element={<Worker proprietor={proprietor} />} />
-                    <Route path={`/payment`} element={<Payment />} />
+                    <Route path={`/viewmanager`} element={manager && manager.manager_id ? <ViewManager /> : null} />
+                    <Route path={`/issue`} element={manager && manager.manager_id ? <Issue proprietor={proprietor} /> : null} />
+                    <Route path={`/accept`} element={manager && manager.manager_id ? <Accept /> : null} />
+                    <Route path={`/worker`} element={manager && manager.manager_id ? <Worker proprietor={proprietor} /> : null} />
+                    <Route path={`/payment`} element={manager && manager.manager_id ? <Payment /> : null} />
                     <Route path={`/addmanager`} element={<AddManager proprietor={proprietor} setManagersList={setManagersList} />} />
                 </Routes>
             </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Typography } from '@mui/material'
+import { Typography, CircularProgress } from '@mui/material'
 
 import ViewTable from '../../layouts/ViewTable'
 import { getOnHoldItems } from '../../../api'
@@ -20,19 +20,23 @@ const getOnHoldItemsData = async (proprietor_id) => {
 const OnHoldItems = ({ proprietor }) => {
 
     const [data, setData] = useState([])
+    const [loading, setLoading] = useState(false)
 
     useEffect(() => {
         console.log(proprietor)
 
+        setLoading(true)
         getOnHoldItemsData(proprietor.proprietor_id).then((onHoldItemsData) => {
+            setLoading(false)
             setData(onHoldItemsData)
         });
 
     }, [proprietor])
 
     return (
-        <div>
-            {(data && data.length > 0) ? <ViewTable data={data} keys={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>}
+        <div>{loading ? <CircularProgress style={{ margin: "150px" }} /> : (
+            (data && data.length > 0) ? <ViewTable data={data} keys={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>
+        )}
         </div>
     )
 }

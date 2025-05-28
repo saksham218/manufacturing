@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Table, TableHead, TableRow, TableCell, Paper, Button, FormControl, Input, TableBody, Typography } from '@mui/material'
+import { Typography, CircularProgress } from '@mui/material'
 
 import { useEffect } from 'react'
 import { getSubmissions } from '../../../../api'
@@ -25,6 +25,7 @@ const Accept = () => {
     const { manager } = useManager()
     const [submissions, setSubmissions] = useState([])
     const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(-1)
+    const [loading, setLoading] = useState(false)
 
 
     const setSubmissionsData = (submissionsData) => {
@@ -39,20 +40,23 @@ const Accept = () => {
 
         if (!manager) return;
 
+        setLoading(true)
         getSubmissionsData(manager.manager_id).then((submissionsData) => {
 
             if (submissionsData && isMounted) {
                 setSubmissionsData(submissionsData)
+                setLoading(false)
             }
         });
 
         return () => { isMounted = false }
     }, [manager])
 
-    const reloadSubmissionsData = () => {
-        getSubmissionsData(manager.manager_id).then((submissionsData) => {
-            setSubmissionsData(submissionsData)
-        });
+    const reloadSubmissionsData = async () => {
+        // setLoading(true)
+        const submissionsData = await getSubmissionsData(manager.manager_id)
+        setSubmissionsData(submissionsData)
+        // setLoading(false)
     }
 
     const acceptFormComponent = {
@@ -65,10 +69,12 @@ const Accept = () => {
     }
 
     return (
-        (submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
-            <ViewNestedTable data={submissions} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
-            :
-            <Typography>No Data for Submissions</Typography>
+        loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
+            ((submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
+                <ViewNestedTable data={submissions} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
+                :
+                <Typography>No Data for Submissions</Typography>
+            )
     )
 }
 

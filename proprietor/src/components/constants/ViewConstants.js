@@ -55,6 +55,10 @@ export const managerDetailsViewConfig = {
         "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "put_on_hold_by", "holding_remarks", "info"]
     },
 
+    "items": {
+        "is_dated": false,
+        "keys": ["design_number", "description", "price", "underprocessing_value", "created_on"]
+    }
 }
 
 export const workerDetailsViewConfig = {
@@ -93,7 +97,7 @@ export const workerDetailsViewConfig = {
     "held_by_manager": {
         "is_dated": false,
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "remarks_from_manager", "info"]
-    },
+    }
 }
 
 export const proprietorDetailsViewConfig = {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box } from '@mui/material'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box, CircularProgress } from '@mui/material'
 
 import { getItemsForSubmit, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
@@ -61,6 +61,10 @@ const Submit = ({ manager }) => {
 
     const [open, setOpen] = useState(false)
 
+    const [itemsLoading, setItemsLoading] = useState(false)
+    const [priceLoading, setPriceLoading] = useState(false)
+
+
     useEffect(() => {
 
         let isMounted = true;
@@ -74,10 +78,12 @@ const Submit = ({ manager }) => {
             setMaxDeduction(0)
             setCurrentWorkerPrice("")
             setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
+            setItemsLoading(true)
             getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc).then((itemsData) => {
 
                 if (isMounted) {
                     setItems(itemsData)
+                    setItemsLoading(false)
                 }
 
             });
@@ -109,11 +115,13 @@ const Submit = ({ manager }) => {
                     hold_info: {}
                 })
                 setMaxQuantity(Infinity)
+                setPriceLoading(true)
 
                 getPrices(worker.worker_id, items[itemIndex].design_number).then((pricesData) => {
                     console.log(pricesData)
 
                     if (isMounted) {
+                        setPriceLoading(false)
                         setCurrentWorkerPrice(pricesData.price)
                     }
 
@@ -193,17 +201,21 @@ const Submit = ({ manager }) => {
             <FormGroup style={{ width: "500px", padding: "20px" }}>
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <div style={{ display: 'flex' }}>
-                    <Box style={{ marginRight: "20px" }}>
-                        <InputLabel>Item</InputLabel>
-                        <Select style={{ width: "400px" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                            {items?.map((item) => (
-                                isAdhoc ?
-                                    <MenuItem value={item.index} > {item.design_number} - {item.description}</MenuItem>
-                                    :
-                                    <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Price: ${item.price}, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
+                    <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
+                        {itemsLoading ? <CircularProgress style={{ marginLeft: "170px", marginTop: "25px" }} /> :
+                            <>
+                                <InputLabel>Item</InputLabel>
+                                <Select style={{ width: "100%" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
+                                    {items?.map((item) => (
+                                        isAdhoc ?
+                                            <MenuItem value={item.index} > {item.design_number} - {item.description}</MenuItem>
+                                            :
+                                            <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Price: ${item.price}, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
 
-                            ))}
-                        </Select>
+                                    ))}
+                                </Select>
+                            </>
+                        }
                     </Box>
 
                     <FormControlLabel control={<Checkbox checked={isAdhoc} onChange={(e) => { setIsAdhoc(e.target.checked) }} />} label="Submit Adhoc" />
@@ -226,7 +238,14 @@ const Submit = ({ manager }) => {
                     }
                     </Select> */}
                     {/* </FormControl> */}
-                    {isAdhoc && <Typography>Current Price: {currentWorkerPrice}</Typography>}
+                    <Box>
+                        {isAdhoc && (
+                            (priceLoading && itemIndex !== "") ? <CircularProgress size={20} /> :
+                                <>
+                                    <Typography>Current Price: {currentWorkerPrice}</Typography>
+                                </>
+                        )}
+                    </Box>
                     {isAdhoc ?
                         <FormControl style={{ marginTop: "10px" }}>
                             <InputLabel>Price</InputLabel>

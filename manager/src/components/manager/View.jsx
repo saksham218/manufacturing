@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Select, MenuItem, Typography, Box } from '@mui/material'
+import { Select, MenuItem, Typography, Box, CircularProgress } from '@mui/material'
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
@@ -39,6 +39,8 @@ const View = ({ manager }) => {
 
     const [viewConfig, setViewConfig] = useState({})
 
+    const [loading, setLoading] = useState(false)
+
 
     const setDisplayData = (r, d, mD) => {
         const viewConfigData = managerDetailsViewConfig[d]
@@ -48,13 +50,13 @@ const View = ({ manager }) => {
         if (displayData && viewConfigData.is_dated) {
             const start = dayjs(r.start, 'DD/MM/YYYY')
             const end = dayjs(r.end, 'DD/MM/YYYY')
-            console.log("start: ", start)
-            console.log("end:", end)
+            // console.log("start: ", start)
+            // console.log("end:", end)
             displayData = displayData.filter((dt) => {
                 const dateObj = new Date(dt.date)
                 const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
                 const date = dayjs(dateString, 'DD/MM/YYYY');
-                console.log("date: ", date)
+                // console.log("date: ", date)
                 return (!date.isBefore(start) && !date.isAfter(end));
             });
         }
@@ -79,7 +81,9 @@ const View = ({ manager }) => {
     useEffect(() => {
         console.log("get manager")
         console.log(manager)
+        setLoading(true)
         getManagerData(manager.manager_id).then((managerData) => {
+            setLoading(false)
             setManagerDetails(managerData)
         });
 
@@ -94,38 +98,39 @@ const View = ({ manager }) => {
 
 
     return (
-        <div style={{ padding: "10px" }}>
-            <Box style={{ display: 'flex' }}>
-                <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
-                    {details.map((d) => (
-                        <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
-                    ))}
-                </Select>
-                <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails.due_amount}</Typography>
-            </Box>
-            <Box style={{ padding: "10px" }}>
+        loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "50px" }} /> :
+            (<div style={{ padding: "10px" }}>
+                <Box style={{ display: 'flex' }}>
+                    <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
+                        {details.map((d) => (
+                            <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
+                        ))}
+                    </Select>
+                    <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails.due_amount}</Typography>
+                </Box>
+                <Box style={{ padding: "10px" }}>
 
-                {viewConfig.is_dated ?
-                    <Box style={{ display: "flex" }}>
-                        <Box >
-                            <Typography>From:</Typography>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DatePicker format='DD/MM/YYYY' value={dayjs(range.start, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, start: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                            </LocalizationProvider>
-                        </Box>
-                        <Box style={{ paddingLeft: "10px" }}>
-                            <Typography>To:</Typography>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DatePicker format='DD/MM/YYYY' value={dayjs(range.end, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, end: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                            </LocalizationProvider>
-                        </Box>
-                    </Box> : null}
-                <Typography>Total: {total}</Typography>
+                    {viewConfig.is_dated ?
+                        <Box style={{ display: "flex" }}>
+                            <Box >
+                                <Typography>From:</Typography>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.start, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, start: d.format('DD/MM/YYYY') }); console.log(range); }} />
+                                </LocalizationProvider>
+                            </Box>
+                            <Box style={{ paddingLeft: "10px" }}>
+                                <Typography>To:</Typography>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.end, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, end: d.format('DD/MM/YYYY') }); console.log(range); }} />
+                                </LocalizationProvider>
+                            </Box>
+                        </Box> : null}
+                    <Typography>Total: {total}</Typography>
 
-                {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} keys={viewConfig.keys} /> : <ViewTable data={data} keys={viewConfig.keys} />)
-                    : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
-            </Box>
-        </div>
+                    {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} keys={viewConfig.keys} /> : <ViewTable data={data} keys={viewConfig.keys} />)
+                        : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
+                </Box>
+            </div>)
     )
 }
 
