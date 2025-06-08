@@ -223,7 +223,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
     console.log("proprietor: ", req.proprietor);
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
-    const { design_number, quantity, new_price, new_underprocessing_value, new_remarks_from_proprietor, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker_id, manager_id, hold_info } = req.body;
+    const { design_number, quantity, new_price, new_underprocessing_value, new_remarks_from_proprietor, price, partial_payment, underprocessing_value, remarks_from_proprietor, deduction_from_manager, remarks_from_manager, hold_date, put_on_hold_by, holding_remarks, is_adhoc, worker_id, manager_id, hold_info } = req.body;
     try {
 
         const newManager = await Manager.findOne({ manager_id: new_manager_id }, { id: 0, password: 0 }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
@@ -271,7 +271,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
 
         const current_date = new Date();
 
-        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, hold_info)));
+        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && isSameDay(oh.hold_date, hold_date) && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, hold_info)));
         if (oHIndex === -1) {
             return res.status(404).json({ message: `${quantity} of ${design_number} not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}` });
         }
@@ -285,7 +285,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
             deduction_from_manager: Number(deduction_from_manager),
             remarks_from_manager: remarks_from_manager,
             is_adhoc: is_adhoc,
-            hold_date: current_date,
+            hold_date: hold_date,
             holding_remarks: holding_remarks,
             put_on_hold_by: put_on_hold_by,
             manager: manager._id,
