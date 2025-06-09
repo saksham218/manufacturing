@@ -86,6 +86,10 @@ export const workerPopulatePaths = {
     on_hold_history: {}
 }
 
+export const proprietorPopulatePaths = {
+    on_hold: {}
+}
+
 export const prepare = async (paths, obj, pOrdp) => {
 
     for (const path in paths) {
@@ -124,6 +128,7 @@ export const populateHoldInfo = async (hold_info) => {
         // console.log("populating: ", key)
 
         hold_info[key] = await mongoCache.get(key, hold_info[key].toString());
+        console.log("populated " + key + ": ", hold_info[key])
     }
 
     if ('prev_hold_info' in hold_info) {

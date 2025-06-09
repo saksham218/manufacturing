@@ -2,9 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import Proprietor from "../models/proprietor.js";
-import Manager from "../models/manager.js";
-import Worker from "../models/worker.js";
-import Item from "../models/item.js";
+import { prepare, proprietorPopulatePaths } from "../utils/utils.js";
 
 export const newProprietor = async (req, res) => {
 
@@ -79,13 +77,15 @@ export const getOnHoldItems = async (req, res) => {
                 { path: 'on_hold.item', model: 'Item', select: 'design_number description' },
                 { path: 'on_hold.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'on_hold.manager', model: 'Manager', select: 'name manager_id' }
-            ]);
+            ]).lean();
 
         // console.log(proprietor);
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
 
-        const onHoldItems = proprietor.on_hold;
+        const preparedProprietor = await prepare(proprietorPopulatePaths, proprietor, true);
+        const onHoldItems = preparedProprietor.on_hold;
+
 
         res.status(200).json(onHoldItems);
 
