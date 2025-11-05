@@ -15,6 +15,7 @@ const Hold_Info = new mongoose.Schema({
         enum: ['manager', 'proprietor']
     },
     holding_remarks: String,
+    submit_to_proprietor_date: Date,
     worker: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Worker'

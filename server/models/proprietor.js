@@ -51,6 +51,7 @@ const proprietorSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Manager'
             },
+            submit_to_proprietor_date: Date,
             hold_info: Hold_Info
         }],
         default: []

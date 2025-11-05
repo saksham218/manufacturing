@@ -111,6 +111,7 @@ const workerSchema = new mongoose.Schema({
             },
             quantity: Number,
             price: Number,
+            penality: Number,
             deduction_from_manager: Number,
             remarks_from_manager: String,
             underprocessing_value: Number,
@@ -121,6 +122,7 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
+            submit_to_proprietor_date: Date,
             hold_info: Hold_Info
         }],
         default: []
