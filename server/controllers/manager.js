@@ -537,7 +537,7 @@ export const acceptFromManager = async (req, res) => {
     console.log(`accept from manager manager_id: ${manager_id}`);
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
-    const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, final_remarks, is_adhoc, to_hold, hold_info } = req.body;
+    const { action, worker_id, design_number, price, partial_payment, deduction_from_manager, remarks_from_manager, underprocessing_value, remarks_from_proprietor, quantity, deduction, penalty, final_remarks, is_adhoc, to_hold, hold_info } = req.body;
 
     try {
         if (!(["hold", "forfeit", "accept"].includes(action))) {
@@ -557,7 +557,7 @@ export const acceptFromManager = async (req, res) => {
         const worker = await Worker.findOne({ worker_id: worker_id, manager: manager._id });
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" });
 
-        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
+        const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor._id });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
@@ -648,18 +648,18 @@ export const acceptFromManager = async (req, res) => {
                 fhIndex = manager.forfeited_history.length - 1;
             }
 
-            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
+            manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), penalty: Number(penalty), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            worker.forfeited_history.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, deduction_from_manager: deduction_from_manager, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
+            worker.forfeited_history.push({ item: item._id, price: Number(price), quantity: Number(quantity), penalty: Number(penalty), underprocessing_value: Number(underprocessing_value), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: current_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
             if (to_hold) {
-                worker.due_amount -= (Number(quantity) * Number(underprocessing_value));
+                worker.due_amount -= (Number(quantity) * Number(penalty));
             }
             else {
-                worker.due_amount -= (Number(quantity) * (Number(underprocessing_value) + (Number(price) - Number(deduction_from_manager))));
+                worker.due_amount -= (Number(quantity) * (Number(penalty) + (Number(price) - Number(deduction_from_manager))));
             }
 
-            manager.due_amount -= (Number(underprocessing_value) * Number(quantity));
+            manager.due_amount -= (Number(penalty) * Number(quantity));
 
         }
         else if (action === "hold") {

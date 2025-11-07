@@ -46,7 +46,7 @@ export const managerDetailsViewConfig = {
         "is_dated": true,
         "is_grouped": true,
         "grouping_keys": ["worker", "forfeiture_date"],
-        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "info"]
+        "keys": ["item", "quantity", "price", "penalty", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "info"]
     },
     "on_hold_history": {
         "is_dated": true,
@@ -80,7 +80,7 @@ export const workerDetailsViewConfig = {
     },
     "forfeited_history": {
         "is_dated": true,
-        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "forfeiture_date", "info"]
+        "keys": ["item", "quantity", "price", "penalty", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "forfeiture_date", "info"]
     },
     "on_hold_history": {
         "is_dated": true,

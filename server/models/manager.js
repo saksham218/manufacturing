@@ -190,7 +190,7 @@ const managerSchema = new mongoose.Schema({
                 },
                 quantity: Number,
                 price: Number,
-                penality: Number,
+                penalty: Number,
                 deduction_from_manager: Number,
                 remarks_from_manager: String,
                 underprocessing_value: Number,

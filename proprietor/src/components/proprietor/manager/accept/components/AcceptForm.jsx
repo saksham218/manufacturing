@@ -26,6 +26,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
     const [finalRemarks, setFinalRemarks] = useState("")
     const [partialPayment, setPartialPayment] = useState("")
     const [actionIndex, setActionIndex] = useState(0)
+    const [penalty, setPenalty] = useState("")
 
     const onSubmit = async () => {
 
@@ -41,6 +42,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
             underprocessing_value: item.underprocessing_value,
             remarks_from_proprietor: item.remarks_from_proprietor,
             deduction: deduction,
+            penalty: penalty,
             final_remarks: finalRemarks,
             is_adhoc: item.is_adhoc,
             to_hold: item.to_hold,
@@ -52,6 +54,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
         console.log(res.data)
         setQuantity("")
         setDeduction("")
+        setPenalty("")
         setFinalRemarks("")
         setPartialPayment("")
         setActionIndex(0)
@@ -62,6 +65,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
     useEffect(() => {
         setQuantity("")
         setDeduction("")
+        setPenalty("")
         setFinalRemarks("")
         setPartialPayment("")
     }, [actionIndex])
@@ -106,6 +110,17 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                             <InputLabel>Partial Payment</InputLabel>
                             <Input type="number" inputProps={{ min: 0, max: (Number(item.price) - Number(item.deduction_from_manager)) }} style={{ marginTop: "10px", width: "150px" }} value={partialPayment}
                                 onChange={(e) => { setPartialPayment(e.target.value) }}
+                                onWheel={(e) => { e.target.blur(); }}
+                            />
+                        </FormControl> : null
+                }
+
+                {
+                    actions[actionIndex].name === "forfeit" ?
+                        <FormControl style={{ marginTop: "10px" }}>
+                            <InputLabel>Penalty</InputLabel>
+                            <Input type="number" inputProps={{ min: 0 }} style={{ marginTop: "10px", width: "150px" }} value={penalty}
+                                onChange={(e) => { setPenalty(e.target.value) }}
                                 onWheel={(e) => { e.target.blur(); }}
                             />
                         </FormControl> : null

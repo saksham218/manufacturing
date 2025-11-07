@@ -19,9 +19,9 @@ export const isSameDay = (d1, d2) => {
 
 
 export const isSameHoldInfo = (hold_info1, hold_info2) => {
-    console.log("(from array) hold_info1: ", hold_info1);
-    console.log("hold_info2: ", hold_info2);
-    console.log("hi");
+    // console.log("(from array) hold_info1: ", hold_info1);
+    // console.log("hold_info2: ", hold_info2);
+    // console.log("hi");
 
     if (!hold_info1 && !hold_info2) return true;
     if ((hold_info1 && hold_info1.is_hold === false && !hold_info2) || (hold_info2 && hold_info2.is_hold === false && !hold_info1)) return true;
