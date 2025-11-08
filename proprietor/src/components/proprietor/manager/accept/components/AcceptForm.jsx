@@ -65,9 +65,15 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
     useEffect(() => {
         setQuantity("")
         setDeduction("")
-        setPenalty("")
         setFinalRemarks("")
         setPartialPayment("")
+
+        if (actions[actionIndex].name === "forfeit") {
+            setPenalty(`${item.underprocessing_value}`)
+        }
+        else {
+            setPenalty("")
+        }
     }, [actionIndex])
 
     return (
@@ -119,7 +125,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                     actions[actionIndex].name === "forfeit" ?
                         <FormControl style={{ marginTop: "10px" }}>
                             <InputLabel>Penalty</InputLabel>
-                            <Input type="number" inputProps={{ min: 0 }} style={{ marginTop: "10px", width: "150px" }} value={penalty}
+                            <Input type="number" inputProps={{ min: 0, max: (Number(item.underprocessing_value)) }} style={{ marginTop: "10px", width: "150px" }} value={penalty}
                                 onChange={(e) => { setPenalty(e.target.value) }}
                                 onWheel={(e) => { e.target.blur(); }}
                             />
@@ -137,8 +143,9 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                 <CustomButton
                     buttonProps={{ variant: "contained", color: "primary", style: { marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" } }}
                     isInputValid={Number(quantity) > 0 && Number(quantity) <= Number(item.quantity) &&
-                        Number(deduction) <= (Number(item.price) - Number(item.deduction_from_manager)) && Number(partialPayment) <= (Number(item.price) - Number(item.deduction_from_manager)) &&
-                        ((Number(deduction) === 0 && actions[actionIndex].name !== "hold" && actions[actionIndex].name !== "forfeit") || finalRemarks !== "")}
+                        Number(deduction) <= (Number(item.price) - Number(item.deduction_from_manager)) &&
+                        (actions[actionIndex].name === "forfeit" && Number(penalty) <= Number(item.underprocessing_value) && Number(penalty) > 0) &&
+                        ((Number(deduction) === 0 && actions[actionIndex].name === "accept") || finalRemarks !== "")}
                     onClick={onSubmit}
                     successMessage="Action successful"
                     errorMessage="Action failed"
