@@ -43,6 +43,7 @@ const managerSchema = new mongoose.Schema({
                 ref: 'Worker'
             },
             date: Date,
+            submit_to_proprietor_date: Date,
             items: [{
                 item: {
                     type: mongoose.Schema.Types.ObjectId,
@@ -56,7 +57,6 @@ const managerSchema = new mongoose.Schema({
                 remarks_from_manager: String,
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
-                submit_to_proprietor_date: Date,
                 is_adhoc: {
                     type: Boolean,
                     default: false
@@ -87,6 +87,7 @@ const managerSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
             },
+            submit_from_worker_date: Date,
             items: [{
                 item: {
                     type: mongoose.Schema.Types.ObjectId,
@@ -98,7 +99,6 @@ const managerSchema = new mongoose.Schema({
                 remarks_from_manager: String,
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
-                submit_from_worker_date: Date,
                 is_adhoc: {
                     type: Boolean,
                     default: false
@@ -118,6 +118,7 @@ const managerSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
             },
+            submit_to_proprietor_date: Date,
             items: [{
                 item: {
                     type: mongoose.Schema.Types.ObjectId,
@@ -129,7 +130,6 @@ const managerSchema = new mongoose.Schema({
                 remarks_from_manager: String,
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
-                submit_to_proprietor_date: Date,
                 is_adhoc: {
                     type: Boolean,
                     default: false
@@ -196,7 +196,6 @@ const managerSchema = new mongoose.Schema({
                 underprocessing_value: Number,
                 remarks_from_proprietor: String,
                 final_remarks_from_proprietor: String,
-                submit_to_proprietor_date: Date,
                 is_adhoc: {
                     type: Boolean,
                     default: false
@@ -207,7 +206,8 @@ const managerSchema = new mongoose.Schema({
             worker: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
-            }
+            },
+            submit_to_proprietor_date: Date,
         }],
         default: []
     },
@@ -225,7 +225,6 @@ const managerSchema = new mongoose.Schema({
                 remarks_from_proprietor: String,
                 deduction_from_manager: Number,
                 remarks_from_manager: String,
-                submit_to_proprietor_date: Date,
                 is_adhoc: {
                     type: Boolean,
                     default: false
@@ -241,8 +240,8 @@ const managerSchema = new mongoose.Schema({
             worker: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
-            }
-
+            },
+            submit_to_proprietor_date: Date,
         }],
         default: []
     }
