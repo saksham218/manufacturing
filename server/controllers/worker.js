@@ -1,7 +1,7 @@
 import Worker from '../models/worker.js'
 import Manager from '../models/manager.js'
 import Item from '../models/item.js'
-import { depopulateHoldInfo, isSameHoldInfo, prepare, workerPopulatePaths } from '../utils/utils.js';
+import { depopulateHoldInfo, isSameDay, isSameHoldInfo, prepare, workerPopulatePaths } from '../utils/utils.js';
 
 
 export const addWorker = async (req, res) => {
@@ -291,22 +291,24 @@ export const submitFromWorker = async (req, res) => {
         if (to_hold && !remarks)
             return res.status(400).json({ message: "Remarks required for hold" });
 
-        let workerIndex = manager.due_backward.findIndex((db) => (db.worker.equals(worker._id)))
-        if (workerIndex === -1) {
-            manager.due_backward.push({ worker: worker._id, items: [] });
-            workerIndex = manager.due_backward.length - 1;
+        const dateObj = new Date();
+
+        let dbIndex = manager.due_backward.findIndex((db) => (db.worker.equals(worker._id) && isSameDay(db.submit_from_worker_date, dateObj)))
+        if (dbIndex === -1) {
+            manager.due_backward.push({ worker: worker._id, submit_from_worker_date: dateObj, items: [] });
+            dbIndex = manager.due_backward.length - 1;
         }
 
         // if (Number(deduction) !== 0 || remarks !== "") {
         //     manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, to_hold: to_hold });
         // }
         // else {
-        const index = manager.due_backward[workerIndex].items.findIndex((db) => (db.item.equals(item._id) && db.remarks_from_manager === remarks && db.remarks_from_proprietor === remarks_from_proprietor && Number(db.price) === Number(price) && Number(db.deduction_from_manager) === Number(deduction) && Number(db.underprocessing_value) === Number(underprocessing_value) && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo)));
+        const index = manager.due_backward[dbIndex].items.findIndex((db) => (db.item.equals(item._id) && db.remarks_from_manager === remarks && db.remarks_from_proprietor === remarks_from_proprietor && Number(db.price) === Number(price) && Number(db.deduction_from_manager) === Number(deduction) && Number(db.underprocessing_value) === Number(underprocessing_value) && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo)));
         if (index === -1) {
-            manager.due_backward[workerIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, to_hold: to_hold, hold_info: preparedHoldInfo });
+            manager.due_backward[dbIndex].items.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, to_hold: to_hold, hold_info: preparedHoldInfo });
         }
         else {
-            manager.due_backward[workerIndex].items[index].quantity += Number(quantity);
+            manager.due_backward[dbIndex].items[index].quantity += Number(quantity);
         }
         // }
 
@@ -341,7 +343,6 @@ export const submitFromWorker = async (req, res) => {
         }
 
 
-        const dateObj = new Date();
         worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj, is_adhoc: is_adhoc ? true : false, hold_info: preparedHoldInfo });
 
 

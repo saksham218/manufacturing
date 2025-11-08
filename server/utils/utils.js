@@ -17,6 +17,27 @@ export const isSameDay = (d1, d2) => {
     return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
 }
 
+export const isDayLessThanOrEqualTo = (d1, d2) => {
+    console.log("isDayLessThanOrEqualTo - Original d1:", d1);
+    console.log("isDayLessThanOrEqualTo - Original d2:", d2);
+    if (!(d1 instanceof Date)) d1 = new Date(d1);
+    if (!(d2 instanceof Date)) d2 = new Date(d2);
+    console.log("isDayLessThanOrEqualTo - Converted d1:", d1);
+    console.log("isDayLessThanOrEqualTo - Converted d2:", d2);
+
+    return d1.getFullYear() < d2.getFullYear() || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() < d2.getMonth()) || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() <= d2.getDate());
+}
+
+export const isDayGreaterThanOrEqualTo = (d1, d2) => {
+    console.log("isDayGreaterThanOrEqualTo - Original d1:", d1);
+    console.log("isDayGreaterThanOrEqualTo - Original d2:", d2);
+    if (!(d1 instanceof Date)) d1 = new Date(d1);
+    if (!(d2 instanceof Date)) d2 = new Date(d2);
+    console.log("isDayGreaterThanOrEqualTo - Converted d1:", d1);
+    console.log("isDayGreaterThanOrEqualTo - Converted d2:", d2);
+
+    return d1.getFullYear() > d2.getFullYear() || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() > d2.getMonth()) || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() >= d2.getDate());
+}
 
 export const isSameHoldInfo = (hold_info1, hold_info2) => {
     // console.log("(from array) hold_info1: ", hold_info1);

@@ -122,7 +122,6 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            submit_to_proprietor_date: Date,
             hold_info: Hold_Info
         }],
         default: []
@@ -150,7 +149,6 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            submit_to_proprietor_date: Date,
             hold_info: Hold_Info
         }],
         default: []

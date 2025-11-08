@@ -7,7 +7,7 @@ export const managerDetailsViewConfig = {
     "accepted_history": {
         "is_dated": true,
         "is_grouped": true,
-        "grouping_keys": ["worker", "date"],
+        "grouping_keys": ["worker", "date", "submit_to_proprietor_date"],
         "keys": ["item", "quantity", "price", "deduction_from_proprietor", "final_remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]
     },
     "due_forward": {
@@ -18,13 +18,13 @@ export const managerDetailsViewConfig = {
     "due_backward": {
         "is_dated": false,
         "is_grouped": true,
-        "grouping_keys": ["worker"],
+        "grouping_keys": ["worker", "submit_from_worker_date"],
         "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]
     },
     "submissions": {
         "is_dated": false,
         "is_grouped": true,
-        "grouping_keys": ["worker"],
+        "grouping_keys": ["worker", "submit_to_proprietor_date"],
         "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]
     },
     "total_due": {
@@ -45,13 +45,13 @@ export const managerDetailsViewConfig = {
     "forfeited_history": {
         "is_dated": true,
         "is_grouped": true,
-        "grouping_keys": ["worker", "forfeiture_date"],
+        "grouping_keys": ["worker", "forfeiture_date", "submit_to_proprietor_date"],
         "keys": ["item", "quantity", "price", "penalty", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "info"]
     },
     "on_hold_history": {
         "is_dated": true,
         "is_grouped": true,
-        "grouping_keys": ["worker", "hold_date"],
+        "grouping_keys": ["worker", "hold_date", "submit_to_proprietor_date"],
         "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "put_on_hold_by", "holding_remarks", "info"]
     },
 
