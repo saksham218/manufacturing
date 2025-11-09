@@ -95,6 +95,7 @@ const workerSchema = new mongoose.Schema({
             deduction_from_proprietor: Number,
             final_remarks_from_proprietor: String,
             deduction_from_manager: Number,
+            submit_to_proprietor_date: Date,
             deduction_date: Date,
             remarks_from_manager: String,
             remarks_from_proprietor: String,
@@ -117,6 +118,7 @@ const workerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             remarks_from_proprietor: String,
             final_remarks_from_proprietor: String,
+            submit_to_proprietor_date: Date,
             forfeiture_date: Date,
             is_adhoc: {
                 type: Boolean,
@@ -139,6 +141,7 @@ const workerSchema = new mongoose.Schema({
             remarks_from_proprietor: String,
             deduction_from_manager: Number,
             remarks_from_manager: String,
+            submit_to_proprietor_date: Date,
             hold_date: Date,
             holding_remarks: String,
             put_on_hold_by: {
