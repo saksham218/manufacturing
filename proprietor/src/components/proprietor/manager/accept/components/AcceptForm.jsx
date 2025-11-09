@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { FormControl, FormGroup, Input, InputLabel, MenuItem, Select } from '@mui/material'
+import dayjs from 'dayjs'
 
 import { acceptFromManager } from '../../../../../api'
 import CustomButton from '../../../../layouts/CustomButton'
@@ -19,7 +20,7 @@ const actions = [
     }
 ]
 
-const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
+const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate }) => {
 
     const [quantity, setQuantity] = useState("")
     const [deduction, setDeduction] = useState("")
@@ -46,6 +47,8 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
             final_remarks: finalRemarks,
             is_adhoc: item.is_adhoc,
             to_hold: item.to_hold,
+            action_date: dayjs(actionDate, 'DD/MM/YYYY').format('YYYY-MM-DD'),
+            submit_to_proprietor_date: dayjs(group.submit_to_proprietor_date).format('YYYY-MM-DD'),
             hold_info: item.hold_info
         }
         console.log(accepted)
@@ -144,7 +147,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager }) => {
                     buttonProps={{ variant: "contained", color: "primary", style: { marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" } }}
                     isInputValid={Number(quantity) > 0 && Number(quantity) <= Number(item.quantity) &&
                         Number(deduction) <= (Number(item.price) - Number(item.deduction_from_manager)) &&
-                        (actions[actionIndex].name === "forfeit" && Number(penalty) <= Number(item.underprocessing_value) && Number(penalty) > 0) &&
+                        (actions[actionIndex].name !== "forfeit" || (Number(penalty) <= Number(item.underprocessing_value) && Number(penalty) > 0)) &&
                         ((Number(deduction) === 0 && actions[actionIndex].name === "accept") || finalRemarks !== "")}
                     onClick={onSubmit}
                     successMessage="Action successful"

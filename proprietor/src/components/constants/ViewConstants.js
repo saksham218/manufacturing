@@ -54,10 +54,9 @@ export const managerDetailsViewConfig = {
         "grouping_keys": ["worker", "hold_date", "submit_to_proprietor_date"],
         "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "put_on_hold_by", "holding_remarks", "info"]
     },
-
     "items": {
         "is_dated": false,
-        "keys": ["design_number", "description", "price", "underprocessing_value", "created_on"]
+        "keys": ["design_number", "description", "price", "underprocessing_value", "created_date"]
     }
 }
 
@@ -104,7 +103,7 @@ export const proprietorDetailsViewConfig = {
     "on_hold": {
         "is_dated": false,
         "is_grouped": false,
-        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
+        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "submit_to_proprietor_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
 
     }
 }
@@ -113,6 +112,6 @@ export const holdInfoViewConfig = {
     "hold_info": {
         "is_dated": false,
         "is_grouped": false,
-        "keys": ["price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
+        "keys": ["price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "submit_to_proprietor_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
     }
 }

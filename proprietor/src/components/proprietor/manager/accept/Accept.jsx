@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
-import { Typography, CircularProgress } from '@mui/material'
+import { Typography, CircularProgress, Box } from '@mui/material'
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs'
 
 import { useEffect } from 'react'
 import { getSubmissions } from '../../../../api'
@@ -26,13 +29,21 @@ const Accept = () => {
     const [submissions, setSubmissions] = useState([])
     const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(-1)
     const [loading, setLoading] = useState(false)
+    const [actionDate, setActionDate] = useState(dayjs().format('DD/MM/YYYY'))
+    const [data, setData] = useState([])
 
+    useEffect(() => {
 
-    const setSubmissionsData = (submissionsData) => {
-        setSubmissions(submissionsData)
-        const fNEI = submissionsData.findIndex((dt) => dt.items.length > 0)
+        const actionDateObj = dayjs(actionDate, 'DD/MM/YYYY')
+        const filteredSubmissions = submissions.filter((group) => {
+            const submitToProprietorDateObj = dayjs(group.submit_to_proprietor_date)
+            return submitToProprietorDateObj.isBefore(actionDateObj, 'day') || submitToProprietorDateObj.isSame(actionDateObj, 'day')
+        })
+        setData(filteredSubmissions)
+        const fNEI = filteredSubmissions.findIndex((dt) => dt.items.length > 0)
         setFirstNonEmptyIndex(fNEI)
-    }
+
+    }, [actionDate, submissions])
 
     useEffect(() => {
 
@@ -44,7 +55,7 @@ const Accept = () => {
         getSubmissionsData(manager.manager_id).then((submissionsData) => {
 
             if (submissionsData && isMounted) {
-                setSubmissionsData(submissionsData)
+                setSubmissions(submissionsData)
                 setLoading(false)
             }
         });
@@ -55,7 +66,7 @@ const Accept = () => {
     const reloadSubmissionsData = async () => {
         // setLoading(true)
         const submissionsData = await getSubmissionsData(manager.manager_id)
-        setSubmissionsData(submissionsData)
+        setSubmissions(submissionsData)
         // setLoading(false)
     }
 
@@ -63,18 +74,34 @@ const Accept = () => {
         component: AcceptForm,
         props: {
             reloadSubmissionsData: reloadSubmissionsData,
-            manager: manager
+            manager: manager,
+            actionDate: actionDate
         },
         label: "accept"
     }
 
     return (
-        loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
-            ((submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
-                <ViewNestedTable data={submissions} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
-                :
-                <Typography>No Data for Submissions</Typography>
-            )
+        <div>
+            <Box style={{ display: "flex", paddingTop: "10px" }}>
+                <Typography style={{ padding: "10px" }}>Action Date:</Typography>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        format='DD/MM/YYYY'
+                        value={dayjs(actionDate, 'DD/MM/YYYY')}
+                        onChange={(d) => { console.log(d); setActionDate(d.format('DD/MM/YYYY')) }}
+                        maxDate={dayjs()}
+                    />
+                </LocalizationProvider>
+            </Box>
+            {
+                loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
+                    ((submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
+                        <ViewNestedTable data={data} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
+                        :
+                        <Typography>No Data for Submissions</Typography>
+                    )
+            }
+        </div>
     )
 }
 

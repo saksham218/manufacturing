@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress } from '@mui/material'
+import dayjs from 'dayjs'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
@@ -79,6 +80,7 @@ const Issue = ({ proprietor }) => {
                     deduction_from_manager: "",
                     remarks_from_manager: "",
                     hold_date: "",
+                    submit_to_proprietor_date: "",
                     put_on_hold_by: "",
                     holding_remarks: "",
                     is_adhoc: "",
@@ -143,7 +145,8 @@ const Issue = ({ proprietor }) => {
                         remarks_from_proprietor: items[itemIndex].remarks_from_proprietor,
                         deduction_from_manager: items[itemIndex].deduction_from_manager,
                         remarks_from_manager: items[itemIndex].remarks_from_manager,
-                        hold_date: items[itemIndex].hold_date,
+                        hold_date: dayjs(items[itemIndex].hold_date).format("YYYY-MM-DD"),
+                        submit_to_proprietor_date: dayjs(items[itemIndex].submit_to_proprietor_date).format("YYYY-MM-DD"),
                         put_on_hold_by: items[itemIndex].put_on_hold_by,
                         holding_remarks: items[itemIndex].holding_remarks,
                         is_adhoc: items[itemIndex].is_adhoc,

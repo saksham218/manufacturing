@@ -272,9 +272,9 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         const current_date = new Date();
         const preparedHoldInfo = await depopulateHoldInfo(hold_info)
 
-        submit_to_proprietor_date = submit_to_proprietor_date instanceof Date ? submit_to_proprietor_date : new Date(submit_to_proprietor_date);
+        const submit_to_proprietor_date_obj = submit_to_proprietor_date instanceof Date ? submit_to_proprietor_date : new Date(submit_to_proprietor_date);
 
-        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && isSameDay(oh.hold_date, hold_date) && isSameDay(oh.submit_to_proprietor_date, submit_to_proprietor_date) && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, preparedHoldInfo)));
+        const oHIndex = proprietor.on_hold.findIndex((oh) => (oh.item.equals(item._id) && Number(oh.quantity) >= Number(quantity) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && isSameDay(oh.hold_date, hold_date) && isSameDay(oh.submit_to_proprietor_date, submit_to_proprietor_date_obj) && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, preparedHoldInfo)));
         if (oHIndex === -1) {
             return res.status(404).json({ message: `${quantity} of ${design_number} submitted to proprietor on ${submit_to_proprietor_date}, not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}` });
         }
@@ -376,7 +376,7 @@ export const submitToProprietor = async (req, res) => {
 
         const current_date = new Date();
 
-        if (!(isDayGreaterThanOrEqualTo(submit_to_proprietor_date, submit_from_worker_date) && isDayLessThanOrEqualTo(submit_to_proprietor_date, current_date))) {
+        if (!(isDayGreaterThanOrEqualTo(submit_to_proprietor_date_obj, submit_from_worker_date) && isDayLessThanOrEqualTo(submit_to_proprietor_date_obj, current_date))) {
             return res.status(400).json({ message: 'Submit to proprietor should be after submit from worker and before or by today' })
         }
 
@@ -569,12 +569,11 @@ export const acceptFromManager = async (req, res) => {
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
 
-        action_date = action_date instanceof Date ? action_date : new Date(action_date);
-        submit_to_proprietor_date = submit_to_proprietor_date instanceof Date ? submit_to_proprietor_date : new Date(submit_to_proprietor_date);
-
+        const action_date_obj = action_date instanceof Date ? action_date : new Date(action_date);
+        const submit_to_proprietor_date_obj = submit_to_proprietor_date instanceof Date ? submit_to_proprietor_date : new Date(submit_to_proprietor_date);
         const current_date = new Date();
 
-        if (!(isDayGreaterThanOrEqualTo(action_date, submit_to_proprietor_date) && isDayLessThanOrEqualTo(action_date, current_date))) {
+        if (!(isDayGreaterThanOrEqualTo(action_date_obj, submit_to_proprietor_date_obj) && isDayLessThanOrEqualTo(action_date_obj, current_date))) {
             return res.status(400).json({ message: "Action by proprietor should be after submit to proprietor and before or by today" });
         }
 
@@ -618,9 +617,9 @@ export const acceptFromManager = async (req, res) => {
                 return res.status(400).json({ message: "Final remarks are required if deduction is made by proprietor" });
             }
 
-            let ahIndex = manager.accepted_history.findIndex((w) => (w.worker.equals(worker._id) && isSameDay(w.date, action_date) && isSameDay(w.submit_to_proprietor_date, submit_to_proprietor_date)));
+            let ahIndex = manager.accepted_history.findIndex((w) => (w.worker.equals(worker._id) && isSameDay(w.date, action_date_obj) && isSameDay(w.submit_to_proprietor_date, submit_to_proprietor_date_obj)));
             if (ahIndex === -1) {
-                manager.accepted_history.push({ worker: worker._id, date: action_date, submit_to_proprietor_date: submit_to_proprietor_date, items: [] });
+                manager.accepted_history.push({ worker: worker._id, date: action_date_obj, submit_to_proprietor_date: submit_to_proprietor_date_obj, items: [] });
                 ahIndex = manager.accepted_history.length - 1;
             }
 
@@ -639,7 +638,7 @@ export const acceptFromManager = async (req, res) => {
             // }
 
             if (Number(deduction) !== 0) {
-                worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: action_date, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
+                worker.deductions_from_proprietor.push({ item: item._id, price: price, quantity: quantity, deduction_from_proprietor: deduction, final_remarks_from_proprietor: final_remarks, deduction_from_manager: deduction_from_manager, deduction_date: action_date_obj, remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
             }
 
             if (to_hold) {
@@ -656,15 +655,15 @@ export const acceptFromManager = async (req, res) => {
                 return res.status(400).json({ message: "Final remarks are required if forfeiture is made by proprietor" });
             }
 
-            let fhIndex = manager.forfeited_history.findIndex((f) => (f.worker.equals(worker._id) && isSameDay(f.forfeiture_date, action_date) && isSameDay(f.submit_to_proprietor_date, submit_to_proprietor_date)));
+            let fhIndex = manager.forfeited_history.findIndex((f) => (f.worker.equals(worker._id) && isSameDay(f.forfeiture_date, action_date_obj) && isSameDay(f.submit_to_proprietor_date, submit_to_proprietor_date_obj)));
             if (fhIndex === -1) {
-                manager.forfeited_history.push({ worker: worker._id, forfeiture_date: action_date, submit_to_proprietor_date: submit_to_proprietor_date, items: [] });
+                manager.forfeited_history.push({ worker: worker._id, forfeiture_date: action_date_obj, submit_to_proprietor_date: submit_to_proprietor_date_obj, items: [] });
                 fhIndex = manager.forfeited_history.length - 1;
             }
 
             manager.forfeited_history[fhIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), penalty: Number(penalty), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            worker.forfeited_history.push({ item: item._id, price: Number(price), quantity: Number(quantity), penalty: Number(penalty), underprocessing_value: Number(underprocessing_value), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: action_date, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
+            worker.forfeited_history.push({ item: item._id, price: Number(price), quantity: Number(quantity), penalty: Number(penalty), underprocessing_value: Number(underprocessing_value), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, forfeiture_date: action_date_obj, final_remarks_from_proprietor: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
             if (to_hold) {
                 worker.due_amount -= (Number(quantity) * Number(penalty));
@@ -696,20 +695,20 @@ export const acceptFromManager = async (req, res) => {
                 worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
             }
 
-            worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, hold_date: action_date, put_on_hold_by: put_on_hold_by, holding_remarks: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
+            worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, hold_date: action_date_obj, put_on_hold_by: put_on_hold_by, holding_remarks: final_remarks, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
             manager.due_amount += (1.1 * Number(partial_payment) * Number(quantity));
 
-            let manHoldIndex = manager.on_hold_history.findIndex((h) => h.worker.equals(worker._id) && isSameDay(h.hold_date, action_date) && isSameDay(h.submit_to_proprietor_date, submit_to_proprietor_date));
+            let manHoldIndex = manager.on_hold_history.findIndex((h) => h.worker.equals(worker._id) && isSameDay(h.hold_date, action_date_obj) && isSameDay(h.submit_to_proprietor_date, submit_to_proprietor_date_obj));
 
             if (manHoldIndex === -1) {
-                manager.on_hold_history.push({ worker: worker._id, hold_date: action_date, submit_to_proprietor_date: submit_to_proprietor_date, items: [] });
+                manager.on_hold_history.push({ worker: worker._id, hold_date: action_date_obj, submit_to_proprietor_date: submit_to_proprietor_date_obj, items: [] });
                 manHoldIndex = manager.on_hold_history.length - 1;
             }
 
             manager.on_hold_history[manHoldIndex].items.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, hold_info: preparedHoldInfo });
 
-            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id, hold_info: preparedHoldInfo, hold_date: action_date, submit_to_proprietor_date: submit_to_proprietor_date });
+            proprietor.on_hold.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by: put_on_hold_by, is_adhoc: is_adhoc, worker: worker._id, manager: manager._id, hold_info: preparedHoldInfo, hold_date: action_date_obj, submit_to_proprietor_date: submit_to_proprietor_date_obj });
 
         }
 

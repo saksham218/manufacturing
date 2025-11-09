@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { Input } from '@mui/material'
 import CustomButton from '../../../../layouts/CustomButton'
 import { submitToProprietor } from '../../../../../api'
+import dayjs from 'dayjs'
 
-const SubmitItemsForm = ({ item, group, reloadDueBackward, manager }) => {
+const SubmitItemsForm = ({ item, group, reloadDueBackward, manager, submitDate }) => {
 
     const [submitQuantity, setSubmitQuantity] = useState("")
 
@@ -20,6 +21,8 @@ const SubmitItemsForm = ({ item, group, reloadDueBackward, manager }) => {
             remarks_from_proprietor: item.remarks_from_proprietor,
             is_adhoc: item.is_adhoc,
             to_hold: item.to_hold,
+            submit_to_proprietor_date: dayjs(submitDate, 'DD/MM/YYYY').format('YYYY-MM-DD'),
+            submit_from_worker_date: dayjs(group.submit_from_worker_date).format('YYYY-MM-DD'),
             hold_info: item.hold_info
         }
         console.log(submission)
