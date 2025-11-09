@@ -83,19 +83,19 @@ export const workerDetailsViewConfig = {
     },
     "deductions_from_proprietor": {
         "is_dated": true,
-        "keys": ["item", "price", "quantity", "deduction_from_proprietor", "final_remarks_from_proprietor", "deduction_from_manager", "deduction_date", "remarks_from_manager", "remarks_from_proprietor", "underprocessing_value", "info"]
+        "keys": ["item", "price", "quantity", "deduction_from_proprietor", "final_remarks_from_proprietor", "deduction_from_manager", "deduction_date", "remarks_from_manager", "remarks_from_proprietor", "underprocessing_value", "submit_to_proprietor_date", "info"]
     },
     "forfeited_history": {
         "is_dated": true,
-        "keys": ["item", "quantity", "price", "deduction_from_manager", "penalty", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "forfeiture_date", "info"]
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "penalty", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "final_remarks_from_proprietor", "forfeiture_date", "submit_to_proprietor_date", "info"]
     },
     "on_hold_history": {
         "is_dated": true,
-        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "holding_remarks", "put_on_hold_by", "info"]
+        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "hold_date", "holding_remarks", "put_on_hold_by", "submit_to_proprietor_date", "info"]
     },
     "held_by_manager": {
         "is_dated": false,
-        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "remarks_from_manager", "info"]
+        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "remarks_from_manager", "submit_to_proprietor_date", "info"]
     }
 }
 

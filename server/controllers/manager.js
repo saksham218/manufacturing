@@ -375,6 +375,7 @@ export const submitToProprietor = async (req, res) => {
         // }
 
         const current_date = new Date();
+        const submit_to_proprietor_date_obj = new Date(submit_to_proprietor_date);
 
         if (!(isDayGreaterThanOrEqualTo(submit_to_proprietor_date_obj, submit_from_worker_date) && isDayLessThanOrEqualTo(submit_to_proprietor_date_obj, current_date))) {
             return res.status(400).json({ message: 'Submit to proprietor should be after submit from worker and before or by today' })
@@ -406,9 +407,9 @@ export const submitToProprietor = async (req, res) => {
 
         // manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
 
-        let subIndex = manager.submissions.findIndex((s) => s.worker.equals(worker._id) && isSameDay(s.submit_to_proprietor_date, submit_to_proprietor_date));
+        let subIndex = manager.submissions.findIndex((s) => s.worker.equals(worker._id) && isSameDay(s.submit_to_proprietor_date, submit_to_proprietor_date_obj));
         if (subIndex === -1) {
-            manager.submissions.push({ worker: worker._id, submit_to_proprietor_date: submit_to_proprietor_date instanceof Date ? submit_to_proprietor_date : new Date(submit_to_proprietor_date), items: [] });
+            manager.submissions.push({ worker: worker._id, submit_to_proprietor_date: submit_to_proprietor_date_obj, items: [] });
             subIndex = manager.submissions.length - 1;
         }
 
