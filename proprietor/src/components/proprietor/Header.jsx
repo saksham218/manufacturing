@@ -16,11 +16,11 @@ const Header = ({ proprietor }) => {
     }
     return (
         <div>
-            <Box style={{ display: 'flex', backgroundColor: "lightblue" }}>
-                <Typography variant='h5'>Manufacturing</Typography>
-                <Button style={{ marginLeft: "1000px", height: "30px", width: "80px" }} onClick={onLogout} variant="contained" color="primary">Logout</Button>
+            <Box style={{ display: 'flex', backgroundColor: "lightblue", justifyContent: "space-between" }}>
+                <Typography variant='h5' style={{ height: "50px", lineHeight: "50px", marginLeft: "10px", fontSize: "30px" }}>Manufacturing</Typography>
+                <Button style={{ marginRight: "10px", height: "30px", width: "80px", marginTop: "10px" }} onClick={onLogout} variant="contained" color="primary">Logout</Button>
             </Box>
-            <Typography variant="h6">Proprietor: {proprietor.name}</Typography>
+            <Typography variant="h6" style={{ marginTop: "10px", height: "30px", lineHeight: "20px", marginLeft: "10px", fontSize: "25px" }}>Proprietor: {proprietor.name}</Typography>
         </div>
     )
 }
