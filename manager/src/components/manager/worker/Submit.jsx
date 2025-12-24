@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box, CircularProgress } from '@mui/material'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
 import { getItemsForSubmit, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
@@ -112,6 +116,7 @@ const Submit = ({ manager }) => {
                     remarks: "",
                     is_adhoc: isAdhoc,
                     to_hold: toHold,
+                    submit_from_worker_date: dayjs().format('DD/MM/YYYY'),
                     hold_info: {}
                 })
                 setMaxQuantity(Infinity)
@@ -140,6 +145,7 @@ const Submit = ({ manager }) => {
                         remarks: "",
                         is_adhoc: isAdhoc,
                         to_hold: toHold,
+                        submit_from_worker_date: undefined,
                         hold_info: items[itemIndex].hold_info
                     })
 
@@ -240,10 +246,24 @@ const Submit = ({ manager }) => {
                     {/* </FormControl> */}
                     <Box>
                         {isAdhoc && (
-                            (priceLoading && itemIndex !== "") ? <CircularProgress size={20} /> :
-                                <>
-                                    <Typography>Current Price: {currentWorkerPrice}</Typography>
-                                </>
+                            <>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        format="DD/MM/YYYY"
+                                        value={submission.submit_from_worker_date ? dayjs(submission.submit_from_worker_date, 'DD/MM/YYYY') : null}
+                                        onChange={(d) => {
+                                            const formattedDate = d ? d.format('YYYY-MM-DD') : '';
+                                            setSubmission({ ...submission, submit_from_worker_date: formattedDate });
+                                        }}
+                                        maxDate={dayjs()}
+                                        disabled={submission.design_number === ""}
+                                        sx={{ width: '250px', mt: 1 }}
+                                    />
+                                </LocalizationProvider>
+                                {(priceLoading && itemIndex !== "") ? <CircularProgress size={20} /> :
+                                    <Typography style={{ marginTop: "10px" }}>Current Price: {currentWorkerPrice}</Typography>
+                                }
+                            </>
                         )}
                     </Box>
                     {isAdhoc ?

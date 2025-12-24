@@ -68,7 +68,7 @@ const SubmitItems = ({ manager }) => {
     return (
         <div>
             <Box style={{ display: "flex" }}>
-                <Typography style={{ padding: "10px" }}>Submit Date:</Typography>
+                <Typography style={{ padding: "10px" }}>Submit To Proprietor on Date:</Typography>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                         format='DD/MM/YYYY'

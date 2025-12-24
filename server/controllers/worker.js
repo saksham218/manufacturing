@@ -242,7 +242,7 @@ export const submitFromWorker = async (req, res) => {
     console.log("submit from worker worker_id: ", worker_id);
     if (!req.manager || !req.manager.manager_id) return res.status(403).json({ message: "Access Denied" });
     const manager_id = req.manager.manager_id;
-    const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value, is_adhoc, to_hold, hold_info } = req.body;
+    const { design_number, quantity, price, deduction, remarks, remarks_from_proprietor, underprocessing_value, is_adhoc, to_hold, submit_from_worker_date, hold_info } = req.body;
 
     try {
 
@@ -292,10 +292,11 @@ export const submitFromWorker = async (req, res) => {
             return res.status(400).json({ message: "Remarks required for hold" });
 
         const dateObj = new Date();
+        const submit_from_worker_date_obj = submit_from_worker_date ? new Date(submit_from_worker_date) : dateObj;
 
-        let dbIndex = manager.due_backward.findIndex((db) => (db.worker.equals(worker._id) && isSameDay(db.submit_from_worker_date, dateObj)))
+        let dbIndex = manager.due_backward.findIndex((db) => (db.worker.equals(worker._id) && isSameDay(db.submit_from_worker_date, submit_from_worker_date_obj)))
         if (dbIndex === -1) {
-            manager.due_backward.push({ worker: worker._id, submit_from_worker_date: dateObj, items: [] });
+            manager.due_backward.push({ worker: worker._id, submit_from_worker_date: submit_from_worker_date_obj, items: [] });
             dbIndex = manager.due_backward.length - 1;
         }
 
@@ -343,7 +344,7 @@ export const submitFromWorker = async (req, res) => {
         }
 
 
-        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: dateObj, is_adhoc: is_adhoc ? true : false, hold_info: preparedHoldInfo });
+        worker.submit_history.push({ item: item._id, quantity: quantity, price: price, deduction_from_manager: Number(deduction), remarks_from_manager: remarks, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, date: submit_from_worker_date_obj, is_adhoc: is_adhoc ? true : false, hold_info: preparedHoldInfo });
 
 
         await manager.save();
