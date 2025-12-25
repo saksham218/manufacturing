@@ -249,6 +249,7 @@ const Submit = ({ manager }) => {
                             <>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
+                                        label="Submit from Worker on Date"
                                         format="DD/MM/YYYY"
                                         value={submission.submit_from_worker_date ? dayjs(submission.submit_from_worker_date, 'DD/MM/YYYY') : null}
                                         onChange={(d) => {
@@ -257,7 +258,7 @@ const Submit = ({ manager }) => {
                                         }}
                                         maxDate={dayjs()}
                                         disabled={submission.design_number === ""}
-                                        sx={{ width: '250px', mt: 1 }}
+                                        sx={{ width: '275px', mt: 1 }}
                                     />
                                 </LocalizationProvider>
                                 {(priceLoading && itemIndex !== "") ? <CircularProgress size={20} /> :
