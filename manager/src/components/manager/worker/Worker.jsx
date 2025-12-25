@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useMatch, Navigate, Routes, Route } from 'react-router-dom'
-import { Box, Typography, Select, MenuItem, CircularProgress } from '@mui/material'
+import { Box, Typography, CircularProgress, TextField, Autocomplete } from '@mui/material'
 
 import Sidebar from './Sidebar'
 import ViewWorker from './ViewWorker'
@@ -63,13 +63,24 @@ const Worker = ({ manager }) => {
                 <Box style={{ display: isAddWorker ? "none" : "block" }}>
                     {loading ? <CircularProgress /> : (
                         <>
-                            <Typography>Select Worker</Typography>
-                            <Select value={worker} onChange={(e) => { setWorker(e.target.value); console.log(worker) }}>
-                                {workers.map((wkr) => (
-                                    <MenuItem value={wkr}>{wkr.name}</MenuItem>
-
-                                ))}
-                            </Select>
+                            <Typography>Worker:</Typography>
+                            <Autocomplete
+                                options={workers}
+                                getOptionLabel={(option) => option.name || ''}
+                                value={worker}
+                                onChange={(event, newValue) => {
+                                    setWorker(newValue);
+                                    console.log(newValue);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        variant="outlined"
+                                        placeholder="Select a worker"
+                                    />
+                                )}
+                                style={{ width: 200 }}
+                            />
                         </>
                     )}
                 </Box>
@@ -81,7 +92,6 @@ const Worker = ({ manager }) => {
                     {/* <Route path={`/submitadhoc`} element={<SubmitAdhoc manager={manager} />} /> */}
                     <Route path={`/payment`} element={worker && worker.worker_id ? <Payment /> : null} />
                     <Route path={`/addworker`} element={<AddWorker manager={manager} setWorkersList={setWorkersList} />} />
-
                 </Routes>
             </div>
 

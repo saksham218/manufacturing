@@ -9,7 +9,7 @@ import Accept from './accept/Accept'
 import Worker from './Worker'
 import Payment from './Payment'
 import AddManager from './AddManager'
-import { MenuItem, Select, Typography, Box, CircularProgress } from '@mui/material'
+import { Typography, Box, CircularProgress, TextField, Autocomplete } from '@mui/material'
 import { getManagers } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 
@@ -67,13 +67,24 @@ const Manager = ({ proprietor }) => {
                 <Box style={{ display: isAddManager ? "none" : "block" }}>
                     {loading ? <CircularProgress /> : (
                         <>
-                            <Typography>Select Manager</Typography>
-                            <Select value={manager} onChange={(e) => { setManager(e.target.value); console.log(manager) }}>
-                                {managers.map((mgr) => (
-                                    <MenuItem value={mgr}>{mgr.name}</MenuItem>
-
-                                ))}
-                            </Select>
+                            <Typography>Manager:</Typography>
+                            <Autocomplete
+                                options={managers}
+                                getOptionLabel={(option) => option.name || ''}
+                                value={manager}
+                                onChange={(event, newValue) => {
+                                    setManager(newValue);
+                                    console.log(newValue);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        variant="outlined"
+                                        placeholder="Select a manager"
+                                    />
+                                )}
+                                style={{ width: 200 }}
+                            />
                         </>
                     )}
                 </Box>
