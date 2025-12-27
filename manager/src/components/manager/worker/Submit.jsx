@@ -116,8 +116,7 @@ const Submit = ({ manager }) => {
                     remarks: "",
                     is_adhoc: isAdhoc,
                     to_hold: toHold,
-                    submit_from_worker_date: dayjs().format('DD/MM/YYYY'),
-                    hold_info: {}
+                    submit_from_worker_date: dayjs().format('YYYY-MM-DD')
                 })
                 setMaxQuantity(Infinity)
                 setPriceLoading(true)
@@ -251,7 +250,7 @@ const Submit = ({ manager }) => {
                                     <DatePicker
                                         label="Submit from Worker on Date"
                                         format="DD/MM/YYYY"
-                                        value={submission.submit_from_worker_date ? dayjs(submission.submit_from_worker_date, 'DD/MM/YYYY') : null}
+                                        value={submission.submit_from_worker_date ? dayjs(submission.submit_from_worker_date, 'YYYY-MM-DD') : null}
                                         onChange={(d) => {
                                             const formattedDate = d ? d.format('YYYY-MM-DD') : '';
                                             setSubmission({ ...submission, submit_from_worker_date: formattedDate });

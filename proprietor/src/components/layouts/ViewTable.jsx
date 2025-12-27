@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Table, TableHead, TableRow, TableCell, Paper } from '@mui/material'
+import { Table, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box } from '@mui/material'
 
-import { computeContent } from '../utils/viewUtils'
+import { computeContent, searchByKeyword } from '../utils/viewUtils'
 
 const ViewTable = ({ data, keys }) => {
-    console.log(data)
-    console.log(data[0])
+    const [keyword, setKeyword] = useState('')
+    const [filteredData, setFilteredData] = useState([])
 
     const [selected, setSelected] = useState(null)
 
@@ -20,11 +20,22 @@ const ViewTable = ({ data, keys }) => {
 
     useEffect(() => {
         setSelected(null)
-    }, [data])
+        const filtered = searchByKeyword(data, keyword, keys)
+        setFilteredData(filtered || [])
+    }, [data, keyword, keys])
+
 
     return (
-        <div style={{ paddingTop: "20px" }}>
-            <Table component={Paper} >
+        <Box sx={{ paddingTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+                label="Search"
+                variant="outlined"
+                size="small"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                sx={{ width: 300 }}
+            />
+            <Table component={Paper}>
                 <TableHead>
                     <TableRow>
                         {keys.map((key) => (
@@ -32,17 +43,18 @@ const ViewTable = ({ data, keys }) => {
                             <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
                         ))}
                     </TableRow>
-                    {data.map((row, index) => (
+                </TableHead>
+                <TableBody>
+                    {filteredData.map((row, index) => (
                         <TableRow onClick={() => handleRowClick(index)}>
                             {keys.map((key) => {
                                 return <TableCell sx={{ backgroundColor: selected === index ? 'lightblue' : 'white' }}>{computeContent(row, key)}</TableCell>
                             })}
                         </TableRow>
                     ))}
-                </TableHead>
-
+                </TableBody>
             </Table>
-        </div>
+        </Box>
     )
 }
 

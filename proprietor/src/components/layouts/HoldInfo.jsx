@@ -20,7 +20,7 @@ const getHoldList = (holdInfo) => {
     return holdList
 }
 
-const HoldInfo = ({ holdInfo, size }) => {
+const HoldInfo = ({ holdInfo, size, style }) => {
 
     const [holdList, setHoldList] = useState([])
     const [open, setOpen] = useState(false)
@@ -35,7 +35,7 @@ const HoldInfo = ({ holdInfo, size }) => {
 
     return (
         <div>
-            <Chip label="Hold Info" onClick={() => setOpen(true)} size={size} color="primary" />
+            <Chip label="Hold Info" onClick={() => setOpen(true)} size={size} color="primary" style={style} />
             <Modal
                 open={open}
                 onClose={() => setOpen(false)}
