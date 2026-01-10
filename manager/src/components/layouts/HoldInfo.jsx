@@ -45,11 +45,11 @@ const HoldInfo = ({ holdInfo, size, style }) => {
                     top: '50%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
-                    // width: 400,
+                    width: 1400,
+                    height: 600,
                     backgroundColor: 'white',
                     border: '2px solid #000',
-                    // boxShadow: 24,
-                    // p: 4,
+                    padding: "20px"
                 }}>
                     <Typography variant="h6" component="h2">Hold Info:</Typography>
                     {(holdList && holdList.length > 0)
