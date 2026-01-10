@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, Box, CircularProgress } from '@mui/material'
+import React, { useEffect, useState, useRef } from 'react'
+import { FormGroup, InputLabel, Input, FormControl, Typography, Box, CircularProgress, Autocomplete, TextField } from '@mui/material'
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
@@ -115,14 +115,9 @@ const Issue = ({ manager }) => {
     }, [itemIndex, items])
 
 
-    const onItemSelect = async (e) => {
-
-        setItemIndex(e.target.value)
-        console.log(itemIndex)
-
+    const handleItemSelect = (value) => {
+        setItemIndex(value);
     }
-
-
 
     const onSubmit = async () => {
 
@@ -137,18 +132,56 @@ const Issue = ({ manager }) => {
 
     }
 
+    const getOptionLabel = (option) => {
+        if (!option) return '';
+        return `${option.design_number}-${option.description}` + (open ? `, Quantity Available: ${option.quantity}, Underprocessing Value: ${option.underprocessing_value}, ${option.remarks_from_proprietor ? ", Remarks from proprietor: " + option.remarks_from_proprietor : ''}` : "");
+    }
+
+    const renderOption = (props, option) => (
+        <li {...props}>
+            <div>
+                <div>{option.design_number}-{option.description}</div>
+                <div style={{ fontSize: '0.8rem' }}>
+                    Quantity Available: {option.quantity},
+                    Underprocessing Value: {option.underprocessing_value}
+                    {option.remarks_from_proprietor && (
+                        <>, Remarks from proprietor: {option.remarks_from_proprietor}</>
+                    )}
+                </div>
+            </div>
+        </li>
+    )
+
+
     return (
         <div>
-            <FormGroup style={{ width: "500px", padding: "20px" }}>
+            <FormGroup style={{ width: "500px", paddingTop: "20px" }}>
                 <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
                     {itemsLoading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :
                         <>
-                            <InputLabel>Item</InputLabel>
-                            <Select style={{ width: "100%" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true); }} onClose={() => { setOpen(false) }}>
-                                {items?.map((item) => (
-                                    <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}${item.underprocessing_value ? ", Underprocessing Value: " + item.underprocessing_value : ""}${item.price ? ", Price: " + item.price : ""}` : ""}</MenuItem>
-                                ))}
-                            </Select>
+                            <Typography>Item:</Typography>
+                            <Autocomplete
+                                options={items}
+                                getOptionLabel={getOptionLabel}
+                                renderOption={renderOption}
+                                value={itemIndex !== "" ? items[itemIndex] : null}
+                                onChange={(event, newValue) => {
+                                    if (newValue) {
+                                        handleItemSelect(newValue.index);
+                                    }
+                                }}
+                                onOpen={() => setOpen(true)}
+                                onClose={() => setOpen(false)}
+                                blurOnSelect={true}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        placeholder="Select Item"
+                                        variant="outlined"
+                                    />
+                                )}
+                                style={{ width: "100%" }}
+                            />
                         </>
                     }
                 </Box>

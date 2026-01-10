@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress } from '@mui/material'
+import React, { useEffect, useState, useRef } from 'react'
+import { FormGroup, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress, Autocomplete, TextField } from '@mui/material'
 import dayjs from 'dayjs'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
@@ -44,7 +44,6 @@ const getIssueItemsData = async (issueHoldItems, proprietor_id) => {
 const Issue = ({ proprietor }) => {
 
     const { manager } = useManager()
-    console.log(manager)
     const [issue, setIssue] = useState({})
     const [items, setItems] = useState([])
 
@@ -167,9 +166,8 @@ const Issue = ({ proprietor }) => {
     }, [items, itemIndex])
 
 
-    const handleItemSelect = (e) => {
-        console.log(e.target.value);
-        setItemIndex(e.target.value);
+    const handleItemSelect = (value) => {
+        setItemIndex(value);
     }
 
     const onSubmit = async (e) => {
@@ -186,27 +184,75 @@ const Issue = ({ proprietor }) => {
 
     }
 
+    const getOptionLabel = (option) => {
+        if (!option) return '';
+        if (!issueHoldItems) {
+            return `${option.design_number}-${option.description}`;
+        }
+        return `${option.item?.design_number}-${option.item?.description}` + (open ? `, Quantity Available: ${option.quantity}, Old Price: ${option.price}, Old Underprocessing Value: ${option.underprocessing_value}, Partial Payment: ${option.partial_payment}${option.holding_remarks ? ", Holding Remarks: " + option.holding_remarks : ""}${option.is_adhoc ? " Adhoc" : ""}` : "");
+    }
+
+    const renderOption = (props, option) => (
+        <li {...props}>
+            {!issueHoldItems ? (
+                <div>{option.design_number}-{option.description}</div>
+            ) : (
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                        {option.item?.design_number}-{option.item?.description}
+                        {option.is_adhoc && (
+                            <Chip
+                                label="Adhoc"
+                                size="small"
+                                style={{
+                                    backgroundColor: 'yellow',
+                                    marginLeft: '5px'
+                                }}
+                            />
+                        )}
+                    </div>
+                    <div style={{ fontSize: '0.8rem' }}>
+                        Quantity Available: {option.quantity},
+                        Old Price: {option.price},
+                        Old Underprocessing Value: {option.underprocessing_value},
+                        Partial Payment: {option.partial_payment}
+                        {option.holding_remarks && `, Holding Remarks: ${option.holding_remarks}`}
+                    </div>
+                </div>
+            )}
+        </li>
+    )
+
     return (
         <div>
-            <FormGroup style={{ width: "600px", padding: "20px" }}>
+            <FormGroup style={{ width: "600px", paddingTop: "20px" }}>
                 <div style={{ display: 'flex' }}>
                     <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
                         {loading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :
                             <>
-                                <InputLabel>Item</InputLabel>
-                                <Select style={{ width: "100%" }} value={itemIndex} onChange={handleItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                                    {items.map((item) => (
-                                        !issueHoldItems ?
-                                            <MenuItem value={item.index}>{item.design_number}-{item.description}</MenuItem>
-                                            : <MenuItem value={item.index}>
-                                                <React.Fragment>
-                                                    {item.item?.design_number}-{item.item?.description}
-                                                    {open ? `, Quantity Available: ${item.quantity}, Old Price: ${item.price}, Old Underprocessing Value: ${item.underprocessing_value}, Partial Payment: ${item.partial_payment}${item.holding_remarks !== "" ? ", Holding Remarks: " + item.holding_remarks : ""}` : ""}
-                                                </React.Fragment>
-                                                {open && item.is_adhoc ? <Chip label="Adhoc" style={{ backgroundColor: 'yellow', marginLeft: '5px' }} /> : null}
-                                            </MenuItem>
-                                    ))}
-                                </Select>
+                                <Typography>Item:</Typography>
+                                <Autocomplete
+                                    options={items}
+                                    getOptionLabel={getOptionLabel}
+                                    renderOption={renderOption}
+                                    value={itemIndex !== "" ? items[itemIndex] : null}
+                                    onChange={(event, newValue) => {
+                                        if (newValue) {
+                                            handleItemSelect(newValue.index);
+                                        }
+                                    }}
+                                    onOpen={() => { setOpen(true) }}
+                                    onClose={() => { setOpen(false) }}
+                                    blurOnSelect={true}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Select Item"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    style={{ width: "100%" }}
+                                />
                             </>
                         }
                     </Box>
@@ -243,7 +289,7 @@ const Issue = ({ proprietor }) => {
                         </>
                         :
                         <>
-                            <div style={{ padding: "10px", borderRadius: "5px" }}>
+                            <div>
                                 <Typography>Old Price: {issue.price}</Typography>
                                 <Typography>Partial Payment: {issue.partial_payment}</Typography>
                                 <Typography>Old Underprocessing Value: {issue.underprocessing_value}</Typography>

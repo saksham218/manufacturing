@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box, CircularProgress } from '@mui/material'
+import { FormGroup, InputLabel, Input, FormControl, Typography, TextField, FormControlLabel, Checkbox, Box, CircularProgress, Autocomplete } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -63,7 +63,7 @@ const Submit = ({ manager }) => {
 
     const [currentWorkerPrice, setCurrentWorkerPrice] = useState("")
 
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
 
     const [itemsLoading, setItemsLoading] = useState(false)
     const [priceLoading, setPriceLoading] = useState(false)
@@ -172,9 +172,8 @@ const Submit = ({ manager }) => {
     }, [toHold])
 
 
-    const onItemSelect = async (e) => {
-        console.log("selected item index: ", e.target.value)
-        setItemIndex(e.target.value)
+    const handleItemSelect = (value) => {
+        setItemIndex(value);
     }
 
     const onPriceChange = (e) => {
@@ -201,24 +200,58 @@ const Submit = ({ manager }) => {
 
     }
 
+    const getOptionLabel = (option) => {
+        if (!option) return '';
+        return `${option.design_number}-${option.description}` + (open && !isAdhoc ? `, Quantity Available: ${option.quantity}, Underprocessing Value: ${option.underprocessing_value}, ${option.remarks_from_proprietor ? ", Remarks from proprietor: " + option.remarks_from_proprietor : ''}` : "");
+    }
+
+    const renderOption = (props, option) => (
+        <li {...props}>
+            <div>
+                <div>{option.design_number}-{option.description}</div>
+                {!isAdhoc && (
+                    <div style={{ fontSize: '0.8rem' }}>
+                        Price: {option.price}, Quantity Available: {option.quantity}
+                        {option.remarks_from_proprietor && (
+                            <>, Remarks from proprietor: {option.remarks_from_proprietor}</>
+                        )}
+                    </div>
+                )}
+            </div>
+        </li>
+    )
+
     return (
         <div>
-            <FormGroup style={{ width: "500px", padding: "20px" }}>
+            <FormGroup style={{ width: "500px", paddingTop: "20px" }}>
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <div style={{ display: 'flex' }}>
                     <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
                         {itemsLoading ? <CircularProgress style={{ marginLeft: "170px", marginTop: "25px" }} /> :
                             <>
-                                <InputLabel>Item</InputLabel>
-                                <Select style={{ width: "100%" }} value={itemIndex} onChange={onItemSelect} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }}>
-                                    {items?.map((item) => (
-                                        isAdhoc ?
-                                            <MenuItem value={item.index} > {item.design_number} - {item.description}</MenuItem>
-                                            :
-                                            <MenuItem value={item.index}>{item.design_number}-{item.description}{open ? `, Price: ${item.price}, Quantity Available: ${item.quantity}${item.remarks_from_proprietor !== "" ? ", Remarks: " + item.remarks_from_proprietor : ""}` : ""}</MenuItem>
-
-                                    ))}
-                                </Select>
+                                <Typography>Item:</Typography>
+                                <Autocomplete
+                                    options={items}
+                                    getOptionLabel={getOptionLabel}
+                                    renderOption={renderOption}
+                                    value={itemIndex !== "" ? items[itemIndex] : null}
+                                    onChange={(event, newValue) => {
+                                        if (newValue) {
+                                            handleItemSelect(newValue.index);
+                                        }
+                                    }}
+                                    onOpen={() => setOpen(true)}
+                                    onClose={() => setOpen(false)}
+                                    blurOnSelect={true}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Select Item"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    style={{ width: "100%" }}
+                                />
                             </>
                         }
                     </Box>
