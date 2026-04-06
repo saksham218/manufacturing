@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { FormGroup, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress, Autocomplete, TextField } from '@mui/material'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
 
 import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } from '../../../api'
@@ -63,7 +66,7 @@ const Issue = ({ proprietor }) => {
 
             let newIssue;
             if (!issueHoldItems) {
-                newIssue = { design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "" }
+                newIssue = { design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "", issue_date: currentIssue.issue_date ? currentIssue.issue_date : dayjs().format('YYYY-MM-DD') }
             }
             else {
                 newIssue = {
@@ -85,7 +88,8 @@ const Issue = ({ proprietor }) => {
                     is_adhoc: "",
                     worker_id: "",
                     manager_id: "",
-                    hold_info: ""
+                    hold_info: "",
+                    issue_date: currentIssue.issue_date ? currentIssue.issue_date : dayjs().format('YYYY-MM-DD')
                 }
             }
             return newIssue;
@@ -129,7 +133,7 @@ const Issue = ({ proprietor }) => {
             setIssue(currentIssue => {
                 let newIssue;
                 if (!issueHoldItems) {
-                    newIssue = { design_number: items[itemIndex].design_number, quantity: "", underprocessing_value: items[itemIndex].underprocessing_value, general_price: items[itemIndex].price, remarks: "" };
+                    newIssue = { design_number: items[itemIndex].design_number, quantity: "", underprocessing_value: items[itemIndex].underprocessing_value, general_price: items[itemIndex].price, remarks: "", issue_date: currentIssue.issue_date };
                 }
                 else {
                     newIssue = {
@@ -151,7 +155,8 @@ const Issue = ({ proprietor }) => {
                         is_adhoc: items[itemIndex].is_adhoc,
                         worker_id: items[itemIndex].worker.worker_id,
                         manager_id: items[itemIndex].manager.manager_id,
-                        hold_info: items[itemIndex].hold_info
+                        hold_info: items[itemIndex].hold_info,
+                        issue_date: currentIssue.issue_date
                     };
                 }
 
@@ -226,6 +231,15 @@ const Issue = ({ proprietor }) => {
     return (
         <div>
             <FormGroup style={{ width: "600px", paddingTop: "20px" }}>
+                <Typography>Issue Date:</Typography>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        value={dayjs(issue.issue_date, 'YYYY-MM-DD')}
+                        onChange={(d) => { setIssue({ ...issue, issue_date: d.format('YYYY-MM-DD') }) }}
+                        format="DD/MM/YYYY"
+                        slotProps={{ textField: { style: { marginBottom: "15px", width: "400px" } } }}
+                    />
+                </LocalizationProvider>
                 <div style={{ display: 'flex' }}>
                     <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
                         {loading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :

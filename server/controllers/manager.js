@@ -148,7 +148,7 @@ export const issueToManager = async (req, res) => {
     console.log(req.body);
     const manager_id = req.params.manager_id;
     console.log("issue to manager manager_id: ", manager_id);
-    const { design_number, quantity, underprocessing_value, general_price, remarks } = req.body;
+    const { design_number, quantity, underprocessing_value, general_price, remarks, issue_date } = req.body;
     if (!req.proprietor || !req.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
     const proprietor_id = req.proprietor.proprietor_id;
     try {
@@ -169,7 +169,8 @@ export const issueToManager = async (req, res) => {
         // const [day, month, year] = date.split('/').map(Number);
         // const dateObj = new Date(year, month - 1, day);
         const dateObj = new Date();
-        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, general_price: general_price, remarks_from_proprietor: remarks, date: dateObj });
+        const issueDateObj = new Date(issue_date);
+        manager.issue_history.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, general_price: general_price, remarks_from_proprietor: remarks, issue_date: issueDateObj, record_date: dateObj });
 
         // const df_index = manager.due_forward.findIndex((dueItem) => dueItem.item.equals(item._id) && dueunderprocessing_value === Number(underprocessing_value) && dueItem.remarks_from_proprietor === remarks);
         // if (df_index === -1) {
@@ -181,28 +182,66 @@ export const issueToManager = async (req, res) => {
 
         // manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
 
-        if (remarks === "") {
-            const td_index = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));
-            if (td_index === -1) {
-                manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: "" });
-            }
-            else {
-                manager.total_due[td_index].quantity += Number(quantity);
-            }
-
-            const df_index = manager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === "" && dueItem.underprocessing_value === Number(underprocessing_value)));
-
-            if (df_index === -1) {
-                manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: "" });
-            }
-            else {
-                manager.due_forward[df_index].quantity += Number(quantity);
-            }
-
+        const td_index = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === remarks && dueItem.underprocessing_value === Number(underprocessing_value) && dueItem.is_adhoc === false && isSameHoldInfo(dueItem.hold_info, null) && dueItem.price === null));
+        if (td_index === -1) {
+            manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, is_adhoc: false, hold_info: null, price: null, event_date: issue_date, record_date: dateObj });
         }
         else {
-            manager.total_due.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
-            manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks });
+            manager.total_due[td_index].quantity += Number(quantity);
+            manager.total_due[td_index].record_date = dateObj;
+            if (isDayGreaterThanOrEqualTo(issueDateObj, manager.total_due[td_index].event_date)) {
+                manager.total_due[td_index].event_date = issueDateObj;
+            }
+        }
+
+        const df_index = manager.due_forward.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === remarks && dueItem.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(dueItem.hold_info, null) && dueItem.price === null));
+
+        if (df_index === -1) {
+            manager.due_forward.push({ item: item._id, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: null, price: null, event_date: issueDateObj, record_date: dateObj });
+        }
+        else {
+            manager.due_forward[df_index].quantity += Number(quantity);
+            manager.due_forward[df_index].record_date = dateObj;
+            if (isDayGreaterThanOrEqualTo(issueDateObj, manager.due_forward[df_index].event_date)) {
+                manager.due_forward[df_index].event_date = issueDateObj;
+            }
+        }
+
+        let df_log_index = -1;
+        let shouldInsert = true;
+        let i = 0;
+        let prevQuantity = 0;
+
+        for (i = 0; i < manager.due_forward_log.length; i++) {
+            const log = manager.due_forward_log[i];
+
+            if (log.item.equals(item._id) && log.remarks_from_proprietor === remarks && log.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(log.hold_info, null) && log.price === null && !isDayGreaterThanOrEqualTo(log.event_date, issueDateObj)) {
+                prevQuantity = log.quantity;
+            }
+
+            if (log.item.equals(item._id) && log.remarks_from_proprietor === remarks && log.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(log.hold_info, null) && log.price === null && isSameDay(log.event_date, issueDateObj)) {
+                log.quantity += Number(quantity);
+                log.record_date = dateObj;
+                shouldInsert = false;
+                break;
+            }
+            if (!isDayLessThanOrEqualTo(log.event_date, issueDateObj)) {
+                break;
+            }
+        }
+
+        df_log_index = i;
+
+        if (shouldInsert) {
+            manager.due_forward_log.splice(df_log_index, 0, { item: item._id, quantity: prevQuantity + Number(quantity), underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: null, price: null, event_date: issueDateObj, record_date: dateObj });
+        }
+
+        for (let i = df_log_index + 1; i < manager.due_forward_log.length; i++) {
+            const log = manager.due_forward_log[i];
+            if (log.item.equals(item._id) && log.remarks_from_proprietor === remarks && log.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(log.hold_info, null) && log.price === null) {
+                log.quantity += Number(quantity);
+                log.record_date = dateObj;
+            }
         }
 
         // console.log("manager: ", manager);
