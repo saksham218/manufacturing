@@ -68,33 +68,13 @@ export const isSameHoldInfo = (hold_info1, hold_info2) => {
 
 export const managerPopulatePaths = {
     issue_history: {},
-    accepted_history: {
-        subpaths: {
-            items: {}
-        }
-    },
+    accepted_history: {},
     due_forward: {},
-    due_backward: {
-        subpaths: {
-            items: {}
-        }
-    },
-    submissions: {
-        subpaths: {
-            items: {}
-        }
-    },
+    due_backward: {},
+    submissions: {},
     total_due: {},
-    forfeited_history: {
-        subpaths: {
-            items: {}
-        }
-    },
-    on_hold_history: {
-        subpaths: {
-            items: {}
-        }
-    }
+    forfeited_history: {},
+    on_hold_history: {}
 }
 
 export const workerPopulatePaths = {
