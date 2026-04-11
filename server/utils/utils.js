@@ -165,3 +165,56 @@ export const depopulateHoldInfo = async (hold_info) => {
     return hold_info;
 }
 
+export const addToTransient = (transient_list, transient_log, check_equality, push_to_list_log, quantity, event_date, record_date) => {
+
+    const list_index = transient_list.findIndex(check_equality);
+    if (list_index === -1) {
+        transient_list.push({ ...push_to_list_log, quantity: Number(quantity), record_date: record_date, event_date: event_date });
+    }
+    else {
+        transient_list[list_index].quantity += Number(quantity);
+        transient_list[list_index].record_date = record_date;
+        if (isDayGreaterThanOrEqualTo(event_date, transient_list[list_index].event_date)) {
+            transient_list[list_index].event_date = event_date;
+        }
+
+    }
+
+    let log_index = -1;
+    let shouldInsert = true;
+    let i = 0;
+    let prevQuantity = 0;
+
+    for (i = 0; i < transient_log.length; i++) {
+        const log = transient_log[i];
+
+        if (check_equality(log) && !isDayGreaterThanOrEqualTo(log.event_date, event_date)) {
+            prevQuantity = log.quantity;
+        }
+
+        if (check_equality(log) && isSameDay(log.event_date, event_date)) {
+            log.quantity += Number(quantity);
+            log.record_date = record_date;
+            shouldInsert = false;
+            break;
+        }
+        if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
+            break;
+        }
+    }
+
+    log_index = i;
+
+    if (shouldInsert) {
+        transient_log.splice(log_index, 0, { ...push_to_list_log, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
+    }
+
+    for (let i = log_index + 1; i < transient_log.length; i++) {
+        const log = transient_log[i];
+        if (check_equality(log)) {
+            log.quantity += Number(quantity);
+            log.record_date = record_date;
+        }
+    }
+}
+

@@ -211,6 +211,26 @@ const managerSchema = new mongoose.Schema({
         }],
         default: []
     },
+    total_due_log: {
+        type: [{
+            item: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Item'
+            },
+            quantity: Number,
+            underprocessing_value: Number,
+            remarks_from_proprietor: String,
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            },
+            hold_info: Hold_Info,
+            price: Number,
+            event_date: Date,
+            record_date: Date
+        }],
+        default: []
+    },
     payment_history: {
         type: [{
             amount: Number,
