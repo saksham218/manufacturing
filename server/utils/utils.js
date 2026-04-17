@@ -39,6 +39,34 @@ export const isDayGreaterThanOrEqualTo = (d1, d2) => {
     return d1.getFullYear() > d2.getFullYear() || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() > d2.getMonth()) || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() >= d2.getDate());
 }
 
+export const hashObject = (obj, keys) => {
+    const serializeHoldInfo = (hi) => {
+        if (!hi || !hi.is_hold) return 'no_hold';
+        const w = hi.worker ? (hi.worker._id || hi.worker).toString() : 'null';
+        const m = hi.manager ? (hi.manager._id || hi.manager).toString() : 'null';
+        const d = hi.hold_date
+            ? (() => { const dt = new Date(hi.hold_date); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; })()
+            : 'null';
+        return [
+            hi.is_hold, hi.price, hi.partial_payment, hi.underprocessing_value,
+            hi.remarks_from_proprietor, hi.deduction_from_manager, hi.remarks_from_manager,
+            hi.is_adhoc, hi.put_on_hold_by, hi.holding_remarks, d, w, m,
+            serializeHoldInfo(hi.prev_hold_info)
+        ].join('|');
+    };
+
+    const serializeValue = (val) => {
+        if (val === null || val === undefined) return 'null';
+        if (typeof val !== 'object') return String(val);
+        if (val instanceof Date) return `${val.getFullYear()}-${val.getMonth()}-${val.getDate()}`;
+        if (val._id !== undefined) return val._id.toString(); // populated mongoose doc
+        if (val.constructor && val.constructor.name === 'ObjectId') return val.toString(); // raw ObjectId
+        return serializeHoldInfo(val);
+    };
+
+    return [...keys].sort().map(k => `${k}:${serializeValue(obj[k])}`).join(';');
+}
+
 export const isSameHoldInfo = (hold_info1, hold_info2) => {
     // console.log("(from array) hold_info1: ", hold_info1);
     // console.log("hold_info2: ", hold_info2);
@@ -170,8 +198,7 @@ export const addToTransient = (transient_list, transient_log, check_equality, pu
     const list_index = transient_list.findIndex(check_equality);
     if (list_index === -1) {
         transient_list.push({ ...push_to_list_log, quantity: Number(quantity), record_date: record_date, event_date: event_date });
-    }
-    else {
+    } else {
         transient_list[list_index].quantity += Number(quantity);
         transient_list[list_index].record_date = record_date;
         if (isDayGreaterThanOrEqualTo(event_date, transient_list[list_index].event_date)) {
@@ -180,41 +207,145 @@ export const addToTransient = (transient_list, transient_log, check_equality, pu
 
     }
 
-    let log_index = -1;
-    let shouldInsert = true;
-    let i = 0;
-    let prevQuantity = 0;
+    if (transient_log) {
 
-    for (i = 0; i < transient_log.length; i++) {
+        let log_index = -1;
+        let shouldInsert = true;
+        let i = 0;
+        let prevQuantity = 0;
+
+        for (i = 0; i < transient_log.length; i++) {
+            const log = transient_log[i];
+
+            if (check_equality(log) && !isDayGreaterThanOrEqualTo(log.event_date, event_date)) {
+                prevQuantity = log.quantity;
+            }
+
+            if (check_equality(log) && isSameDay(log.event_date, event_date)) {
+                log.quantity += Number(quantity);
+                log.record_date = record_date;
+                shouldInsert = false;
+                break;
+            }
+            if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
+                break;
+            }
+        }
+
+        log_index = i;
+
+        if (shouldInsert) {
+            transient_log.splice(log_index, 0, { ...push_to_list_log, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
+        }
+
+        for (let i = log_index + 1; i < transient_log.length; i++) {
+            const log = transient_log[i];
+            if (check_equality(log)) {
+                log.quantity += Number(quantity);
+                log.record_date = record_date;
+            }
+        }
+    }
+}
+
+export const getRemovalQuantitiesFromTransient = (transient_list, transient_log, keys, event_date) => {
+    const result = [];
+    const transient_list_map = new Map();
+    for (let i = 0; i < transient_list.length; i++) {
+        const item = transient_list[i];
+        if (isDayGreaterThanOrEqualTo(event_date, item.event_date)) {
+            result.push(item);
+        } else {
+            const key = hashObject(item, keys);
+            transient_list_map.set(key, { ...item, event_on_or_before_found: false, quantity: Infinity });
+        }
+
+    }
+    for (let i = transient_log.length - 1; i >= 0; i--) {
         const log = transient_log[i];
-
-        if (check_equality(log) && !isDayGreaterThanOrEqualTo(log.event_date, event_date)) {
-            prevQuantity = log.quantity;
-        }
-
-        if (check_equality(log) && isSameDay(log.event_date, event_date)) {
-            log.quantity += Number(quantity);
-            log.record_date = record_date;
-            shouldInsert = false;
-            break;
-        }
-        if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
-            break;
+        const logHash = hashObject(log, keys);
+        if (transient_list_map.has(logHash)) {
+            if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
+                transient_list_map.get(logHash).quantity = Math.min(transient_list_map.get(logHash).quantity, log.quantity);
+            } else {
+                if (!transient_list_map.get(logHash).event_on_or_before_found) {
+                    transient_list_map.get(logHash).event_on_or_before_found = true;
+                    transient_list_map.get(logHash).quantity = Math.min(transient_list_map.get(logHash).quantity, log.quantity);
+                }
+            }
         }
     }
 
-    log_index = i;
-
-    if (shouldInsert) {
-        transient_log.splice(log_index, 0, { ...push_to_list_log, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
-    }
-
-    for (let i = log_index + 1; i < transient_log.length; i++) {
-        const log = transient_log[i];
-        if (check_equality(log)) {
-            log.quantity += Number(quantity);
-            log.record_date = record_date;
+    for (let [, value] of transient_list_map) {
+        if (value.event_on_or_before_found && value.quantity > 0) {
+            const res = {}
+            for (let key of keys) {
+                res[key] = value[key];
+            }
+            res.quantity = value.quantity;
+            result.push(res);
         }
     }
+    return result;
+}
+
+export const validateAndRemoveFromTransient = (transient_list, transient_log, check_equality, push_to_log, quantity, event_date, record_date) => {
+
+    const list_index = transient_list.findIndex(item => check_equality(item) && quantity <= item.quantity);
+    if (list_index === -1) {
+        return false;
+    }
+
+    if (transient_log) {
+        let i = transient_log.length - 1;
+        let current_date_last_index = i;
+        let current_date = transient_log[i].event_date;
+        for (; i >= 0; i--) {
+            if (!isDayLessThanOrEqualTo(current_date, transient_log[i].event_date)) {
+                current_date = transient_log[i].event_date;
+                current_date_last_index = i;
+            }
+            if (check_equality(transient_log[i])) {
+                if (transient_log[i].quantity < quantity) {
+                    return false;
+                }
+                if (isDayLessThanOrEqualTo(transient_log[i].event_date, event_date)) {
+                    break;
+                }
+            }
+        }
+        if (i === -1) {
+            return false;
+        }
+
+        const log_on_or_before_event_date = transient_log[i];
+
+        if (isSameDay(log_on_or_before_event_date.event_date, event_date)) {
+            log_on_or_before_event_date.quantity -= Number(quantity);
+            log_on_or_before_event_date.record_date = record_date;
+        } else {
+            i = current_date_last_index + 1;
+            transient_log.splice(i, 0, { ...push_to_log, quantity: log_on_or_before_event_date.quantity - Number(quantity), record_date: record_date, event_date: event_date });
+        }
+
+        for (let j = i + 1; j < transient_log.length; j++) {
+            if (check_equality(transient_log[j])) {
+                transient_log[j].quantity -= Number(quantity);
+                transient_log[j].record_date = record_date;
+            }
+        }
+
+    }
+
+    transient_list[list_index].quantity -= Number(quantity);
+    if (transient_list[list_index].quantity === 0) {
+        transient_list.splice(list_index, 1);
+    } else {
+        transient_list[list_index].record_date = record_date;
+        if (isDayGreaterThanOrEqualTo(event_date, transient_list[list_index].event_date)) {
+            transient_list[list_index].event_date = event_date;
+        }
+    }
+    return true;
 }
 

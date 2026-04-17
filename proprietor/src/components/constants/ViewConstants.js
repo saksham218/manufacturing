@@ -15,6 +15,11 @@ export const managerDetailsViewConfig = {
         "is_grouped": false,
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
+    "due_forward_log": {
+        "is_dated": false,
+        "is_grouped": false,
+        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
+    },
     "due_backward": {
         "is_dated": false,
         "is_grouped": true,
@@ -28,6 +33,11 @@ export const managerDetailsViewConfig = {
         "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "total_due": {
+        "is_dated": false,
+        "is_grouped": false,
+        "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
+    },
+    "total_due_log": {
         "is_dated": false,
         "is_grouped": false,
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]

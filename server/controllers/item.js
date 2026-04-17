@@ -2,7 +2,7 @@ import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
-import { managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
+import { getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
 
 export const getItems = async (req, res) => {
 
@@ -64,43 +64,33 @@ export const createItem = async (req, res) => {
     }
 }
 
-export const getItemsForIssue = async (req, res) => {
+export const getItemsForIssueToWorker = async (req, res) => {
     const manager_id = req.params.manager_id
     console.log("get items for issue manager_id: ", manager_id)
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
 
+    const { issue_date } = req.body
+
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, proprietor: 1 }).lean()
+        const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, due_forward_log: 1 })
+            .populate({ path: 'due_forward.item' })
+            .lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
-        const items = await Item.find({ proprietor: manager.proprietor })
-
         const peparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        const itemsForIssue = []
-        // items.forEach((item) => {
-        //     const index = manager.due_forward.findIndex((df) => {
-        //         console.log(df.item)
-        //         console.log(item._id)
-        //         return (df.item.equals(item._id) && df.quantity > 0);
-        //     })
-        //     console.log(index)
-        //     if (index !== -1) {
-        //         console.log("hi")
-        //         console.log(manager.due_forward[index])
-        //         itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: manager.due_forward[index].quantity, underprocessing_value: manager.due_forward[index].underprocessing_value, thread_raw_material: manager.due_forward[index].thread_raw_material, remarks_from_proprietor: manager.due_forward[index].remarks_from_proprietor })
-        //     }
-        // })
-
-        items.forEach((item) => {
-            peparedManager.due_forward.forEach((df) => {
-                if (df.item.equals(item._id) && df.quantity > 0) {
-                    itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, hold_info: df.hold_info, price: df.price })
-                }
-            })
-        })
+        const itemsForIssue = getRemovalQuantitiesFromTransient(peparedManager.due_forward, peparedManager.due_forward_log, ['item', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info', 'price'], issue_date)
+            .map(item => ({
+                design_number: item.item.design_number,
+                description: item.item.description,
+                quantity: item.quantity,
+                underprocessing_value: item.underprocessing_value,
+                remarks_from_proprietor: item.remarks_from_proprietor,
+                hold_info: item.hold_info,
+                price: item.price
+            }));
 
         return res.status(200).json(itemsForIssue)
     }
@@ -110,7 +100,7 @@ export const getItemsForIssue = async (req, res) => {
     }
 }
 
-export const getItemsForSubmit = async (req, res) => {
+export const getItemsForSubmitFromWorker = async (req, res) => {
     const worker_id = req.params.worker_id
     console.log("get items for submit worker_id: ", worker_id)
     try {
@@ -150,7 +140,7 @@ export const getItemsForSubmit = async (req, res) => {
     }
 }
 
-export const getItemsForFinalSubmit = async (req, res) => {
+export const getItemsForSubmitFromManager = async (req, res) => {
     const manager_id = req.params.manager_id
     console.log("get items for final submit manager_id: ", manager_id)
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })

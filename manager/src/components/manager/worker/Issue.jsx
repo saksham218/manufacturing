@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { FormGroup, InputLabel, Input, FormControl, Typography, Box, CircularProgress, Autocomplete, TextField } from '@mui/material'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
 
 import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
@@ -20,9 +24,9 @@ const getPrice = async (worker_id, design_number, priceFromDF) => {
     }
 }
 
-const getItemsData = async (manager_id) => {
+const getItemsData = async (manager_id, issue_date) => {
     try {
-        const res = await getItemsForIssue(manager_id)
+        const res = await getItemsForIssue(manager_id, issue_date)
         console.log(res.data)
         let i = 0;
         const itemsData = res.data.map((item) => {
@@ -43,6 +47,7 @@ const Issue = ({ manager }) => {
 
     const { worker } = useWorker()
     console.log(worker)
+    const [issueDate, setIssueDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
     const [items, setItems] = useState([])
     const [itemIndex, setItemIndex] = useState("")
@@ -63,7 +68,7 @@ const Issue = ({ manager }) => {
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
         setItemIndex("")
         setItemsLoading(true)
-        getItemsData(manager.manager_id).then((itemsData) => {
+        getItemsData(manager.manager_id, issueDate).then((itemsData) => {
             if (isMounted) {
                 setItemsLoading(false)
                 setItems(itemsData)
@@ -72,7 +77,7 @@ const Issue = ({ manager }) => {
         });
 
         return () => { isMounted = false }
-    }, [manager])
+    }, [manager, issueDate])
 
     useEffect(() => {
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
@@ -95,7 +100,6 @@ const Issue = ({ manager }) => {
                 if (isMounted) {
                     setPriceLoading(false)
                     setIssue({
-                        ...issue,
                         price: price,
                         design_number: items[itemIndex].design_number,
                         quantity: "",
@@ -121,10 +125,10 @@ const Issue = ({ manager }) => {
 
     const onSubmit = async () => {
 
-        const res = await issueToWorker(issue, worker.worker_id)
+        const res = await issueToWorker({ ...issue, issue_date: issueDate }, worker.worker_id)
         console.log(res.data)
 
-        const itemsData = await getItemsData(manager.manager_id);
+        const itemsData = await getItemsData(manager.manager_id, issueDate);
         setItems(itemsData);
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
         setItemIndex("");
@@ -156,6 +160,15 @@ const Issue = ({ manager }) => {
     return (
         <div>
             <FormGroup style={{ width: "500px", paddingTop: "20px" }}>
+                <Typography>Issue Date:</Typography>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        value={dayjs(issueDate, 'YYYY-MM-DD')}
+                        onChange={(d) => { setIssueDate(d.format('YYYY-MM-DD')) }}
+                        format="DD/MM/YYYY"
+                        slotProps={{ textField: { style: { marginBottom: "15px", width: "400px" } } }}
+                    />
+                </LocalizationProvider>
                 <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
                     {itemsLoading ? <CircularProgress style={{ marginTop: "30px", marginLeft: "200px" }} /> :
                         <>
@@ -190,12 +203,13 @@ const Issue = ({ manager }) => {
                         <>
                             <Typography>Price: {issue.price}</Typography>
                             <Typography>Underprocessing Value: {issue.underprocessing_value}</Typography>
+                            <Typography>Remarks from Proprietor: {issue.remarks}</Typography>
                             {issue.hold_info ? <HoldInfo holdInfo={issue.hold_info} /> : null}
                         </>
                     }
                 </Box>
                 <Typography style={{ marginTop: "25px" }}>Quantity Available: {itemIndex !== "" && items[itemIndex].quantity}</Typography>
-                <FormControl style={{ marginTop: "20px" }}>
+                <FormControl style={{ marginTop: "20px", width: "400px" }}>
                     <InputLabel>Quantity</InputLabel>
                     <Input disabled={issue.design_number === ""} inputProps={{ min: 1, max: max }} type="number" value={issue.quantity}
                         onChange={(e) => { setIssue({ ...issue, quantity: e.target.value }); console.log(issue); }}
@@ -208,7 +222,6 @@ const Issue = ({ manager }) => {
                     <Input value={issue.thread_raw_material} onChange={(e) => { setIssue({ ...issue, thread_raw_material: e.target.value }); console.log(issue); }} />
                 </FormControl> */}
 
-                <Typography>Remarks from Proprietor: {issue.remarks}</Typography>
                 <CustomButton
                     buttonProps={{ variant: "contained", color: "primary", style: { width: "100px", marginLeft: "100px", marginTop: "10px" } }}
                     isInputValid={issue.design_number !== "" && issue.quantity !== "" && issue.quantity !== "0" &&

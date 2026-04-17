@@ -55,6 +55,7 @@ export const getManager = async (req, res) => {
                 { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'submissions.item', model: 'Item', select: 'design_number description' },
                 { path: 'total_due.item', model: 'Item', select: 'design_number description' },
+                { path: 'total_due_log.item', model: 'Item', select: 'design_number description' },
                 { path: 'forfeited_history.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'forfeited_history.item', model: 'Item', select: 'design_number description' },
                 { path: 'on_hold_history.worker', model: 'Worker', select: 'name worker_id' },
