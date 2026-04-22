@@ -5,12 +5,12 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 
-import { getItemsForSubmit, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
+import { getItemsForSubmitFromWorker, getItems, submitFromWorker, getPricesForSubmitAdhoc } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
 import HoldInfo from '../../layouts/HoldInfo'
 import CustomButton from '../../layouts/CustomButton'
 
-const getItemsData = async (proprietor_id, worker_id, isAdhoc) => {
+const getItemsData = async (proprietor_id, worker_id, isAdhoc, submit_date) => {
     try {
 
         let res;
@@ -18,7 +18,7 @@ const getItemsData = async (proprietor_id, worker_id, isAdhoc) => {
             res = await getItems(proprietor_id)
         }
         else {
-            res = await getItemsForSubmit(worker_id)
+            res = await getItemsForSubmitFromWorker(worker_id, submit_date)
         }
         console.log(res.data)
 
@@ -51,6 +51,7 @@ const Submit = ({ manager }) => {
 
     const { worker } = useWorker()
     console.log(worker)
+    const [submitDate, setSubmitDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
     const [items, setItems] = useState([])
     const [itemIndex, setItemIndex] = useState("")
@@ -83,7 +84,7 @@ const Submit = ({ manager }) => {
             setCurrentWorkerPrice("")
             setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
             setItemsLoading(true)
-            getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc).then((itemsData) => {
+            getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc, submitDate).then((itemsData) => {
 
                 if (isMounted) {
                     setItems(itemsData)
@@ -95,7 +96,7 @@ const Submit = ({ manager }) => {
         }
 
         return () => { isMounted = false }
-    }, [worker, isAdhoc])
+    }, [worker, isAdhoc, submitDate])
 
     useEffect(() => {
 
@@ -115,8 +116,7 @@ const Submit = ({ manager }) => {
                     remarks_from_proprietor: "",
                     remarks: "",
                     is_adhoc: isAdhoc,
-                    to_hold: toHold,
-                    submit_from_worker_date: dayjs().format('YYYY-MM-DD')
+                    to_hold: toHold
                 })
                 setMaxQuantity(Infinity)
                 setPriceLoading(true)
@@ -144,7 +144,6 @@ const Submit = ({ manager }) => {
                         remarks: "",
                         is_adhoc: isAdhoc,
                         to_hold: toHold,
-                        submit_from_worker_date: undefined,
                         hold_info: items[itemIndex].hold_info
                     })
 
@@ -189,11 +188,11 @@ const Submit = ({ manager }) => {
 
     const onSubmit = async () => {
 
-        const res = await submitFromWorker({ ...submission, is_adhoc: isAdhoc, to_hold: toHold }, worker.worker_id)
+        const res = await submitFromWorker({ ...submission, is_adhoc: isAdhoc, to_hold: toHold, submit_date: submitDate }, worker.worker_id)
         console.log(res.data)
 
         setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
-        const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc);
+        const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc, submitDate);
         setItems(itemsData);
         setItemIndex("");
         setCurrentWorkerPrice("");
@@ -224,6 +223,15 @@ const Submit = ({ manager }) => {
     return (
         <div>
             <FormGroup style={{ width: "500px", paddingTop: "20px" }}>
+                <Typography>Submit Date:</Typography>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        value={dayjs(submitDate, 'YYYY-MM-DD')}
+                        onChange={(d) => { setSubmitDate(d.format('YYYY-MM-DD')) }}
+                        format="DD/MM/YYYY"
+                        slotProps={{ textField: { style: { marginBottom: "15px", width: "400px" } } }}
+                    />
+                </LocalizationProvider>
                 {/* <FormControl style={{ padding: "15px" }}> */}
                 <div style={{ display: 'flex' }}>
                     <Box style={{ marginRight: "20px", width: "400px", height: "100px" }}>
@@ -279,20 +287,6 @@ const Submit = ({ manager }) => {
                     <Box>
                         {isAdhoc && (
                             <>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker
-                                        label="Submit from Worker on Date"
-                                        format="DD/MM/YYYY"
-                                        value={submission.submit_from_worker_date ? dayjs(submission.submit_from_worker_date, 'YYYY-MM-DD') : null}
-                                        onChange={(d) => {
-                                            const formattedDate = d ? d.format('YYYY-MM-DD') : '';
-                                            setSubmission({ ...submission, submit_from_worker_date: formattedDate });
-                                        }}
-                                        maxDate={dayjs()}
-                                        disabled={submission.design_number === ""}
-                                        sx={{ width: '275px', mt: 1 }}
-                                    />
-                                </LocalizationProvider>
                                 {(priceLoading && itemIndex !== "") ? <CircularProgress size={20} /> :
                                     <Typography style={{ marginTop: "10px" }}>Current Price: {currentWorkerPrice}</Typography>
                                 }

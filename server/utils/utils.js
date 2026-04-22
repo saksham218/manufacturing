@@ -18,23 +18,23 @@ export const isSameDay = (d1, d2) => {
 }
 
 export const isDayLessThanOrEqualTo = (d1, d2) => {
-    console.log("isDayLessThanOrEqualTo - Original d1:", d1);
-    console.log("isDayLessThanOrEqualTo - Original d2:", d2);
+    // console.log("isDayLessThanOrEqualTo - Original d1:", d1);
+    // console.log("isDayLessThanOrEqualTo - Original d2:", d2);
     if (!(d1 instanceof Date)) d1 = new Date(d1);
     if (!(d2 instanceof Date)) d2 = new Date(d2);
-    console.log("isDayLessThanOrEqualTo - Converted d1:", d1);
-    console.log("isDayLessThanOrEqualTo - Converted d2:", d2);
+    // console.log("isDayLessThanOrEqualTo - Converted d1:", d1);
+    // console.log("isDayLessThanOrEqualTo - Converted d2:", d2);
 
     return d1.getFullYear() < d2.getFullYear() || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() < d2.getMonth()) || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() <= d2.getDate());
 }
 
 export const isDayGreaterThanOrEqualTo = (d1, d2) => {
-    console.log("isDayGreaterThanOrEqualTo - Original d1:", d1);
-    console.log("isDayGreaterThanOrEqualTo - Original d2:", d2);
+    // console.log("isDayGreaterThanOrEqualTo - Original d1:", d1);
+    // console.log("isDayGreaterThanOrEqualTo - Original d2:", d2);
     if (!(d1 instanceof Date)) d1 = new Date(d1);
     if (!(d2 instanceof Date)) d2 = new Date(d2);
-    console.log("isDayGreaterThanOrEqualTo - Converted d1:", d1);
-    console.log("isDayGreaterThanOrEqualTo - Converted d2:", d2);
+    // console.log("isDayGreaterThanOrEqualTo - Converted d1:", d1);
+    // console.log("isDayGreaterThanOrEqualTo - Converted d2:", d2);
 
     return d1.getFullYear() > d2.getFullYear() || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() > d2.getMonth()) || (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() >= d2.getDate());
 }
@@ -109,7 +109,7 @@ export const workerPopulatePaths = {
     due_items: {},
     issue_history: {},
     submit_history: {},
-    deductions_from_proprietor: {},
+    accepted_history: {},
     forfeited_history: {},
     held_by_manager: {},
     on_hold_history: {}
@@ -193,6 +193,7 @@ export const depopulateHoldInfo = async (hold_info) => {
     return hold_info;
 }
 
+// adds to transient_list and transient_log (if provided) (not to any history)
 export const addToTransient = (transient_list, transient_log, check_equality, push_to_list_log, quantity, event_date, record_date) => {
 
     const list_index = transient_list.findIndex(check_equality);
@@ -248,7 +249,13 @@ export const addToTransient = (transient_list, transient_log, check_equality, pu
     }
 }
 
-export const getRemovalQuantitiesFromTransient = (transient_list, transient_log, keys, event_date) => {
+// calculates using transient_list and transient_log or addition_history/removal_history
+export const getRemovalQuantitiesFromTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, keys, event_date) => {
+
+    if (!transient_log && !(addition_history && addition_event_date_key && removal_history && removal_event_date_key)) {
+        throw new Error("Invalid state: neither transient_log nor addition_history/removal_history provided");
+    }
+
     const result = [];
     const transient_list_map = new Map();
     for (let i = 0; i < transient_list.length; i++) {
@@ -257,27 +264,71 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
             result.push(item);
         } else {
             const key = hashObject(item, keys);
-            transient_list_map.set(key, { ...item, event_on_or_before_found: false, quantity: Infinity });
+            transient_list_map.set(key, transient_log ? { ...item, event_on_or_before_found: false, quantity: Infinity } : { ...item, current_quantity: 0, quantity: Infinity, prev_history_event_date: null });
         }
 
     }
-    for (let i = transient_log.length - 1; i >= 0; i--) {
-        const log = transient_log[i];
-        const logHash = hashObject(log, keys);
-        if (transient_list_map.has(logHash)) {
-            if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
-                transient_list_map.get(logHash).quantity = Math.min(transient_list_map.get(logHash).quantity, log.quantity);
-            } else {
-                if (!transient_list_map.get(logHash).event_on_or_before_found) {
-                    transient_list_map.get(logHash).event_on_or_before_found = true;
+
+    if (transient_log) {
+        for (let i = transient_log.length - 1; i >= 0; i--) {
+            const log = transient_log[i];
+            const logHash = hashObject(log, keys);
+            if (transient_list_map.has(logHash)) {
+                if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
                     transient_list_map.get(logHash).quantity = Math.min(transient_list_map.get(logHash).quantity, log.quantity);
+                } else {
+                    if (!transient_list_map.get(logHash).event_on_or_before_found) {
+                        transient_list_map.get(logHash).event_on_or_before_found = true;
+                        transient_list_map.get(logHash).quantity = Math.min(transient_list_map.get(logHash).quantity, log.quantity);
+                    }
                 }
             }
         }
+    } else {
+        console.log("transient_list_map", transient_list_map)
+        const sorted_additions = [...addition_history].sort((a, b) => new Date(a[addition_event_date_key]) - new Date(b[addition_event_date_key]));
+        const sorted_removals = [...removal_history].sort((a, b) => new Date(a[removal_event_date_key]) - new Date(b[removal_event_date_key]));
+        let addition_index = 0;
+        let removal_index = 0;
+        while (addition_index < sorted_additions.length || removal_index < sorted_removals.length) {
+            let event;
+            let mode;
+            let history_event_date;
+            if (addition_index < sorted_additions.length && (removal_index >= sorted_removals.length || isDayLessThanOrEqualTo(sorted_additions[addition_index][addition_event_date_key], sorted_removals[removal_index][removal_event_date_key]))) {
+                event = sorted_additions[addition_index];
+                mode = "addition";
+                history_event_date = sorted_additions[addition_index][addition_event_date_key];
+                addition_index++;
+            } else {
+                event = sorted_removals[removal_index];
+                mode = "removal";
+                history_event_date = sorted_removals[removal_index][removal_event_date_key];
+                removal_index++;
+            }
+            const eventHash = hashObject(event, keys);
+            if (transient_list_map.has(eventHash)) {
+
+                if (!isDayLessThanOrEqualTo(history_event_date, transient_list_map.get(eventHash).prev_history_event_date) && !isDayLessThanOrEqualTo(history_event_date, event_date)) {
+                    transient_list_map.get(eventHash).quantity = Math.min(transient_list_map.get(eventHash).quantity, transient_list_map.get(eventHash).current_quantity);
+                }
+
+                if (mode === "addition") {
+                    transient_list_map.get(eventHash).current_quantity += event.quantity;
+                } else {
+                    transient_list_map.get(eventHash).current_quantity -= event.quantity;
+                }
+                transient_list_map.get(eventHash).prev_history_event_date = history_event_date;
+            }
+        }
+        transient_list_map.forEach((value) => {
+            if (!isDayLessThanOrEqualTo(value.prev_history_event_date, event_date)) {
+                value.quantity = Math.min(value.quantity, value.current_quantity);
+            }
+        });
     }
 
     for (let [, value] of transient_list_map) {
-        if (value.event_on_or_before_found && value.quantity > 0) {
+        if ((value.event_on_or_before_found || !transient_log) && value.quantity > 0) {
             const res = {}
             for (let key of keys) {
                 res[key] = value[key];
@@ -289,7 +340,12 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
     return result;
 }
 
-export const validateAndRemoveFromTransient = (transient_list, transient_log, check_equality, push_to_log, quantity, event_date, record_date) => {
+// validates and removes from transient_list and transient_log (if provided) (not from any history)
+export const validateAndRemoveFromTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, check_equality, push_to_log, quantity, event_date, record_date) => {
+
+    if (!transient_log && !(addition_history && addition_event_date_key && removal_history && removal_event_date_key)) {
+        throw new Error("Invalid state: neither transient_log nor addition_history/removal_history provided");
+    }
 
     const list_index = transient_list.findIndex(item => check_equality(item) && quantity <= item.quantity);
     if (list_index === -1) {
@@ -332,6 +388,57 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ch
             if (check_equality(transient_log[j])) {
                 transient_log[j].quantity -= Number(quantity);
                 transient_log[j].record_date = record_date;
+            }
+        }
+
+    } else {
+
+        const sorted_additions = [...addition_history].sort((a, b) => new Date(a[addition_event_date_key]) - new Date(b[addition_event_date_key]));
+        const sorted_removals = [...removal_history].sort((a, b) => new Date(a[removal_event_date_key]) - new Date(b[removal_event_date_key]));
+        let addition_index = 0;
+        let removal_index = 0;
+        let current_quantity = 0;
+        let prev_history_event_date = null;
+
+        while (addition_index < sorted_additions.length || removal_index < sorted_removals.length) {
+
+            let event;
+            let mode;
+            let history_event_date;
+
+            if (addition_index < sorted_additions.length && (removal_index >= sorted_removals.length || isDayLessThanOrEqualTo(sorted_additions[addition_index][addition_event_date_key], sorted_removals[removal_index][removal_event_date_key]))) {
+                event = sorted_additions[addition_index];
+                mode = "addition";
+                history_event_date = sorted_additions[addition_index][addition_event_date_key];
+                addition_index++;
+            } else {
+                event = sorted_removals[removal_index];
+                mode = "removal";
+                history_event_date = sorted_removals[removal_index][removal_event_date_key];
+                removal_index++;
+            }
+
+            if (check_equality(event)) {
+
+
+                if (!isDayLessThanOrEqualTo(history_event_date, prev_history_event_date) && !isDayLessThanOrEqualTo(history_event_date, event_date)) {
+                    if (current_quantity < quantity) {
+                        return false;
+                    }
+                }
+
+
+                if (mode === "addition") {
+                    current_quantity += Number(event.quantity);
+                } else {
+                    current_quantity -= Number(event.quantity);
+                }
+                prev_history_event_date = history_event_date;
+            }
+        }
+        if (!isDayLessThanOrEqualTo(prev_history_event_date, event_date)) {
+            if (current_quantity < quantity) {
+                return false;
             }
         }
 

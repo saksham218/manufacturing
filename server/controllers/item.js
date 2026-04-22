@@ -4,6 +4,8 @@ import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
 import { getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
 
+import _ from 'lodash';
+
 export const getItems = async (req, res) => {
 
     const proprietor_id = req.params.proprietor_id
@@ -31,7 +33,7 @@ export const getItems = async (req, res) => {
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -60,7 +62,7 @@ export const createItem = async (req, res) => {
         res.status(201).json(newItem)
     }
     catch (err) {
-        res.status(409).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -81,42 +83,60 @@ export const getItemsForIssueToWorker = async (req, res) => {
 
         const peparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        const itemsForIssue = getRemovalQuantitiesFromTransient(peparedManager.due_forward, peparedManager.due_forward_log, ['item', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info', 'price'], issue_date)
-            .map(item => ({
-                design_number: item.item.design_number,
-                description: item.item.description,
-                quantity: item.quantity,
-                underprocessing_value: item.underprocessing_value,
-                remarks_from_proprietor: item.remarks_from_proprietor,
-                hold_info: item.hold_info,
-                price: item.price
-            }));
+        const itemsForIssue = getRemovalQuantitiesFromTransient(
+            peparedManager.due_forward,
+            peparedManager.due_forward_log,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            ['item', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info', 'price'],
+            issue_date
+        ).map(item => ({
+            design_number: item.item.design_number,
+            description: item.item.description,
+            quantity: item.quantity,
+            underprocessing_value: item.underprocessing_value,
+            remarks_from_proprietor: item.remarks_from_proprietor,
+            hold_info: item.hold_info,
+            price: item.price
+        }));
 
         return res.status(200).json(itemsForIssue)
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
 export const getItemsForSubmitFromWorker = async (req, res) => {
     const worker_id = req.params.worker_id
     console.log("get items for submit worker_id: ", worker_id)
+
+    const { submit_date } = req.body
+
     try {
-        const worker = await Worker.findOne({ worker_id: worker_id }, { due_items: 1, manager: 1 }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' }).lean()
+        const worker = await Worker.findOne({ worker_id: worker_id }, { due_items: 1, manager: 1, issue_history: 1, submit_history: 1 })
+            .populate([
+                { path: 'manager', model: 'Manager', select: 'manager_id proprietor' },
+                { path: 'due_items.item', model: 'Item', select: 'design_number description' },
+                { path: 'issue_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'submit_history.item', model: 'Item', select: 'design_number description' },
+            ])
+            .lean()
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" })
 
         if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" })
 
-        const items = await Item.find({ proprietor: worker.manager.proprietor })
+        // const items = await Item.find({ proprietor: worker.manager.proprietor })
 
-        const peparedWorker = await prepare(workerPopulatePaths, worker, true)
+        const preparedWorker = await prepare(workerPopulatePaths, worker, true)
 
         // console.log("due_items", peparedWorker.due_items)
 
-        const itemsForSubmit = []
+        // const itemsForSubmit = []
         // items.forEach((item) => {
         //     const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity > 0))
         //     if (index !== -1) {
@@ -124,19 +144,38 @@ export const getItemsForSubmitFromWorker = async (req, res) => {
         //     }
         // })
 
-        items.forEach((item) => {
-            peparedWorker.due_items.forEach((di) => {
-                if (di.item.equals(item._id) && di.quantity > 0) {
-                    itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor, hold_info: di.hold_info })
-                }
-            })
-        })
+        // items.forEach((item) => {
+        //     peparedWorker.due_items.forEach((di) => {
+        //         if (di.item.equals(item._id) && di.quantity > 0) {
+        //             itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor, hold_info: di.hold_info })
+        //         }
+        //     })
+        // })
+
+        const itemsForSubmit = getRemovalQuantitiesFromTransient(
+            preparedWorker.due_items,
+            undefined,
+            preparedWorker.issue_history,
+            "issue_date",
+            _.filter(preparedWorker.submit_history, (sh) => !sh.is_adhoc),
+            "submit_date",
+            ['item', 'price', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info'],
+            submit_date
+        ).map(item => ({
+            design_number: item.item.design_number,
+            description: item.item.description,
+            quantity: item.quantity,
+            price: item.price,
+            underprocessing_value: item.underprocessing_value,
+            remarks_from_proprietor: item.remarks_from_proprietor,
+            hold_info: item.hold_info
+        }));
 
         return res.status(200).json(itemsForSubmit)
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -179,6 +218,6 @@ export const getItemsForSubmitFromManager = async (req, res) => {
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
