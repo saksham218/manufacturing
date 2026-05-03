@@ -179,42 +179,35 @@ export const getItemsForSubmitFromWorker = async (req, res) => {
     }
 }
 
-export const getItemsForSubmitFromManager = async (req, res) => {
+export const getItemsForSubmitToProprietor = async (req, res) => {
     const manager_id = req.params.manager_id
-    console.log("get items for final submit manager_id: ", manager_id)
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
+
+    const { submit_date } = req.body
+
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward').populate([
+        const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward due_backward_log').populate([
             { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },
-            { path: 'due_backward.items.item', model: 'Item', select: 'design_number description' }
+            { path: 'due_backward.item', model: 'Item', select: 'design_number description' },
+            { path: 'due_backward_log.worker', model: 'Worker', select: 'name worker_id' },
+            { path: 'due_backward_log.item', model: 'Item', select: 'design_number description' }
         ]).lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
-        const peparedManager = await prepare(managerPopulatePaths, manager, true)
-        // console.log("peparedManager", peparedManager)
+        const preparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        // const items = await Item.find({ proprietor: manager.proprietor })
+        const keys = ['worker', 'item', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info']
 
-        // const itemsForFinalSubmit = []
-        // items.forEach((item) => {
-        //     const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
-        //     if (index !== -1) {
-        //         itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: manager.due_backward[index].quantity })
-        //     }
-        // })
+        const itemsForSubmit = getRemovalQuantitiesFromTransient(
+            preparedManager.due_backward,
+            preparedManager.due_backward_log,
+            undefined, undefined, undefined, undefined,
+            keys,
+            submit_date
+        )
 
-        // items.forEach((item) => {
-        //     manager.due_backward.forEach((df) => {
-        //         if (df.item.equals(item._id) && df.quantity > 0) {
-        //             itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, price: df.price, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, remarks_from_manager: df.remarks_from_manager, deduction: df.deduction })
-        //         }
-        //     })
-        // })
-
-        // return res.status(200).json(itemsForFinalSubmit)
-
-        return res.status(200).json(peparedManager.due_backward)
+        return res.status(200).json(itemsForSubmit)
     }
     catch (err) {
         console.log(err)

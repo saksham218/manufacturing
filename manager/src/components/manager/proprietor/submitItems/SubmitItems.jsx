@@ -4,55 +4,32 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
-import { getItemsForFinalSubmit } from '../../../../api'
-import ViewNestedTable from '../../../layouts/ViewNestedTable'
-import { managerDetailsViewConfig } from '../../../constants/ViewConstants'
+import { getItemsForSubmitToProprietor } from '../../../../api'
+import GroupedTable from '../../../layouts/GroupedTable'
 import SubmitItemsForm from './components/SubmitItemsForm'
-
-const getItemsData = async (manager_id) => {
-    try {
-        const res = await getItemsForFinalSubmit(manager_id)
-        console.log(res.data)
-
-        return res.data
-
-    }
-    catch (err) {
-        console.log(err)
-    }
-}
 
 const SubmitItems = ({ manager }) => {
 
-    const [dueBackward, setDueBackward] = useState([])
-    const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(-1)
     const [submitDate, setSubmitDate] = useState(dayjs().format('DD/MM/YYYY'))
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState([])
 
-    useEffect(() => {
+    const fetchData = async (manager_id, submit_date) => {
         setLoading(true)
-        getItemsData(manager.manager_id).then((itemsData) => {
-            setDueBackward(itemsData)
-            setLoading(false)
-        })
-    }, [manager])
+        try {
+            const res = await getItemsForSubmitToProprietor(manager_id, dayjs(submit_date, 'DD/MM/YYYY').format('YYYY-MM-DD'))
+            setData(res.data)
+        } catch (err) {
+            console.log(err)
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const submitDateObj = dayjs(submitDate, 'DD/MM/YYYY')
-        const filteredDueBackward = dueBackward.filter((group) => {
-            const submitFromWorkerDateObj = dayjs(group.submit_from_worker_date)
-            return submitFromWorkerDateObj.isBefore(submitDateObj, 'day') || submitFromWorkerDateObj.isSame(submitDateObj, 'day')
-        })
-        setData(filteredDueBackward)
-        const fNEI = filteredDueBackward.findIndex((dt) => dt.items.length > 0)
-        setFirstNonEmptyIndex(fNEI)
-    }, [submitDate, dueBackward])
+        fetchData(manager.manager_id, submitDate)
+    }, [manager, submitDate])
 
-    const reloadDueBackward = async () => {
-        const itemsData = await getItemsData(manager.manager_id)
-        setDueBackward(itemsData)
-    }
+    const reloadDueBackward = () => fetchData(manager.manager_id, submitDate)
 
     const submitItemsFormComponent = {
         component: SubmitItemsForm,
@@ -79,8 +56,8 @@ const SubmitItems = ({ manager }) => {
                 </LocalizationProvider>
             </Box>
             {loading ? <CircularProgress /> :
-                (data && data.length > 0 && firstNonEmptyIndex !== -1) ?
-                    <ViewNestedTable data={data} groupingKeys={managerDetailsViewConfig["due_backward"].grouping_keys} keys={managerDetailsViewConfig['due_backward'].keys} additionalComponents={[submitItemsFormComponent]} />
+                (data && data.length > 0) ?
+                    <GroupedTable data={data} groupKeys={['worker']} columns={['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'info']} additionalComponents={[submitItemsFormComponent]} />
                     :
                     <Typography>No Data for Due Backward</Typography>
             }

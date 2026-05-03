@@ -5,7 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { getWorkerDetails } from '../../../api'
-import ViewTable from '../../layouts/ViewTable'
+import GroupedTable from '../../layouts/GroupedTable'
 import { useWorker } from './workerContext/WorkerContext'
 import { workerDetailsViewConfig } from '../../constants/ViewConstants';
 
@@ -127,7 +127,8 @@ const ViewWorker = () => {
                             </Box>
                         </Box> : null}
                     <Typography >Total: {total}</Typography>
-                    {(data && data.length > 0) ? <ViewTable data={data} keys={viewConfig.keys} />
+                    {(data && data.length > 0)
+                        ? <GroupedTable data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
                         : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
                 </Box>
             </div>)

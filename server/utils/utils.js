@@ -99,10 +99,12 @@ export const managerPopulatePaths = {
     accepted_history: {},
     due_forward: {},
     due_backward: {},
+    due_backward_log: {},
     submissions: {},
     total_due: {},
     forfeited_history: {},
-    on_hold_history: {}
+    on_hold_history: {},
+    submit_history: {}
 }
 
 export const workerPopulatePaths = {
@@ -261,7 +263,12 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
     for (let i = 0; i < transient_list.length; i++) {
         const item = transient_list[i];
         if (isDayGreaterThanOrEqualTo(event_date, item.event_date)) {
-            result.push(item);
+            const res = {}
+            for (let key of keys) {
+                res[key] = item[key];
+            }
+            res.quantity = item.quantity;
+            result.push(res);
         } else {
             const key = hashObject(item, keys);
             transient_list_map.set(key, transient_log ? { ...item, event_on_or_before_found: false, quantity: Infinity } : { ...item, current_quantity: 0, quantity: Infinity, prev_history_event_date: null });
@@ -285,7 +292,6 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
             }
         }
     } else {
-        console.log("transient_list_map", transient_list_map)
         const sorted_additions = [...addition_history].sort((a, b) => new Date(a[addition_event_date_key]) - new Date(b[addition_event_date_key]));
         const sorted_removals = [...removal_history].sort((a, b) => new Date(a[removal_event_date_key]) - new Date(b[removal_event_date_key]));
         let addition_index = 0;
@@ -354,18 +360,16 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
 
     if (transient_log) {
         let i = transient_log.length - 1;
-        let current_date_last_index = i;
-        let current_date = transient_log[i].event_date;
+        let insert_index = -1;
         for (; i >= 0; i--) {
-            if (!isDayLessThanOrEqualTo(current_date, transient_log[i].event_date)) {
-                current_date = transient_log[i].event_date;
-                current_date_last_index = i;
-            }
-            if (check_equality(transient_log[i])) {
-                if (transient_log[i].quantity < quantity) {
-                    return false;
+            if (isDayLessThanOrEqualTo(transient_log[i].event_date, event_date)) {
+                if (insert_index === -1) {
+                    insert_index = i;
                 }
-                if (isDayLessThanOrEqualTo(transient_log[i].event_date, event_date)) {
+                if (check_equality(transient_log[i])) {
+                    if (transient_log[i].quantity < quantity) {
+                        return false;
+                    }
                     break;
                 }
             }
@@ -380,7 +384,7 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
             log_on_or_before_event_date.quantity -= Number(quantity);
             log_on_or_before_event_date.record_date = record_date;
         } else {
-            i = current_date_last_index + 1;
+            i = insert_index + 1;
             transient_log.splice(i, 0, { ...push_to_log, quantity: log_on_or_before_event_date.quantity - Number(quantity), record_date: record_date, event_date: event_date });
         }
 
@@ -418,9 +422,9 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
                 removal_index++;
             }
 
-            if (check_equality(event)) {
+            if (check_equality(event)) { // sure to be true for some history event since the transient list has an entry satisfying equality and quantity
 
-
+                // history_event_date has changed and is after event_date
                 if (!isDayLessThanOrEqualTo(history_event_date, prev_history_event_date) && !isDayLessThanOrEqualTo(history_event_date, event_date)) {
                     if (current_quantity < quantity) {
                         return false;
@@ -436,13 +440,16 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
                 prev_history_event_date = history_event_date;
             }
         }
+
+        // prev_history_event_date would never be null here since some history event must have satisfied the equality check
+        // quantity check has to be done only if prev_history_event_date is after event_date, as for an event after the last history event, quantity check with the transient list is sufficient
         if (!isDayLessThanOrEqualTo(prev_history_event_date, event_date)) {
             if (current_quantity < quantity) {
                 return false;
             }
         }
-
     }
+
 
     transient_list[list_index].quantity -= Number(quantity);
     if (transient_list[list_index].quantity === 0) {

@@ -8,12 +8,11 @@ import { useEffect } from 'react'
 import { getSubmissions } from '../../../../api'
 import { useManager } from '../managerContext/ManagerContext'
 import AcceptForm from './components/AcceptForm'
-import { managerDetailsViewConfig } from '../../../constants/ViewConstants'
-import ViewNestedTable from '../../../layouts/ViewNestedTable'
+import GroupedTable from '../../../layouts/GroupedTable'
 
-const getSubmissionsData = async (manager_id) => {
+const getSubmissionsData = async (manager_id, accept_date) => {
     try {
-        const res = await getSubmissions(manager_id);
+        const res = await getSubmissions(manager_id, accept_date);
         console.log(res.data)
 
         return res.data;
@@ -26,24 +25,9 @@ const getSubmissionsData = async (manager_id) => {
 const Accept = () => {
 
     const { manager } = useManager()
-    const [submissions, setSubmissions] = useState([])
-    const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(-1)
     const [loading, setLoading] = useState(false)
     const [actionDate, setActionDate] = useState(dayjs().format('DD/MM/YYYY'))
     const [data, setData] = useState([])
-
-    useEffect(() => {
-
-        const actionDateObj = dayjs(actionDate, 'DD/MM/YYYY')
-        const filteredSubmissions = submissions.filter((group) => {
-            const submitToProprietorDateObj = dayjs(group.submit_to_proprietor_date)
-            return submitToProprietorDateObj.isBefore(actionDateObj, 'day') || submitToProprietorDateObj.isSame(actionDateObj, 'day')
-        })
-        setData(filteredSubmissions)
-        const fNEI = filteredSubmissions.findIndex((dt) => dt.items.length > 0)
-        setFirstNonEmptyIndex(fNEI)
-
-    }, [actionDate, submissions])
 
     useEffect(() => {
 
@@ -52,22 +36,20 @@ const Accept = () => {
         if (!manager) return;
 
         setLoading(true)
-        getSubmissionsData(manager.manager_id).then((submissionsData) => {
+        getSubmissionsData(manager.manager_id, dayjs(actionDate, 'DD/MM/YYYY').format('YYYY-MM-DD')).then((submissionsData) => {
 
             if (submissionsData && isMounted) {
-                setSubmissions(submissionsData)
+                setData(submissionsData)
                 setLoading(false)
             }
         });
 
         return () => { isMounted = false }
-    }, [manager])
+    }, [manager, actionDate])
 
     const reloadSubmissionsData = async () => {
-        // setLoading(true)
-        const submissionsData = await getSubmissionsData(manager.manager_id)
-        setSubmissions(submissionsData)
-        // setLoading(false)
+        const submissionsData = await getSubmissionsData(manager.manager_id, dayjs(actionDate, 'DD/MM/YYYY').format('YYYY-MM-DD'))
+        setData(submissionsData)
     }
 
     const acceptFormComponent = {
@@ -77,7 +59,7 @@ const Accept = () => {
             manager: manager,
             actionDate: actionDate
         },
-        label: "accept"
+        label: "action"
     }
 
     return (
@@ -95,8 +77,8 @@ const Accept = () => {
             </Box>
             {
                 loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
-                    ((submissions && submissions.length > 0 && firstNonEmptyIndex !== -1) ?
-                        <ViewNestedTable data={data} groupingKeys={managerDetailsViewConfig['submissions'].grouping_keys} keys={managerDetailsViewConfig['submissions'].keys} additionalComponents={[acceptFormComponent]} />
+                    ((data && data.length > 0) ?
+                        <GroupedTable data={data} groupKeys={[]} columns={["worker", "submit_to_proprietor_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info",]} additionalComponents={[acceptFormComponent]} />
                         :
                         <Typography>No Data for Submissions</Typography>
                     )

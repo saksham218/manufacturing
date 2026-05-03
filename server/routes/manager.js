@@ -17,7 +17,7 @@ router.post('/:manager_id/submittoproprietor', manager, submitToProprietor);
 router.get('/:manager_id/:design_number/getpricesforfinalsubmit', manager, getPricesForFinalSubmit);
 router.post('/:manager_id/raiseexpenserequest', manager, raiseExpenseRequest);
 router.post('/login', loginManager);
-router.get('/:manager_id/getsubmissions', proprietor, getSubmissions);
+router.post('/:manager_id/getsubmissions', proprietor, getSubmissions);
 router.post('/:manager_id/acceptfrommanager', proprietor, acceptFromManager);
 
 export default router;

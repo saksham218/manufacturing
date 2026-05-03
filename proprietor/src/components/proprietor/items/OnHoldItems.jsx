@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Typography, CircularProgress } from '@mui/material'
 
-import ViewTable from '../../layouts/ViewTable'
+import GroupedTable from '../../layouts/GroupedTable'
 import { getOnHoldItems } from '../../../api'
 import { proprietorDetailsViewConfig } from '../../constants/ViewConstants'
 
@@ -35,7 +35,7 @@ const OnHoldItems = ({ proprietor }) => {
 
     return (
         <div>{loading ? <CircularProgress style={{ margin: "150px" }} /> : (
-            (data && data.length > 0) ? <ViewTable data={data} keys={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>
+            (data && data.length > 0) ? <GroupedTable data={data} groupKeys={[]} columns={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>
         )}
         </div>
     )

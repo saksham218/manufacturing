@@ -5,7 +5,7 @@ import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
-import { addToTransient, depopulateHoldInfo, isDayGreaterThanOrEqualTo, isDayLessThanOrEqualTo, isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
+import { addToTransient, validateAndRemoveFromTransient, depopulateHoldInfo, getRemovalQuantitiesFromTransient, isDayGreaterThanOrEqualTo, isDayLessThanOrEqualTo, isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -52,6 +52,8 @@ export const getManager = async (req, res) => {
                 { path: 'due_forward_log.item', model: 'Item', select: 'design_number description' },
                 { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'due_backward.item', model: 'Item', select: 'design_number description' },
+                { path: 'due_backward_log.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'due_backward_log.item', model: 'Item', select: 'design_number description' },
                 { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'submissions.item', model: 'Item', select: 'design_number description' },
                 { path: 'total_due.item', model: 'Item', select: 'design_number description' },
@@ -60,6 +62,8 @@ export const getManager = async (req, res) => {
                 { path: 'forfeited_history.item', model: 'Item', select: 'design_number description' },
                 { path: 'on_hold_history.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'on_hold_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'submit_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'submit_history.item', model: 'Item', select: 'design_number description' },
             ]).lean();
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
@@ -404,10 +408,8 @@ export const issueOnHoldItemsToManager = async (req, res) => {
 
 
 export const submitToProprietor = async (req, res) => {
-    console.log(req.body);
     const manager_id = req.params.manager_id;
-    console.log("submit to proprietor manager_id: ", manager_id);
-    const { worker_id, design_number, submit_quantity, price, deduction_from_manager, submit_to_proprietor_date, submit_from_worker_date, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold, hold_info } = req.body;
+    const { worker_id, design_number, quantity, price, deduction_from_manager, submit_date, remarks_from_manager, underprocessing_value, remarks_from_proprietor, is_adhoc, to_hold, hold_info } = req.body;
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
@@ -420,80 +422,82 @@ export const submitToProprietor = async (req, res) => {
 
         const item = await Item.findOne({ design_number: design_number, proprietor: manager.proprietor });
         if (!item) return res.status(404).json({ message: "Item doesn't exist" });
-        // const [day, month, year] = date.split('/').map(Number);
-        // const dateObj = new Date(year, month - 1, day);
 
+        const dateObj = new Date();
+        const submitDateObj = new Date(submit_date);
 
-        // const tdIndex = manager.total_due.findIndex((dueItem) => (dueItem.item.equals(item._id) && dueItem.quantity >= Number(quantity) && dueItem.remarks_from_proprietor === remarks_from_proprietor && dueItem.underprocessing_value === Number(underprocessing_value)));
-        // if (tdIndex === -1) {
-        //     return res.status(404).json({ message: `${quantity} of ${design_number} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor} not issued to ${manager_id}` });
-        // }
-        // else {
-        //     manager.total_due[tdIndex].quantity -= Number(quantity);
-        //     if (manager.total_due[tdIndex].quantity === 0) {
-        //         manager.total_due.splice(tdIndex, 1);
-        //     }
-        // }
+        const preparedHoldInfo = await depopulateHoldInfo(hold_info);
 
-        const current_date = new Date();
-        const submit_to_proprietor_date_obj = new Date(submit_to_proprietor_date);
+        const removalSuccess = validateAndRemoveFromTransient(
+            manager.due_backward,
+            manager.due_backward_log,
+            undefined, undefined, undefined, undefined,
+            (db) => db.worker.equals(worker._id) && db.item.equals(item._id) && db.price === Number(price) && db.deduction_from_manager === Number(deduction_from_manager) && db.remarks_from_manager === remarks_from_manager && Number(db.underprocessing_value) === Number(underprocessing_value) && db.remarks_from_proprietor === remarks_from_proprietor && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo),
+            {
+                worker: worker._id,
+                item: item._id,
+                price: Number(price),
+                deduction_from_manager: Number(deduction_from_manager),
+                remarks_from_manager,
+                underprocessing_value: Number(underprocessing_value),
+                remarks_from_proprietor,
+                is_adhoc,
+                to_hold,
+                hold_info: preparedHoldInfo
+            },
+            Number(quantity),
+            submitDateObj,
+            dateObj
+        );
 
-        if (!(isDayGreaterThanOrEqualTo(submit_to_proprietor_date_obj, submit_from_worker_date) && isDayLessThanOrEqualTo(submit_to_proprietor_date_obj, current_date))) {
-            return res.status(400).json({ message: 'Submit to proprietor should be after submit from worker and before or by today' })
+        if (!removalSuccess) {
+            return res.status(404).json({ message: `${quantity} of ${design_number} with is_adhoc: ${is_adhoc}, to_hold: ${to_hold}, price: ${price}, deduction_from_manager: ${deduction_from_manager}, remarks_from_manager: ${remarks_from_manager}, remarks_from_proprietor: ${remarks_from_proprietor}, underprocessing_value: ${underprocessing_value} not due backward at manager: ${manager_id} for worker: ${worker_id}` });
         }
 
-        const preparedHoldInfo = await depopulateHoldInfo(hold_info)
-        const dbIndex = manager.due_backward.findIndex((w) => w.worker.equals(worker._id) && isSameDay(w.submit_from_worker_date, submit_from_worker_date));
-        if (dbIndex === -1) {
-            return res.status(404).json({ message: `no goods due backward for worker: ${worker_id}, submitted from worker on: ${submit_from_worker_date}` });
-        }
-        else {
-            const dbItemIndex = manager.due_backward[dbIndex].items.findIndex((i) => (i.item.equals(item._id) && i.quantity >= Number(submit_quantity) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && (i.is_adhoc === is_adhoc) && (i.to_hold === to_hold) && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
-            if (dbItemIndex === -1) {
-                console.log("not found hold info", preparedHoldInfo)
-                return res.status(404).json({ message: `${submit_quantity} of ${design_number}, to_hold: ${to_hold} and is_adhoc: ${is_adhoc} not due backward at manager: ${manager_id}, submitted by worker: ${worker_id} on ${submit_from_worker_date} with price: ${price}, deduction from manager: ${deduction_from_manager} and remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}` });
-            }
-            else {
-                manager.due_backward[dbIndex].items[dbItemIndex].quantity -= Number(submit_quantity);
-                if (manager.due_backward[dbIndex].items[dbItemIndex].quantity === 0) {
-                    manager.due_backward[dbIndex].items.splice(dbItemIndex, 1);
-                }
+        addToTransient(
+            manager.submissions,
+            null,
+            (db) => db.worker.equals(worker._id) && db.item.equals(item._id) && isSameDay(submitDateObj, db.submit_to_proprietor_date) && db.price === Number(price) && db.deduction_from_manager === Number(deduction_from_manager) && db.remarks_from_manager === remarks_from_manager && Number(db.underprocessing_value) === Number(underprocessing_value) && db.remarks_from_proprietor === remarks_from_proprietor && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo),
+            {
+                worker: worker._id,
+                item: item._id,
+                submit_to_proprietor_date: submitDateObj,
+                price: Number(price),
+                deduction_from_manager: Number(deduction_from_manager),
+                remarks_from_manager,
+                underprocessing_value: Number(underprocessing_value),
+                remarks_from_proprietor,
+                is_adhoc,
+                to_hold,
+                hold_info: preparedHoldInfo
+            },
+            Number(quantity),
+            submitDateObj,
+            dateObj
+        );
 
-                if (manager.due_backward[dbIndex].items.length === 0) {
-                    manager.due_backward.splice(dbIndex, 1);
-                }
+        manager.submit_history.push({
+            submit_date: submitDateObj,
+            item: item._id,
+            quantity: Number(quantity),
+            price: Number(price),
+            underprocessing_value: Number(underprocessing_value),
+            remarks_from_proprietor,
+            deduction_from_manager: Number(deduction_from_manager),
+            remarks_from_manager,
+            is_adhoc,
+            to_hold,
+            hold_info: preparedHoldInfo,
+            worker: worker._id,
+            record_date: dateObj
+        });
 
-            }
-        }
-
-        // manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
-
-        let subIndex = manager.submissions.findIndex((s) => s.worker.equals(worker._id) && isSameDay(s.submit_to_proprietor_date, submit_to_proprietor_date_obj));
-        if (subIndex === -1) {
-            manager.submissions.push({ worker: worker._id, submit_to_proprietor_date: submit_to_proprietor_date_obj, items: [] });
-            subIndex = manager.submissions.length - 1;
-        }
-
-        // if (Number(deduction_from_manager) !== 0 || remarks_from_manager !== "" || remarks_from_proprietor !== "" || to_hold) {
-        //     manager.submissions[sWorkerIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, date: current_date, is_adhoc: is_adhoc, to_hold: to_hold });
-        // }
-        // else {
-        let sItemIndex = manager.submissions[subIndex].items.findIndex((i) => (i.item.equals(item._id) && i.price === Number(price) && i.deduction_from_manager === Number(deduction_from_manager) && i.remarks_from_manager === remarks_from_manager && i.remarks_from_proprietor === remarks_from_proprietor && Number(i.underprocessing_value) === Number(underprocessing_value) && is_adhoc === i.is_adhoc && to_hold === i.to_hold && isSameHoldInfo(i.hold_info, preparedHoldInfo)));
-        if (sItemIndex === -1) {
-            manager.submissions[subIndex].items.push({ item: item._id, quantity: Number(submit_quantity), price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager: remarks_from_manager, remarks_from_proprietor: remarks_from_proprietor, underprocessing_value: underprocessing_value, is_adhoc: is_adhoc, to_hold: to_hold, hold_info: preparedHoldInfo });
-        }
-        else {
-            manager.submissions[subIndex].items[sItemIndex].quantity += Number(submit_quantity);
-        }
-        // }
-
-        // console.log("manager: ", manager);
         await manager.save();
         return res.status(200).json({ result: manager });
 
     }
     catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: "Something went wrong" });
     }
 }
@@ -579,22 +583,53 @@ export const getPricesForFinalSubmit = async (req, res) => {
 
 export const getSubmissions = async (req, res) => {
     const manager_id = req.params.manager_id;
-    console.log(`get submissions manager_id: ${manager_id}`);
+    const { accept_date } = req.body;
 
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }).select('submissions proprietor').populate([
-            { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' },
-            { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
-            { path: 'submissions.items.item', model: 'Item', select: 'design_number description' }
-        ]).lean();
+        const manager = await Manager.findOne({ manager_id: manager_id })
+            .select('submissions proprietor submit_history accepted_history on_hold_history forfeited_history')
+            .populate([
+                { path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' },
+                { path: 'submissions.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'submissions.item', model: 'Item', select: 'design_number description' },
+                { path: 'submit_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'submit_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'accepted_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'accepted_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'on_hold_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'on_hold_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'forfeited_history.worker', model: 'Worker', select: 'name worker_id' },
+                { path: 'forfeited_history.item', model: 'Item', select: 'design_number description' },
+            ]).lean();
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" });
         if (!req.proprietor || req.proprietor.proprietor_id !== manager.proprietor.proprietor_id) return res.status(403).json({ message: "Access Denied" });
-        const peparedManager = await prepare(managerPopulatePaths, manager, true)
-        res.status(200).json(peparedManager.submissions);
+
+        const peparedManager = await prepare(managerPopulatePaths, manager, true);
+
+        const additionHistory = peparedManager.submit_history.map(sh => ({ ...sh, submit_to_proprietor_date: sh.submit_date }));
+
+        const removalHistory = [
+            ...peparedManager.accepted_history.map(ah => ({ ...ah, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
+            ...peparedManager.on_hold_history.map(oh => ({ ...oh, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
+            ...peparedManager.forfeited_history.map(fh => ({ ...fh, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
+        ];
+
+        const submissions = getRemovalQuantitiesFromTransient(
+            peparedManager.submissions,
+            undefined,
+            additionHistory,
+            'submit_date',
+            removalHistory,
+            'action_date',
+            ['worker', 'item', 'submit_to_proprietor_date', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info'],
+            accept_date
+        );
+
+        return res.status(200).json(submissions);
     }
     catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: "Something went wrong" });
     }
 }

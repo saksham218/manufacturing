@@ -4,25 +4,24 @@ import CustomButton from '../../../../layouts/CustomButton'
 import { submitToProprietor } from '../../../../../api'
 import dayjs from 'dayjs'
 
-const SubmitItemsForm = ({ item, group, reloadDueBackward, manager, submitDate }) => {
+const SubmitItemsForm = ({ item, reloadDueBackward, manager, submitDate }) => {
 
     const [submitQuantity, setSubmitQuantity] = useState("")
 
     const onSubmit = async () => {
 
         const submission = {
-            worker_id: group.worker.worker_id,
+            worker_id: item.worker.worker_id,
             design_number: item.item.design_number,
             price: item.price,
-            submit_quantity: submitQuantity,
+            quantity: submitQuantity,
             deduction_from_manager: item.deduction_from_manager,
             remarks_from_manager: item.remarks_from_manager,
             underprocessing_value: item.underprocessing_value,
             remarks_from_proprietor: item.remarks_from_proprietor,
             is_adhoc: item.is_adhoc,
             to_hold: item.to_hold,
-            submit_to_proprietor_date: dayjs(submitDate, 'DD/MM/YYYY').format('YYYY-MM-DD'),
-            submit_from_worker_date: dayjs(group.submit_from_worker_date).format('YYYY-MM-DD'),
+            submit_date: dayjs(submitDate, 'DD/MM/YYYY').format('YYYY-MM-DD'),
             hold_info: item.hold_info
         }
         console.log(submission)

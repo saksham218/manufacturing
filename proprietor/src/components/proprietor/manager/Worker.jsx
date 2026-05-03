@@ -5,7 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../../api'
-import ViewTable from '../../layouts/ViewTable'
+import GroupedTable from '../../layouts/GroupedTable'
 import { useManager } from './managerContext/ManagerContext'
 import { workerDetailsViewConfig } from '../../constants/ViewConstants';
 import CustomButton from '../../layouts/CustomButton'
@@ -247,7 +247,7 @@ const Worker = ({ proprietor }) => {
                             </>
                         )}
                     </Box>
-                    <Box style={{ width: '800px', paddingTop: '20px' }}>
+                    <Box style={{ paddingTop: '20px' }}>
                         {detailsLoading ? <CircularProgress /> : (
                             <>
                                 <Typography>Worker Details:</Typography>
@@ -276,7 +276,8 @@ const Worker = ({ proprietor }) => {
                                             </Box>
                                         </Box> : null}
                                     <Typography style={{ paddingTop: "40px", paddingLeft: "20px" }}>Total: {total}</Typography>
-                                    {(data && data.length > 0) ? <ViewTable data={data} keys={viewConfig.keys} />
+                                    {(data && data.length > 0)
+                                        ? <GroupedTable data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
                                         : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
                                 </Box>
                             </>

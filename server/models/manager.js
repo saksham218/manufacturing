@@ -62,7 +62,10 @@ const managerSchema = new mongoose.Schema({
                 default: false
             },
             hold_info: Hold_Info,
-            was_to_hold: Boolean,
+            was_to_hold: {
+                type: Boolean,
+                default: false
+            },
             record_date: Date
         }],
         default: []
@@ -177,6 +180,7 @@ const managerSchema = new mongoose.Schema({
             remarks_from_manager: String,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
+            submit_to_proprietor_date: Date,
             is_adhoc: {
                 type: Boolean,
                 default: false
@@ -278,7 +282,10 @@ const managerSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
             },
-            was_to_hold: Boolean,
+            was_to_hold: {
+                type: Boolean,
+                default: false
+            },
             record_date: Date
         }],
         default: []
@@ -312,7 +319,10 @@ const managerSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
             },
-            was_to_hold: Boolean,
+            was_to_hold: {
+                type: Boolean,
+                default: false
+            },
             record_date: Date
         }],
         default: []
@@ -339,7 +349,10 @@ const managerSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Worker'
             },
-            to_hold: Boolean,
+            to_hold: {
+                type: Boolean,
+                default: false
+            },
             record_date: Date
         }],
         default: []
