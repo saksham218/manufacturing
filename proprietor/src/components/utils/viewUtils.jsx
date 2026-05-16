@@ -20,7 +20,7 @@ export const computeContent = (item, key, forSearch) => {
         if (forSearch) {
             let keywordString = ''
             keywordString += !!item['is_adhoc'] ? 'Adhoc' : ''
-            keywordString += !!item['to_hold'] ? 'Hold' : ''
+            keywordString += !!item['to_hold'] || !!item['was_to_hold'] ? 'Hold' : ''
             keywordString += item['hold_info']?.is_hold ? 'Hold Info' : ''
             return keywordString
         }
@@ -31,7 +31,7 @@ export const computeContent = (item, key, forSearch) => {
                 color: 'black',
                 width: '70px'
             }} />}
-            {!!item['to_hold'] && <Chip label="Hold" size="small" style={{
+            {(!!item['to_hold'] || !!item['was_to_hold']) && <Chip label="Hold" size="small" style={{
                 backgroundColor: 'orange',
                 color: 'black',
                 width: '70px'
@@ -48,7 +48,7 @@ export const computeContent = (item, key, forSearch) => {
 }
 
 export const computeBackgroundColor = (item) => {
-    if (item?.is_adhoc && item?.to_hold) {
+    if (item?.is_adhoc && (item?.to_hold || item?.was_to_hold)) {
         return 'pink'
     }
 
@@ -56,7 +56,7 @@ export const computeBackgroundColor = (item) => {
         return 'yellow'
     }
 
-    if ((item?.to_hold)) {
+    if (item?.to_hold || item?.was_to_hold) {
         return 'orange'
     }
 
@@ -64,7 +64,7 @@ export const computeBackgroundColor = (item) => {
 }
 
 export const filterKeys = (keys) => {
-    const notRequired = ['_id', 'is_adhoc', 'to_hold']
+    const notRequired = ['_id', 'is_adhoc', 'to_hold', 'was_to_hold']
     return keys.filter((key) => !notRequired.includes(key))
 }
 

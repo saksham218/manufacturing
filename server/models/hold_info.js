@@ -22,10 +22,6 @@ const Hold_Info = new mongoose.Schema({
     },
     holding_remarks: String,
     submit_to_proprietor_date: Date,
-    was_to_hold: {
-        type: Boolean,
-        default: false
-    },
     worker: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Worker'

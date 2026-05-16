@@ -151,6 +151,9 @@ const Issue = ({ manager }) => {
                     {option.remarks_from_proprietor && (
                         <>, Remarks from proprietor: {option.remarks_from_proprietor}</>
                     )}
+                    {option.price && (
+                        <>, Price: {option.price}</>
+                    )}
                 </div>
             </div>
         </li>
@@ -198,7 +201,7 @@ const Issue = ({ manager }) => {
                         </>
                     }
                 </Box>
-                <Box style={{ height: "60px" }}>
+                <Box>
                     {(priceLoading && itemIndex !== "") ? <CircularProgress style={{ marginLeft: "100px" }} /> :
                         <>
                             <Typography>Price: {issue.price}</Typography>

@@ -40,17 +40,23 @@ export const isDayGreaterThanOrEqualTo = (d1, d2) => {
 }
 
 export const hashObject = (obj, keys) => {
+
+    const serializeDate = (date) => {
+        if (!date) return 'null';
+        const dt = new Date(date);
+        return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+    };
+
     const serializeHoldInfo = (hi) => {
         if (!hi || !hi.is_hold) return 'no_hold';
         const w = hi.worker ? (hi.worker._id || hi.worker).toString() : 'null';
         const m = hi.manager ? (hi.manager._id || hi.manager).toString() : 'null';
-        const d = hi.hold_date
-            ? (() => { const dt = new Date(hi.hold_date); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; })()
-            : 'null';
+        const hd = serializeDate(hi.hold_date);
+        const spd = serializeDate(hi.submit_to_proprietor_date);
         return [
             hi.is_hold, hi.price, hi.partial_payment, hi.underprocessing_value,
             hi.remarks_from_proprietor, hi.deduction_from_manager, hi.remarks_from_manager,
-            hi.is_adhoc, hi.put_on_hold_by, hi.holding_remarks, d, w, m,
+            hi.is_adhoc, hi.put_on_hold_by, hi.holding_remarks, hd, spd, w, m,
             serializeHoldInfo(hi.prev_hold_info)
         ].join('|');
     };
@@ -58,7 +64,7 @@ export const hashObject = (obj, keys) => {
     const serializeValue = (val) => {
         if (val === null || val === undefined) return 'null';
         if (typeof val !== 'object') return String(val);
-        if (val instanceof Date) return `${val.getFullYear()}-${val.getMonth()}-${val.getDate()}`;
+        if (val instanceof Date) return serializeDate(val);
         if (val._id !== undefined) return val._id.toString(); // populated mongoose doc
         if (val.constructor && val.constructor.name === 'ObjectId') return val.toString(); // raw ObjectId
         return serializeHoldInfo(val);
@@ -87,6 +93,7 @@ export const isSameHoldInfo = (hold_info1, hold_info2) => {
         && isSameDay(hold_info1.hold_date, hold_info2.hold_date)
         && hold_info1.put_on_hold_by === hold_info2.put_on_hold_by
         && hold_info1.holding_remarks === hold_info2.holding_remarks
+        && isSameDay(hold_info1.submit_to_proprietor_date, hold_info2.submit_to_proprietor_date)
         && hold_info1.worker.equals(hold_info2.worker)
         && hold_info1.manager.equals(hold_info2.manager)
         && isSameHoldInfo(hold_info1.prev_hold_info, hold_info2.prev_hold_info);
