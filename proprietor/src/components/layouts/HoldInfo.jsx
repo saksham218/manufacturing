@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import ViewTable from './ViewTable'
+import GroupedTable from './GroupedTable'
 import { Box, Chip, Modal, Typography } from '@mui/material'
 import { holdInfoViewConfig } from '../constants/ViewConstants'
 
@@ -54,7 +54,7 @@ const HoldInfo = ({ holdInfo, size, style }) => {
                     <Typography variant="h6" component="h2">Hold Info:</Typography>
                     {(holdList && holdList.length > 0)
                         ?
-                        <ViewTable data={holdList} keys={holdInfoViewConfig.hold_info.keys} />
+                        <GroupedTable data={holdList} groupKeys={[]} columns={holdInfoViewConfig.hold_info.keys} />
                         :
                         <div style={{ paddingTop: "20px" }}>
                             No Hold Info
