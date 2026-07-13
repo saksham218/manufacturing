@@ -2,7 +2,7 @@ import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
-import { getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
+import { DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, DUE_ITEMS_KEYS, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
 
 import _ from 'lodash';
 
@@ -50,9 +50,9 @@ export const createItem = async (req, res) => {
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" })
 
-        const oldItem = await Item.findOne({ design_number: design_number })
+        const oldItem = await Item.findOne({ design_number: design_number, proprietor: proprietor._id })
 
-        if (oldItem) return res.status(400).json({ message: "Item already exists" })
+        if (oldItem) return res.status(400).json({ message: "Item already exists for this proprietor" })
 
         const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, created_on: Date.now() })
 
@@ -90,7 +90,7 @@ export const getItemsForIssueToWorker = async (req, res) => {
             undefined,
             undefined,
             undefined,
-            ['item', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info', 'price'],
+            DUE_FORWARD_KEYS,
             issue_date
         ).map(item => ({
             design_number: item.item.design_number,
@@ -159,7 +159,7 @@ export const getItemsForSubmitFromWorker = async (req, res) => {
             "issue_date",
             _.filter(preparedWorker.submit_history, (sh) => !sh.is_adhoc),
             "submit_date",
-            ['item', 'price', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info'],
+            DUE_ITEMS_KEYS,
             submit_date
         ).map(item => ({
             design_number: item.item.design_number,
@@ -197,13 +197,11 @@ export const getItemsForSubmitToProprietor = async (req, res) => {
 
         const preparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        const keys = ['worker', 'item', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info']
-
         const itemsForSubmit = getRemovalQuantitiesFromTransient(
             preparedManager.due_backward,
             preparedManager.due_backward_log,
             undefined, undefined, undefined, undefined,
-            keys,
+            DUE_BACKWARD_KEYS,
             submit_date
         )
 

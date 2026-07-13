@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FormGroup, InputLabel, Input, FormControl, Typography, FormControlLabel, Box, Checkbox, Chip, CircularProgress, Autocomplete, TextField } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -22,9 +22,9 @@ const getItemsData = async (proprietor_id) => {
     }
 }
 
-const getOnHoldItemsData = async (proprietor_id) => {
+const getOnHoldItemsData = async (proprietor_id, issue_date) => {
     try {
-        const res = await getOnHoldItems(proprietor_id)
+        const res = await getOnHoldItems(proprietor_id, issue_date)
         console.log(res.data)
         return res.data
     }
@@ -33,8 +33,8 @@ const getOnHoldItemsData = async (proprietor_id) => {
     }
 }
 
-const getIssueItemsData = async (issueHoldItems, proprietor_id) => {
-    const getData = issueHoldItems ? getOnHoldItemsData : getItemsData;
+const getIssueItemsData = async (issueHoldItems, proprietor_id, issue_date) => {
+    const getData = issueHoldItems ? (id) => getOnHoldItemsData(id, issue_date) : getItemsData;
     console.log(getData);
     const itemsData = await getData(proprietor_id);
     let i = 0;
@@ -51,6 +51,7 @@ const Issue = ({ proprietor }) => {
     const [items, setItems] = useState([])
 
     const [issueHoldItems, setIssueHoldItems] = useState(false)
+    const [issueDate, setIssueDate] = useState(dayjs().format('YYYY-MM-DD'))
 
     const [itemIndex, setItemIndex] = useState("")
 
@@ -66,7 +67,7 @@ const Issue = ({ proprietor }) => {
 
             let newIssue;
             if (!issueHoldItems) {
-                newIssue = { design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "", issue_date: currentIssue.issue_date ? currentIssue.issue_date : dayjs().format('YYYY-MM-DD') }
+                newIssue = { design_number: "", quantity: "", underprocessing_value: "", general_price: "", remarks: "", issue_date: issueDate }
             }
             else {
                 newIssue = {
@@ -89,7 +90,7 @@ const Issue = ({ proprietor }) => {
                     worker_id: "",
                     manager_id: "",
                     hold_info: "",
-                    issue_date: currentIssue.issue_date ? currentIssue.issue_date : dayjs().format('YYYY-MM-DD')
+                    issue_date: issueDate
                 }
             }
             return newIssue;
@@ -109,7 +110,7 @@ const Issue = ({ proprietor }) => {
         console.log("get items")
         resetIssue();
         setLoading(true)
-        getIssueItemsData(issueHoldItems, proprietor.proprietor_id).then((itemsData) => {
+        getIssueItemsData(issueHoldItems, proprietor.proprietor_id, issueDate).then((itemsData) => {
             if (isMounted) {
                 setItems(itemsData)
                 setLoading(false)
@@ -119,6 +120,23 @@ const Issue = ({ proprietor }) => {
             isMounted = false;
         }
     }, [proprietor, issueHoldItems])
+
+    useEffect(() => {
+        if (!issueHoldItems) return;
+        let isMounted = true;
+        setLoading(true)
+        setItemIndex("")
+        setMaxQuantity(0)
+        getIssueItemsData(issueHoldItems, proprietor.proprietor_id, issueDate).then((itemsData) => {
+            if (isMounted) {
+                setItems(itemsData)
+                setLoading(false)
+            }
+        })
+        return () => {
+            isMounted = false;
+        }
+    }, [issueDate])
 
     useEffect(() => {
         setEmptyIssue();
@@ -183,7 +201,7 @@ const Issue = ({ proprietor }) => {
         console.log(res.data)
 
         resetIssue();
-        getIssueItemsData(issueHoldItems, proprietor.proprietor_id).then((itemsData) => {
+        getIssueItemsData(issueHoldItems, proprietor.proprietor_id, issueDate).then((itemsData) => {
             setItems(itemsData)
         })
 
@@ -234,8 +252,8 @@ const Issue = ({ proprietor }) => {
                 <Typography>Issue Date:</Typography>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                        value={dayjs(issue.issue_date, 'YYYY-MM-DD')}
-                        onChange={(d) => { setIssue({ ...issue, issue_date: d.format('YYYY-MM-DD') }) }}
+                        value={dayjs(issueDate, 'YYYY-MM-DD')}
+                        onChange={(d) => { const f = d.format('YYYY-MM-DD'); setIssueDate(f); setIssue(prev => ({ ...prev, issue_date: f })) }}
                         format="DD/MM/YYYY"
                         slotProps={{ textField: { style: { marginBottom: "15px", width: "400px" } } }}
                     />

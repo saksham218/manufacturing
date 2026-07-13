@@ -108,7 +108,11 @@ const workerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             hold_info: Hold_Info,
             record_date: Date,
-            was_to_hold: Boolean
+            was_to_hold: Boolean,
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            }
         }],
         default: []
     },

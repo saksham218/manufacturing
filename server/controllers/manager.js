@@ -5,7 +5,7 @@ import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
-import { addToTransient, validateAndRemoveFromTransient, depopulateHoldInfo, getRemovalQuantitiesFromTransient, isDayGreaterThanOrEqualTo, isDayLessThanOrEqualTo, isSameDay, isSameHoldInfo, managerPopulatePaths, prepare } from "../utils/utils.js";
+import { addToTransient, validateAndRemoveFromTransient, depopulateHoldInfo, DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, HELD_BY_MANAGER_KEYS, ON_HOLD_KEYS, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, SUBMISSIONS_KEYS, TOTAL_DUE_KEYS } from "../utils/utils.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -253,8 +253,9 @@ export const issueToManager = async (req, res) => {
         addToTransient(
             manager.total_due,
             manager.total_due_log,
-            (dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === remarks && dueItem.underprocessing_value === Number(underprocessing_value) && dueItem.is_adhoc === false && isSameHoldInfo(dueItem.hold_info, null) && dueItem.price === null),
-            { item: item._id, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, is_adhoc: false, hold_info: null, price: null },
+            null, null, null, null,
+            { item: item._id, price: null, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, is_adhoc: false, hold_info: null },
+            TOTAL_DUE_KEYS,
             quantity,
             issueDateObj,
             dateObj
@@ -263,8 +264,9 @@ export const issueToManager = async (req, res) => {
         addToTransient(
             manager.due_forward,
             manager.due_forward_log,
-            (dueItem) => (dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === remarks && dueItem.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(dueItem.hold_info, null) && dueItem.price === null),
-            { item: item._id, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: null, price: null },
+            null, null, null, null,
+            { item: item._id, price: null, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: null },
+            DUE_FORWARD_KEYS,
             quantity,
             issueDateObj,
             dateObj
@@ -345,8 +347,8 @@ export const issueOnHoldItemsToManager = async (req, res) => {
             proprietor.on_hold,
             proprietor.on_hold_log,
             undefined, undefined, undefined, undefined,
-            (oh) => oh.item.equals(item._id) && Number(oh.price) === Number(price) && Number(oh.partial_payment) === Number(partial_payment) && oh.remarks_from_proprietor === remarks_from_proprietor && Number(oh.underprocessing_value) === Number(underprocessing_value) && Number(oh.deduction_from_manager) === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && isSameDay(oh.hold_date, holdDateObj) && isSameDay(oh.submit_to_proprietor_date, submitToProprietorDateObj) && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === holding_remarks && oh.is_adhoc === is_adhoc && oh.manager.equals(manager._id) && oh.worker.equals(worker._id) && isSameHoldInfo(oh.hold_info, preparedHoldInfo),
-            { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, manager: manager._id, worker: worker._id, hold_date: holdDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
+            { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker: worker._id, manager: manager._id, hold_date: holdDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
+            ON_HOLD_KEYS,
             Number(quantity),
             issueDateObj,
             dateObj
@@ -379,8 +381,9 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         addToTransient(
             newManager.total_due,
             newManager.total_due_log,
-            (dueItem) => dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === new_remarks_from_proprietor && dueItem.underprocessing_value === Number(new_underprocessing_value) && dueItem.price === Number(new_price) && dueItem.is_adhoc === false && isSameHoldInfo(dueItem.hold_info, new_hold_info),
+            null, null, null, null,
             { item: item._id, price: Number(new_price), underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, is_adhoc: false, hold_info: new_hold_info },
+            TOTAL_DUE_KEYS,
             quantity,
             issueDateObj,
             dateObj
@@ -389,8 +392,9 @@ export const issueOnHoldItemsToManager = async (req, res) => {
         addToTransient(
             newManager.due_forward,
             newManager.due_forward_log,
-            (dueItem) => dueItem.item.equals(item._id) && dueItem.remarks_from_proprietor === new_remarks_from_proprietor && dueItem.underprocessing_value === Number(new_underprocessing_value) && dueItem.price === Number(new_price) && isSameHoldInfo(dueItem.hold_info, new_hold_info),
+            null, null, null, null,
             { item: item._id, price: Number(new_price), underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info },
+            DUE_FORWARD_KEYS,
             quantity,
             issueDateObj,
             dateObj
@@ -433,19 +437,19 @@ export const submitToProprietor = async (req, res) => {
             manager.due_backward,
             manager.due_backward_log,
             undefined, undefined, undefined, undefined,
-            (db) => db.worker.equals(worker._id) && db.item.equals(item._id) && db.price === Number(price) && db.deduction_from_manager === Number(deduction_from_manager) && db.remarks_from_manager === remarks_from_manager && Number(db.underprocessing_value) === Number(underprocessing_value) && db.remarks_from_proprietor === remarks_from_proprietor && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo),
             {
                 worker: worker._id,
                 item: item._id,
                 price: Number(price),
                 deduction_from_manager: Number(deduction_from_manager),
-                remarks_from_manager,
                 underprocessing_value: Number(underprocessing_value),
+                remarks_from_manager,
                 remarks_from_proprietor,
                 is_adhoc,
                 to_hold,
                 hold_info: preparedHoldInfo
             },
+            DUE_BACKWARD_KEYS,
             Number(quantity),
             submitDateObj,
             dateObj
@@ -455,23 +459,35 @@ export const submitToProprietor = async (req, res) => {
             return res.status(404).json({ message: `${quantity} of ${design_number} with is_adhoc: ${is_adhoc}, to_hold: ${to_hold}, price: ${price}, deduction_from_manager: ${deduction_from_manager}, remarks_from_manager: ${remarks_from_manager}, remarks_from_proprietor: ${remarks_from_proprietor}, underprocessing_value: ${underprocessing_value} not due backward at manager: ${manager_id} for worker: ${worker_id}` });
         }
 
+        const proprietorActionManagerHistory = [
+            ...manager.accepted_history.map(ah => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
+            ...manager.on_hold_history.map(oh => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
+            ...manager.forfeited_history.map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
+        ];
+
+        const submissionAdditionHistory = manager.submit_history.map(sh => ({ ...sh._doc, submit_to_proprietor_date: sh.submit_date }));
+
         addToTransient(
             manager.submissions,
             null,
-            (db) => db.worker.equals(worker._id) && db.item.equals(item._id) && isSameDay(submitDateObj, db.submit_to_proprietor_date) && db.price === Number(price) && db.deduction_from_manager === Number(deduction_from_manager) && db.remarks_from_manager === remarks_from_manager && Number(db.underprocessing_value) === Number(underprocessing_value) && db.remarks_from_proprietor === remarks_from_proprietor && db.is_adhoc === is_adhoc && db.to_hold === to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo),
+            submissionAdditionHistory,
+            'submit_to_proprietor_date',
+            proprietorActionManagerHistory,
+            'action_date',
             {
                 worker: worker._id,
                 item: item._id,
                 submit_to_proprietor_date: submitDateObj,
                 price: Number(price),
                 deduction_from_manager: Number(deduction_from_manager),
-                remarks_from_manager,
                 underprocessing_value: Number(underprocessing_value),
+                remarks_from_manager,
                 remarks_from_proprietor,
                 is_adhoc,
                 to_hold,
                 hold_info: preparedHoldInfo
             },
+            SUBMISSIONS_KEYS,
             Number(quantity),
             submitDateObj,
             dateObj
@@ -611,9 +627,9 @@ export const getSubmissions = async (req, res) => {
         const additionHistory = peparedManager.submit_history.map(sh => ({ ...sh, submit_to_proprietor_date: sh.submit_date }));
 
         const removalHistory = [
-            ...peparedManager.accepted_history.map(ah => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
-            ...peparedManager.on_hold_history.map(oh => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
-            ...peparedManager.forfeited_history.map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
+            ...peparedManager.accepted_history.map(ah => ({ ...ah, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
+            ...peparedManager.on_hold_history.map(oh => ({ ...oh, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
+            ...peparedManager.forfeited_history.map(fh => ({ ...fh, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
         ];
 
         const submissions = getRemovalQuantitiesFromTransient(
@@ -623,7 +639,7 @@ export const getSubmissions = async (req, res) => {
             'submit_date',
             removalHistory,
             'action_date',
-            ['worker', 'item', 'submit_to_proprietor_date', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info'],
+            SUBMISSIONS_KEYS,
             accept_date
         );
 
@@ -681,8 +697,8 @@ export const acceptFromManager = async (req, res) => {
             manager.total_due,
             manager.total_due_log,
             undefined, undefined, undefined, undefined,
-            (td) => td.item.equals(item._id) && td.is_adhoc === is_adhoc && (!is_adhoc ? td.price === null : td.price === Number(price)) && td.remarks_from_proprietor === remarks_from_proprietor && Number(td.underprocessing_value) === Number(underprocessing_value) && isSameHoldInfo(td.hold_info, preparedHoldInfo),
-            { item: item._id, price: !is_adhoc ? null : Number(price), remarks_from_proprietor, underprocessing_value: Number(underprocessing_value), is_adhoc, hold_info: preparedHoldInfo },
+            { item: item._id, price: (is_adhoc || (preparedHoldInfo && preparedHoldInfo.is_hold)) ? Number(price) : null, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, is_adhoc, hold_info: preparedHoldInfo },
+            TOTAL_DUE_KEYS,
             Number(quantity),
             actionDateObj,
             dateObj
@@ -705,15 +721,17 @@ export const acceptFromManager = async (req, res) => {
 
         console.log(proprietorActionManagerHistory);
 
+        const submissionAdditionHistory = manager.submit_history.map(sh => ({ ...sh._doc, submit_to_proprietor_date: sh.submit_date }));
+
         const submissionRemoved = validateAndRemoveFromTransient(
             manager.submissions,
             undefined,
-            manager.submit_history,
+            submissionAdditionHistory,
             'submit_date',
             proprietorActionManagerHistory,
             'action_date',
-            (s) => s.worker.equals(worker._id) && s.item?.equals(item._id) && isSameDay(s.submit_to_proprietor_date, submitToProprietorDateObj) && s.price === Number(price) && s.deduction_from_manager === Number(deduction_from_manager) && s.remarks_from_manager === remarks_from_manager && s.remarks_from_proprietor === remarks_from_proprietor && Number(s.underprocessing_value) === Number(underprocessing_value) && s.is_adhoc === is_adhoc && s.to_hold === to_hold && isSameHoldInfo(s.hold_info, preparedHoldInfo),
-            { worker: worker._id, item: item._id, submit_to_proprietor_date: submitToProprietorDateObj, price: Number(price), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, remarks_from_proprietor, underprocessing_value: Number(underprocessing_value), is_adhoc, to_hold, hold_info: preparedHoldInfo },
+            { worker: worker._id, item: item._id, submit_to_proprietor_date: submitToProprietorDateObj, price: Number(price), deduction_from_manager: Number(deduction_from_manager), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, to_hold, hold_info: preparedHoldInfo },
+            SUBMISSIONS_KEYS,
             Number(quantity),
             actionDateObj,
             dateObj
@@ -746,8 +764,8 @@ export const acceptFromManager = async (req, res) => {
                 'submit_date',
                 proprietorActionWorkerWithHoldHistory,
                 'action_date',
-                (h) => h.item.equals(item._id) && h.price === Number(price) && h.remarks_from_manager === remarks_from_manager && h.remarks_from_proprietor === remarks_from_proprietor && Number(h.underprocessing_value) === Number(underprocessing_value) && h.is_adhoc === is_adhoc && isSameHoldInfo(h.hold_info, preparedHoldInfo),
-                { item: item._id, price: Number(price), remarks_from_manager, remarks_from_proprietor, underprocessing_value: Number(underprocessing_value), is_adhoc, hold_info: preparedHoldInfo },
+                { item: item._id, price: Number(price), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, hold_info: preparedHoldInfo },
+                HELD_BY_MANAGER_KEYS,
                 Number(quantity),
                 actionDateObj,
                 dateObj
@@ -779,7 +797,7 @@ export const acceptFromManager = async (req, res) => {
 
             manager.accepted_history.push({ worker: worker._id, accept_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
 
-            worker.accepted_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, accept_date: actionDateObj, record_date: dateObj });
+            worker.accepted_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, submit_to_proprietor_date: submitToProprietorDateObj, accept_date: actionDateObj, record_date: dateObj });
         }
         else if (action === "forfeit") {
             if (final_remarks === "") {
@@ -824,8 +842,9 @@ export const acceptFromManager = async (req, res) => {
             addToTransient(
                 proprietor.on_hold,
                 proprietor.on_hold_log,
-                (oh) => oh.item.equals(item._id) && oh.price === Number(price) && oh.partial_payment === Number(partial_payment) && Number(oh.underprocessing_value) === Number(underprocessing_value) && oh.remarks_from_proprietor === remarks_from_proprietor && oh.deduction_from_manager === Number(deduction_from_manager) && oh.remarks_from_manager === remarks_from_manager && oh.put_on_hold_by === put_on_hold_by && oh.holding_remarks === final_remarks && oh.is_adhoc === is_adhoc && oh.worker.equals(worker._id) && oh.manager.equals(manager._id) && isSameDay(oh.submit_to_proprietor_date, submitToProprietorDateObj) && isSameDay(oh.hold_date, actionDateObj) && isSameHoldInfo(oh.hold_info, preparedHoldInfo),
-                { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks: final_remarks, is_adhoc, worker: worker._id, manager: manager._id, submit_to_proprietor_date: submitToProprietorDateObj, hold_date: actionDateObj, hold_info: preparedHoldInfo },
+                null, null, null, null,
+                { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks: final_remarks, is_adhoc, worker: worker._id, manager: manager._id, hold_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
+                ON_HOLD_KEYS,
                 Number(quantity),
                 actionDateObj,
                 dateObj

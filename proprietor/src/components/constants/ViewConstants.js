@@ -128,7 +128,7 @@ export const proprietorDetailsViewConfig = {
     "on_hold": {
         "is_dated": false,
         "grouping_keys": [],
-        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "submit_to_proprietor_date", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "event_date", "info", "record_date"]
+        "keys": ["item", "quantity", "price", "partial_payment", "underprocessing_value", "remarks_from_proprietor", "deduction_from_manager", "remarks_from_manager", "submit_to_proprietor_date", "hold_date", "put_on_hold_by", "holding_remarks", "worker", "manager", "info"]
     }
 }
 

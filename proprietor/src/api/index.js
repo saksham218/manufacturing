@@ -47,6 +47,6 @@ export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}
 export const addCustomPrice = (customPrice, worker_id) => service.post(`/worker/${worker_id}/customprice`, customPrice)
 export const getSubmissions = (manager_id, accept_date) => service.post(`/manager/${manager_id}/getsubmissions`, { accept_date })
 export const acceptFromManager = (accepted, manager_id) => service.post(`/manager/${manager_id}/acceptfrommanager`, accepted)
-export const getOnHoldItems = (proprietor_id) => service.get(`/proprietor/${proprietor_id}/getonholditems`)
+export const getOnHoldItems = (proprietor_id, issue_date) => service.get(`/proprietor/${proprietor_id}/getonholditems`, { params: { issue_date } })
 
 

@@ -1,7 +1,7 @@
 import Worker from '../models/worker.js'
 import Manager from '../models/manager.js'
 import Item from '../models/item.js'
-import { addToTransient, depopulateHoldInfo, isSameDay, isSameHoldInfo, prepare, validateAndRemoveFromTransient, workerPopulatePaths } from '../utils/utils.js';
+import { addToTransient, depopulateHoldInfo, DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, DUE_ITEMS_KEYS, HELD_BY_MANAGER_KEYS, prepare, TOTAL_DUE_KEYS, validateAndRemoveFromTransient, workerPopulatePaths } from '../utils/utils.js';
 
 import _ from 'lodash';
 
@@ -148,8 +148,8 @@ export const issueToWorker = async (req, res) => {
             undefined,
             undefined,
             undefined,
-            (dfItem) => dfItem.item.equals(item._id) && dfItem.underprocessing_value === Number(underprocessing_value) && dfItem.remarks_from_proprietor === remarks && isSameHoldInfo(dfItem.hold_info, preparedHoldInfo) && (is_price_from_df ? dfItem.price === Number(price) : dfItem.price === null),
-            { item: item._id, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks, hold_info: preparedHoldInfo, price: is_price_from_df ? Number(price) : null },
+            { item: item._id, price: is_price_from_df ? Number(price) : null, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor: remarks, hold_info: preparedHoldInfo },
+            DUE_FORWARD_KEYS,
             Number(quantity),
             issueDateObj,
             dateObj
@@ -159,31 +159,21 @@ export const issueToWorker = async (req, res) => {
             return res.status(400).json({ message: `Quantity not available for ${design_number}, underprocessing_value: ${underprocessing_value}, remarks_from_proprietor: ${remarks} ${is_price_from_df ? `and price: ${price}` : ''}` });
         }
 
-        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: preparedHoldInfo, issue_date: issueDateObj, record_date: dateObj });
-
-        // if (remarks === "") {
-        //     const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.remarks_from_proprietor === "" && di.price === Number(price) && di.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(di.hold_info, preparedHoldInfo)));
-        //     if (index === -1) {
-        //         worker.due_items.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: preparedHoldInfo });
-        //     }
-        //     else {
-        //         worker.due_items[index].quantity += Number(quantity);
-        //     }
-        // }
-        // else {
-        //     worker.due_items.push({ item: item._id, price: price, quantity: quantity, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: preparedHoldInfo });
-
-        // }
-
         addToTransient(
             worker.due_items,
             undefined,
-            (di) => (di.item.equals(item._id) && di.remarks_from_proprietor === remarks && di.price === Number(price) && di.underprocessing_value === Number(underprocessing_value) && isSameHoldInfo(di.hold_info, preparedHoldInfo)),
+            worker.issue_history,
+            'issue_date',
+            worker.submit_history.filter(sh => !sh.is_adhoc),
+            'submit_date',
             { item: item._id, price: price, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: preparedHoldInfo },
+            DUE_ITEMS_KEYS,
             Number(quantity),
             issueDateObj,
             dateObj
         );
+
+        worker.issue_history.push({ item: item._id, quantity: quantity, price: price, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks, hold_info: preparedHoldInfo, issue_date: issueDateObj, record_date: dateObj });
 
         // console.log("manager: ", manager);
         await manager.save();
@@ -335,8 +325,8 @@ export const submitFromWorker = async (req, res) => {
                 "issue_date",
                 _.filter(worker.submit_history, (sh) => !sh.is_adhoc),
                 "submit_date",
-                (history_event) => history_event.item.equals(item._id) && Number(history_event.price) === Number(price) && Number(history_event.underprocessing_value) === Number(underprocessing_value) && history_event.remarks_from_proprietor === remarks_from_proprietor && isSameHoldInfo(history_event.hold_info, preparedHoldInfo),
-                undefined,
+                { item: item._id, price: price, underprocessing_value: underprocessing_value, remarks_from_proprietor: remarks_from_proprietor, hold_info: preparedHoldInfo },
+                DUE_ITEMS_KEYS,
                 Number(quantity),
                 submitDateObj,
                 dateObj
@@ -349,7 +339,7 @@ export const submitFromWorker = async (req, res) => {
             addToTransient(
                 manager.total_due,
                 manager.total_due_log,
-                (di) => di.item.equals(item._id) && Number(di.price) === Number(price) && Number(di.underprocessing_value) === Number(underprocessing_value) && di.remarks_from_proprietor === remarks_from_proprietor && isSameHoldInfo(di.hold_info, preparedHoldInfo) && di.is_adhoc === true,
+                null, null, null, null,
                 {
                     item: item._id,
                     price: Number(price),
@@ -358,6 +348,7 @@ export const submitFromWorker = async (req, res) => {
                     is_adhoc: true,
                     hold_info: preparedHoldInfo,
                 },
+                TOTAL_DUE_KEYS,
                 Number(quantity),
                 submitDateObj,
                 dateObj
@@ -388,19 +379,20 @@ export const submitFromWorker = async (req, res) => {
         addToTransient(
             manager.due_backward,
             manager.due_backward_log,
-            (db) => db.worker.equals(worker._id) && db.item.equals(item._id) && db.remarks_from_manager === remarks && db.remarks_from_proprietor === remarks_from_proprietor && Number(db.price) === Number(price) && Number(db.deduction_from_manager) === Number(deduction) && Number(db.underprocessing_value) === Number(underprocessing_value) && db.is_adhoc === !!is_adhoc && db.to_hold === !!to_hold && isSameHoldInfo(db.hold_info, preparedHoldInfo),
+            null, null, null, null,
             {
                 worker: worker._id,
                 item: item._id,
                 price: price,
                 deduction_from_manager: Number(deduction),
-                remarks_from_manager: remarks,
                 underprocessing_value: underprocessing_value,
+                remarks_from_manager: remarks,
                 remarks_from_proprietor: remarks_from_proprietor,
                 is_adhoc: !!is_adhoc,
                 to_hold: !!to_hold,
                 hold_info: preparedHoldInfo,
             },
+            DUE_BACKWARD_KEYS,
             Number(quantity),
             submitDateObj,
             dateObj
@@ -437,19 +429,29 @@ export const submitFromWorker = async (req, res) => {
             // }
             // TODO: addToTransient held_by_manager of worker
 
+            const proprietorActionWorkerWithHoldHistory = [
+                ...worker.accepted_history.filter(ah => ah.was_to_hold).map(ah => ({ ...ah._doc, action_date: ah.accept_date })),
+                ...worker.on_hold_history.filter(oh => oh.was_to_hold).map(oh => ({ ...oh._doc, action_date: oh.hold_date })),
+                ...worker.forfeited_history.filter(fh => fh.was_to_hold).map(fh => ({ ...fh._doc, action_date: fh.forfeiture_date })),
+            ];
+
             addToTransient(
                 worker.held_by_manager,
                 undefined,
-                (hm) => hm.item.equals(item._id) && Number(hm.price) === Number(price) && hm.remarks_from_manager === remarks && hm.remarks_from_proprietor === remarks_from_proprietor && Number(hm.underprocessing_value) === Number(underprocessing_value) && hm.is_adhoc === !!is_adhoc && isSameHoldInfo(hm.hold_info, preparedHoldInfo),
+                worker.submit_history.filter(sh => sh.to_hold),
+                'submit_date',
+                proprietorActionWorkerWithHoldHistory,
+                'action_date',
                 {
                     item: item._id,
                     price: Number(price),
-                    remarks_from_manager: remarks,
                     underprocessing_value: Number(underprocessing_value),
+                    remarks_from_manager: remarks,
                     remarks_from_proprietor: remarks_from_proprietor,
                     is_adhoc: !!is_adhoc,
                     hold_info: preparedHoldInfo,
                 },
+                HELD_BY_MANAGER_KEYS,
                 Number(quantity),
                 submitDateObj,
                 dateObj

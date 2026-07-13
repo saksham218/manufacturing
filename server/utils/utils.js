@@ -70,7 +70,7 @@ export const hashObject = (obj, keys) => {
         return serializeHoldInfo(val);
     };
 
-    return [...keys].sort().map(k => `${k}:${serializeValue(obj[k])}`).join(';');
+    return keys.map(k => `${k}:${serializeValue(obj[k])}`).join(';');
 }
 
 export const isSameHoldInfo = (hold_info1, hold_info2) => {
@@ -127,6 +127,14 @@ export const workerPopulatePaths = {
 export const proprietorPopulatePaths = {
     on_hold: {}
 }
+
+export const DUE_ITEMS_KEYS = ['item', 'price', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info'];
+export const DUE_FORWARD_KEYS = ['item', 'price', 'underprocessing_value', 'remarks_from_proprietor', 'hold_info'];
+export const TOTAL_DUE_KEYS = ['item', 'price', 'underprocessing_value', 'remarks_from_proprietor', 'is_adhoc', 'hold_info'];
+export const DUE_BACKWARD_KEYS = ['worker', 'item', 'price', 'deduction_from_manager', 'underprocessing_value', 'remarks_from_manager', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info'];
+export const HELD_BY_MANAGER_KEYS = ['item', 'price', 'underprocessing_value', 'remarks_from_manager', 'remarks_from_proprietor', 'is_adhoc', 'hold_info'];
+export const SUBMISSIONS_KEYS = ['worker', 'item', 'submit_to_proprietor_date', 'price', 'deduction_from_manager', 'underprocessing_value', 'remarks_from_manager', 'remarks_from_proprietor', 'is_adhoc', 'to_hold', 'hold_info'];
+export const ON_HOLD_KEYS = ['item', 'price', 'partial_payment', 'underprocessing_value', 'remarks_from_proprietor', 'deduction_from_manager', 'remarks_from_manager', 'put_on_hold_by', 'holding_remarks', 'is_adhoc', 'worker', 'manager', 'hold_date', 'submit_to_proprietor_date', 'hold_info'];
 
 export const prepare = async (paths, obj, pOrdp) => {
 
@@ -203,19 +211,12 @@ export const depopulateHoldInfo = async (hold_info) => {
 }
 
 // adds to transient_list and transient_log (if provided) (not to any history)
-export const addToTransient = (transient_list, transient_log, check_equality, push_to_list_log, quantity, event_date, record_date) => {
+export const addToTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, push_to_list_log, keys, quantity, event_date, record_date) => {
 
-    const list_index = transient_list.findIndex(check_equality);
-    if (list_index === -1) {
-        transient_list.push({ ...push_to_list_log, quantity: Number(quantity), record_date: record_date, event_date: event_date });
-    } else {
-        transient_list[list_index].quantity += Number(quantity);
-        transient_list[list_index].record_date = record_date;
-        if (isDayGreaterThanOrEqualTo(event_date, transient_list[list_index].event_date)) {
-            transient_list[list_index].event_date = event_date;
-        }
+    const hashGenerator = (obj) => hashObject(obj, keys);
+    const newHash = hashGenerator(push_to_list_log);
 
-    }
+    let list_event_date;
 
     if (transient_log) {
 
@@ -226,18 +227,20 @@ export const addToTransient = (transient_list, transient_log, check_equality, pu
 
         for (i = 0; i < transient_log.length; i++) {
             const log = transient_log[i];
+            const logHash = hashGenerator(log);
 
-            if (check_equality(log) && !isDayGreaterThanOrEqualTo(log.event_date, event_date)) {
+            if (logHash === newHash && !isDayGreaterThanOrEqualTo(log.event_date, event_date)) {
                 prevQuantity = log.quantity;
             }
 
-            if (check_equality(log) && isSameDay(log.event_date, event_date)) {
+            if (logHash === newHash && isSameDay(log.event_date, event_date)) {
                 log.quantity += Number(quantity);
                 log.record_date = record_date;
                 shouldInsert = false;
                 break;
             }
-            if (!isDayLessThanOrEqualTo(log.event_date, event_date)) {
+            // break when event_date exceeded, or same date but this entry's hash is larger (maintain ascending hash order within same date)
+            if (!isDayLessThanOrEqualTo(log.event_date, event_date) || (isSameDay(log.event_date, event_date) && hashGenerator(log) > newHash)) {
                 break;
             }
         }
@@ -248,12 +251,56 @@ export const addToTransient = (transient_list, transient_log, check_equality, pu
             transient_log.splice(log_index, 0, { ...push_to_list_log, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
         }
 
+        // propagate quantity forward and capture the latest event_date for this hash in the log
+        list_event_date = event_date;
         for (let i = log_index + 1; i < transient_log.length; i++) {
             const log = transient_log[i];
-            if (check_equality(log)) {
+            const logHash = hashGenerator(log);
+            if (logHash === newHash) {
                 log.quantity += Number(quantity);
                 log.record_date = record_date;
+                list_event_date = log.event_date;
             }
+        }
+
+    } else {
+
+        // find the latest event_date for this hash across histories
+        let latest_history_event_date = null;
+        if (addition_history && addition_event_date_key) {
+            for (const entry of addition_history) {
+                if (hashGenerator(entry) === newHash) {
+                    const entryDate = new Date(entry[addition_event_date_key]);
+                    if (!latest_history_event_date || isDayGreaterThanOrEqualTo(entryDate, latest_history_event_date)) {
+                        latest_history_event_date = entryDate;
+                    }
+                }
+            }
+        }
+        if (removal_history && removal_event_date_key) {
+            for (const entry of removal_history) {
+                if (hashGenerator(entry) === newHash) {
+                    const entryDate = new Date(entry[removal_event_date_key]);
+                    if (!latest_history_event_date || isDayGreaterThanOrEqualTo(entryDate, latest_history_event_date)) {
+                        latest_history_event_date = entryDate;
+                    }
+                }
+            }
+        }
+        list_event_date = (latest_history_event_date && isDayGreaterThanOrEqualTo(latest_history_event_date, event_date))
+            ? latest_history_event_date
+            : event_date;
+
+    }
+
+    const list_index = transient_list.findIndex(item => hashGenerator(item) === newHash);
+    if (list_index === -1) {
+        transient_list.push({ ...push_to_list_log, quantity: Number(quantity), record_date: record_date, event_date: list_event_date });
+    } else {
+        transient_list[list_index].quantity += Number(quantity);
+        transient_list[list_index].record_date = record_date;
+        if (isDayGreaterThanOrEqualTo(list_event_date, transient_list[list_index].event_date)) {
+            transient_list[list_index].event_date = list_event_date;
         }
     }
 }
@@ -354,26 +401,44 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
 }
 
 // validates and removes from transient_list and transient_log (if provided) (not from any history)
-export const validateAndRemoveFromTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, check_equality, push_to_log, quantity, event_date, record_date) => {
+export const validateAndRemoveFromTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, push_to_log, keys, quantity, event_date, record_date) => {
 
     if (!transient_log && !(addition_history && addition_event_date_key && removal_history && removal_event_date_key)) {
         throw new Error("Invalid state: neither transient_log nor addition_history/removal_history provided");
     }
 
-    const list_index = transient_list.findIndex(item => check_equality(item) && quantity <= item.quantity);
+    const hashGenerator = (obj) => hashObject(obj, keys);
+    const newHash = hashGenerator(push_to_log);
+
+    const list_index = transient_list.findIndex(item => hashGenerator(item) === newHash && quantity <= item.quantity);
     if (list_index === -1) {
         return false;
     }
 
     if (transient_log) {
         let i = transient_log.length - 1;
+        let greatest_event_date_less_than_or_equal_to = null;
         let insert_index = -1;
         for (; i >= 0; i--) {
+            const transientLogHash = hashGenerator(transient_log[i]);
             if (isDayLessThanOrEqualTo(transient_log[i].event_date, event_date)) {
-                if (insert_index === -1) {
+                if (!greatest_event_date_less_than_or_equal_to) {
+                    greatest_event_date_less_than_or_equal_to = transient_log[i].event_date;
+                }
+                // set insert_index when entry's date is less than greatest (different date group),
+                // or entry is at a different date than event_date (Case B: no entries at event_date),
+                // or same date but entry's hash is smaller than newHash (Case A: hash ordering)
+                if (insert_index === -1 &&
+                    (
+                        !isDayLessThanOrEqualTo(event_date, greatest_event_date_less_than_or_equal_to) ||
+                        !isDayGreaterThanOrEqualTo(transient_log[i].event_date, greatest_event_date_less_than_or_equal_to) ||
+                        transientLogHash <= newHash
+                    )
+                ) {
                     insert_index = i;
                 }
-                if (check_equality(transient_log[i])) {
+
+                if (transientLogHash === newHash) {
                     if (transient_log[i].quantity < quantity) {
                         return false;
                     }
@@ -396,7 +461,8 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
         }
 
         for (let j = i + 1; j < transient_log.length; j++) {
-            if (check_equality(transient_log[j])) {
+            const transientLogHash = hashGenerator(transient_log[j]);
+            if (transientLogHash === newHash) {
                 transient_log[j].quantity -= Number(quantity);
                 transient_log[j].record_date = record_date;
             }
@@ -429,7 +495,8 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
                 removal_index++;
             }
 
-            if (check_equality(event)) { // sure to be true for some history event since the transient list has an entry satisfying equality and quantity
+            const eventHash = hashGenerator(event);
+            if (eventHash === newHash) {
 
                 // history_event_date has changed and is after event_date
                 if (!isDayLessThanOrEqualTo(history_event_date, prev_history_event_date) && !isDayLessThanOrEqualTo(history_event_date, event_date)) {
@@ -437,7 +504,6 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
                         return false;
                     }
                 }
-
 
                 if (mode === "addition") {
                     current_quantity += Number(event.quantity);
