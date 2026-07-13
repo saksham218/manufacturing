@@ -5,8 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
 
 import { getManager } from '../../api'
-import ViewTable from '../layouts/ViewTable'
-import ViewNestedTable from '../layouts/ViewNestedTable';
+import GroupedTable from '../layouts/GroupedTable'
 import { managerDetailsViewConfig } from '../constants/ViewConstants'
 
 const getManagerData = async (manager_id) => {
@@ -35,8 +34,6 @@ const View = ({ manager }) => {
     const [managerDetails, setManagerDetails] = useState({})
     const [data, setData] = useState([])
 
-    const [firstNonEmptyIndex, setFirstNonEmptyIndex] = useState(-1)
-
     const [viewConfig, setViewConfig] = useState({})
 
     const [loading, setLoading] = useState(false)
@@ -45,31 +42,19 @@ const View = ({ manager }) => {
     const setDisplayData = (r, d, mD) => {
         const viewConfigData = managerDetailsViewConfig[d]
         var displayData = mD[d];
-        var fNEI = -1;
-        console.log(displayData)
         if (displayData && viewConfigData.is_dated) {
             const start = dayjs(r.start, 'DD/MM/YYYY')
             const end = dayjs(r.end, 'DD/MM/YYYY')
-            // console.log("start: ", start)
-            // console.log("end:", end)
             displayData = displayData.filter((dt) => {
                 const dateObj = new Date(dt.date)
                 const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
                 const date = dayjs(dateString, 'DD/MM/YYYY');
-                // console.log("date: ", date)
                 return (!date.isBefore(start) && !date.isAfter(end));
             });
         }
 
-        if (displayData && viewConfigData.is_grouped) {
-            fNEI = displayData.findIndex((dt) => dt.items.length > 0)
-        }
-
-        console.log(fNEI)
-        setFirstNonEmptyIndex(fNEI)
         console.log(displayData)
         setData(displayData)
-        console.log(viewConfigData)
         setViewConfig(viewConfigData)
     }
 
@@ -127,7 +112,8 @@ const View = ({ manager }) => {
                         </Box> : null}
                     <Typography>Total: {total}</Typography>
 
-                    {(data && data.length > 0 && (!viewConfig.is_grouped || firstNonEmptyIndex !== -1)) ? (viewConfig.is_grouped ? <ViewNestedTable data={data} groupingKeys={viewConfig.grouping_keys} keys={viewConfig.keys} /> : <ViewTable data={data} keys={viewConfig.keys} />)
+                    {(data && data.length > 0)
+                        ? <GroupedTable data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
                         : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
                 </Box>
             </div>)

@@ -31,7 +31,9 @@ const workerSchema = new mongoose.Schema({
             price: Number,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            event_date: Date,
+            record_date: Date
         }],
         default: []
     },
@@ -46,8 +48,9 @@ const workerSchema = new mongoose.Schema({
             underprocessing_value: Number,
             // thread_raw_material: String,
             remarks_from_proprietor: String,
-            date: Date,
-            hold_info: Hold_Info
+            issue_date: Date,
+            hold_info: Hold_Info,
+            record_date: Date
         }],
         default: []
     },
@@ -63,12 +66,14 @@ const workerSchema = new mongoose.Schema({
             remarks_from_manager: String,
             underprocessing_value: Number,
             remarks_from_proprietor: String,
-            date: Date,
+            submit_date: Date,
             is_adhoc: {
                 type: Boolean,
                 default: false
             },
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            record_date: Date,
+            to_hold: Boolean
         }],
         default: []
     },
@@ -79,12 +84,13 @@ const workerSchema = new mongoose.Schema({
     payment_history: {
         type: [{
             amount: Number,
-            date: Date,
+            payment_date: Date,
             remarks: String,
+            record_date: Date
         }],
         default: []
     },
-    deductions_from_proprietor: {
+    accepted_history: {
         type: [{
             item: {
                 type: mongoose.Schema.Types.ObjectId,
@@ -96,11 +102,17 @@ const workerSchema = new mongoose.Schema({
             final_remarks_from_proprietor: String,
             deduction_from_manager: Number,
             submit_to_proprietor_date: Date,
-            deduction_date: Date,
+            accept_date: Date,
             remarks_from_manager: String,
             remarks_from_proprietor: String,
             underprocessing_value: Number,
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            record_date: Date,
+            was_to_hold: Boolean,
+            is_adhoc: {
+                type: Boolean,
+                default: false
+            }
         }],
         default: []
     },
@@ -124,7 +136,9 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            record_date: Date,
+            was_to_hold: Boolean
         }],
         default: []
     },
@@ -152,7 +166,9 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            record_date: Date,
+            was_to_hold: Boolean
         }],
         default: []
     },
@@ -171,7 +187,9 @@ const workerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            hold_info: Hold_Info
+            hold_info: Hold_Info,
+            record_date: Date,
+            event_date: Date
         }],
         default: []
     }

@@ -2,7 +2,9 @@ import Item from '../models/item.js'
 import Proprietor from '../models/proprietor.js'
 import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
-import { managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
+import { DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, DUE_ITEMS_KEYS, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
+
+import _ from 'lodash';
 
 export const getItems = async (req, res) => {
 
@@ -31,7 +33,7 @@ export const getItems = async (req, res) => {
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -48,9 +50,9 @@ export const createItem = async (req, res) => {
 
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" })
 
-        const oldItem = await Item.findOne({ design_number: design_number })
+        const oldItem = await Item.findOne({ design_number: design_number, proprietor: proprietor._id })
 
-        if (oldItem) return res.status(400).json({ message: "Item already exists" })
+        if (oldItem) return res.status(400).json({ message: "Item already exists for this proprietor" })
 
         const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, created_on: Date.now() })
 
@@ -60,73 +62,81 @@ export const createItem = async (req, res) => {
         res.status(201).json(newItem)
     }
     catch (err) {
-        res.status(409).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
-export const getItemsForIssue = async (req, res) => {
+export const getItemsForIssueToWorker = async (req, res) => {
     const manager_id = req.params.manager_id
     console.log("get items for issue manager_id: ", manager_id)
 
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
 
+    const { issue_date } = req.body
+
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, proprietor: 1 }).lean()
+        const manager = await Manager.findOne({ manager_id: manager_id }, { due_forward: 1, due_forward_log: 1 })
+            .populate({ path: 'due_forward.item' })
+            .lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
-        const items = await Item.find({ proprietor: manager.proprietor })
-
         const peparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        const itemsForIssue = []
-        // items.forEach((item) => {
-        //     const index = manager.due_forward.findIndex((df) => {
-        //         console.log(df.item)
-        //         console.log(item._id)
-        //         return (df.item.equals(item._id) && df.quantity > 0);
-        //     })
-        //     console.log(index)
-        //     if (index !== -1) {
-        //         console.log("hi")
-        //         console.log(manager.due_forward[index])
-        //         itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: manager.due_forward[index].quantity, underprocessing_value: manager.due_forward[index].underprocessing_value, thread_raw_material: manager.due_forward[index].thread_raw_material, remarks_from_proprietor: manager.due_forward[index].remarks_from_proprietor })
-        //     }
-        // })
-
-        items.forEach((item) => {
-            peparedManager.due_forward.forEach((df) => {
-                if (df.item.equals(item._id) && df.quantity > 0) {
-                    itemsForIssue.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, hold_info: df.hold_info, price: df.price })
-                }
-            })
-        })
+        const itemsForIssue = getRemovalQuantitiesFromTransient(
+            peparedManager.due_forward,
+            peparedManager.due_forward_log,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            DUE_FORWARD_KEYS,
+            issue_date
+        ).map(item => ({
+            design_number: item.item.design_number,
+            description: item.item.description,
+            quantity: item.quantity,
+            underprocessing_value: item.underprocessing_value,
+            remarks_from_proprietor: item.remarks_from_proprietor,
+            hold_info: item.hold_info,
+            price: item.price
+        }));
 
         return res.status(200).json(itemsForIssue)
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
-export const getItemsForSubmit = async (req, res) => {
+export const getItemsForSubmitFromWorker = async (req, res) => {
     const worker_id = req.params.worker_id
     console.log("get items for submit worker_id: ", worker_id)
+
+    const { submit_date } = req.body
+
     try {
-        const worker = await Worker.findOne({ worker_id: worker_id }, { due_items: 1, manager: 1 }).populate({ path: 'manager', model: 'Manager', select: 'manager_id proprietor' }).lean()
+        const worker = await Worker.findOne({ worker_id: worker_id }, { due_items: 1, manager: 1, issue_history: 1, submit_history: 1 })
+            .populate([
+                { path: 'manager', model: 'Manager', select: 'manager_id proprietor' },
+                { path: 'due_items.item', model: 'Item', select: 'design_number description' },
+                { path: 'issue_history.item', model: 'Item', select: 'design_number description' },
+                { path: 'submit_history.item', model: 'Item', select: 'design_number description' },
+            ])
+            .lean()
 
         if (!worker) return res.status(404).json({ message: "Worker doesn't exist" })
 
         if (!req.manager || req.manager.manager_id !== worker.manager.manager_id) return res.status(403).json({ message: "Access Denied" })
 
-        const items = await Item.find({ proprietor: worker.manager.proprietor })
+        // const items = await Item.find({ proprietor: worker.manager.proprietor })
 
-        const peparedWorker = await prepare(workerPopulatePaths, worker, true)
+        const preparedWorker = await prepare(workerPopulatePaths, worker, true)
 
         // console.log("due_items", peparedWorker.due_items)
 
-        const itemsForSubmit = []
+        // const itemsForSubmit = []
         // items.forEach((item) => {
         //     const index = worker.due_items.findIndex((di) => (di.item.equals(item._id) && di.quantity > 0))
         //     if (index !== -1) {
@@ -134,61 +144,71 @@ export const getItemsForSubmit = async (req, res) => {
         //     }
         // })
 
-        items.forEach((item) => {
-            peparedWorker.due_items.forEach((di) => {
-                if (di.item.equals(item._id) && di.quantity > 0) {
-                    itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor, hold_info: di.hold_info })
-                }
-            })
-        })
+        // items.forEach((item) => {
+        //     peparedWorker.due_items.forEach((di) => {
+        //         if (di.item.equals(item._id) && di.quantity > 0) {
+        //             itemsForSubmit.push({ design_number: item.design_number, description: item.description, quantity: di.quantity, price: di.price, underprocessing_value: di.underprocessing_value, remarks_from_proprietor: di.remarks_from_proprietor, hold_info: di.hold_info })
+        //         }
+        //     })
+        // })
+
+        const itemsForSubmit = getRemovalQuantitiesFromTransient(
+            preparedWorker.due_items,
+            undefined,
+            preparedWorker.issue_history,
+            "issue_date",
+            _.filter(preparedWorker.submit_history, (sh) => !sh.is_adhoc),
+            "submit_date",
+            DUE_ITEMS_KEYS,
+            submit_date
+        ).map(item => ({
+            design_number: item.item.design_number,
+            description: item.item.description,
+            quantity: item.quantity,
+            price: item.price,
+            underprocessing_value: item.underprocessing_value,
+            remarks_from_proprietor: item.remarks_from_proprietor,
+            hold_info: item.hold_info
+        }));
 
         return res.status(200).json(itemsForSubmit)
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
-export const getItemsForFinalSubmit = async (req, res) => {
+export const getItemsForSubmitToProprietor = async (req, res) => {
     const manager_id = req.params.manager_id
-    console.log("get items for final submit manager_id: ", manager_id)
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" })
+
+    const { submit_date } = req.body
+
     try {
-        const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward').populate([
+        const manager = await Manager.findOne({ manager_id: manager_id }).select('manager_id due_backward due_backward_log').populate([
             { path: 'due_backward.worker', model: 'Worker', select: 'name worker_id' },
-            { path: 'due_backward.items.item', model: 'Item', select: 'design_number description' }
+            { path: 'due_backward.item', model: 'Item', select: 'design_number description' },
+            { path: 'due_backward_log.worker', model: 'Worker', select: 'name worker_id' },
+            { path: 'due_backward_log.item', model: 'Item', select: 'design_number description' }
         ]).lean()
 
         if (!manager) return res.status(404).json({ message: "Manager doesn't exist" })
 
-        const peparedManager = await prepare(managerPopulatePaths, manager, true)
-        // console.log("peparedManager", peparedManager)
+        const preparedManager = await prepare(managerPopulatePaths, manager, true)
 
-        // const items = await Item.find({ proprietor: manager.proprietor })
+        const itemsForSubmit = getRemovalQuantitiesFromTransient(
+            preparedManager.due_backward,
+            preparedManager.due_backward_log,
+            undefined, undefined, undefined, undefined,
+            DUE_BACKWARD_KEYS,
+            submit_date
+        )
 
-        // const itemsForFinalSubmit = []
-        // items.forEach((item) => {
-        //     const index = manager.due_backward.findIndex((df) => (df.item.equals(item._id) && df.quantity > 0))
-        //     if (index !== -1) {
-        //         itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: manager.due_backward[index].quantity })
-        //     }
-        // })
-
-        // items.forEach((item) => {
-        //     manager.due_backward.forEach((df) => {
-        //         if (df.item.equals(item._id) && df.quantity > 0) {
-        //             itemsForFinalSubmit.push({ design_number: item.design_number, description: item.description, quantity: df.quantity, price: df.price, underprocessing_value: df.underprocessing_value, remarks_from_proprietor: df.remarks_from_proprietor, remarks_from_manager: df.remarks_from_manager, deduction: df.deduction })
-        //         }
-        //     })
-        // })
-
-        // return res.status(200).json(itemsForFinalSubmit)
-
-        return res.status(200).json(peparedManager.due_backward)
+        return res.status(200).json(itemsForSubmit)
     }
     catch (err) {
         console.log(err)
-        res.status(404).json({ message: err.message })
+        res.status(500).json({ message: err.message })
     }
 }

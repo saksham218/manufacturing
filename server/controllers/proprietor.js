@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import Proprietor from "../models/proprietor.js";
-import { prepare, proprietorPopulatePaths } from "../utils/utils.js";
+import { getRemovalQuantitiesFromTransient, ON_HOLD_KEYS, prepare, proprietorPopulatePaths } from "../utils/utils.js";
 
 export const newProprietor = async (req, res) => {
 
@@ -66,26 +66,30 @@ export const loginProprietor = async (req, res) => {
 
 export const getOnHoldItems = async (req, res) => {
     const { proprietor_id } = req.params;
+    const { issue_date } = req.query;
     console.log(req.proprietor);
     if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) {
         return res.status(403).json({ message: "Access Denied" });
     }
     try {
-
-        const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { on_hold: 1 })
+        const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id }, { on_hold: 1, on_hold_log: 1 })
             .populate([
                 { path: 'on_hold.item', model: 'Item', select: 'design_number description' },
                 { path: 'on_hold.worker', model: 'Worker', select: 'name worker_id' },
                 { path: 'on_hold.manager', model: 'Manager', select: 'name manager_id' }
             ]).lean();
 
-        // console.log(proprietor);
-
         if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" });
 
         const preparedProprietor = await prepare(proprietorPopulatePaths, proprietor, true);
-        const onHoldItems = preparedProprietor.on_hold;
 
+        const onHoldItems = getRemovalQuantitiesFromTransient(
+            preparedProprietor.on_hold,
+            preparedProprietor.on_hold_log,
+            null, null, null, null,
+            ON_HOLD_KEYS,
+            issue_date
+        );
 
         res.status(200).json(onHoldItems);
 

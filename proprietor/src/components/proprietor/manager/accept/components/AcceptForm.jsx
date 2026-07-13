@@ -20,7 +20,7 @@ const actions = [
     }
 ]
 
-const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate }) => {
+const AcceptForm = ({ item, reloadSubmissionsData, manager, actionDate }) => {
 
     const [quantity, setQuantity] = useState("")
     const [deduction, setDeduction] = useState("")
@@ -33,7 +33,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate })
 
         const accepted = {
             action: actions[actionIndex].name,
-            worker_id: group.worker.worker_id,
+            worker_id: item.worker.worker_id,
             design_number: item.item.design_number,
             quantity: quantity,
             price: item.price,
@@ -48,7 +48,7 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate })
             is_adhoc: item.is_adhoc,
             to_hold: item.to_hold,
             action_date: dayjs(actionDate, 'DD/MM/YYYY').format('YYYY-MM-DD'),
-            submit_to_proprietor_date: dayjs(group.submit_to_proprietor_date).format('YYYY-MM-DD'),
+            submit_to_proprietor_date: dayjs(item.submit_to_proprietor_date).format('YYYY-MM-DD'),
             hold_info: item.hold_info
         }
         console.log(accepted)
@@ -80,11 +80,11 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate })
     }, [actionIndex])
 
     return (
-        <>
-            <FormGroup onClick={(e) => { e.stopPropagation() }}>
-                <FormControl >
+        <FormGroup onClick={(e) => { e.stopPropagation() }} style={{ flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+                <FormControl variant="standard">
                     <InputLabel>Action</InputLabel>
-                    <Select value={actionIndex} onChange={(e) => { setActionIndex(e.target.value) }} style={{ marginTop: "10px", width: "150px" }}>
+                    <Select value={actionIndex} onChange={(e) => { setActionIndex(e.target.value) }} style={{ width: "150px", marginTop: "16px" }}>
                         {actions.map((act, index) => (
                             <MenuItem key={act.name} value={index}>
                                 {act.label}
@@ -93,58 +93,55 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate })
                     </Select>
                 </FormControl>
 
-
-                <FormControl style={{ marginTop: "10px" }}>
+                <FormControl variant="standard">
                     <InputLabel>Quantity</InputLabel>
-                    <Input type="number" inputProps={{ min: 0, max: item.quantity }} style={{ marginTop: "10px", width: "150px" }} value={quantity}
+                    <Input type="number" inputProps={{ min: 0, max: item.quantity }} style={{ width: "100px" }} value={quantity}
                         onChange={(e) => { setQuantity(e.target.value) }}
                         onWheel={(e) => { e.target.blur(); }}
                     />
                 </FormControl>
 
-                {
-                    actions[actionIndex].name === "accept" ?
-                        <FormControl style={{ marginTop: "10px" }}>
+                <div style={{ width: "130px" }}>
+                    {actions[actionIndex].name === "accept" &&
+                        <FormControl variant="standard" style={{ width: "100%" }}>
                             <InputLabel>Deduction</InputLabel>
-                            <Input type="number" inputProps={{ min: 0, max: (Number(item.price) - Number(item.deduction_from_manager)) }} style={{ marginTop: "10px", width: "150px" }} value={deduction}
+                            <Input type="number" inputProps={{ min: 0, max: (Number(item.price) - Number(item.deduction_from_manager)) }} style={{ width: "100%" }} value={deduction}
                                 onChange={(e) => { setDeduction(e.target.value) }}
                                 onWheel={(e) => { e.target.blur(); }}
                             />
-                        </FormControl> : null
-                }
-
-                {
-                    actions[actionIndex].name === "hold" ?
-                        <FormControl style={{ marginTop: "10px" }}>
+                        </FormControl>
+                    }
+                    {actions[actionIndex].name === "hold" &&
+                        <FormControl variant="standard" style={{ width: "100%" }}>
                             <InputLabel>Partial Payment</InputLabel>
-                            <Input type="number" inputProps={{ min: 0, max: (Number(item.price) - Number(item.deduction_from_manager)) }} style={{ marginTop: "10px", width: "150px" }} value={partialPayment}
+                            <Input type="number" inputProps={{ min: 0, max: (Number(item.price) - Number(item.deduction_from_manager)) }} style={{ width: "100%" }} value={partialPayment}
                                 onChange={(e) => { setPartialPayment(e.target.value) }}
                                 onWheel={(e) => { e.target.blur(); }}
                             />
-                        </FormControl> : null
-                }
-
-                {
-                    actions[actionIndex].name === "forfeit" ?
-                        <FormControl style={{ marginTop: "10px" }}>
+                        </FormControl>
+                    }
+                    {actions[actionIndex].name === "forfeit" &&
+                        <FormControl variant="standard" style={{ width: "100%" }}>
                             <InputLabel>Penalty</InputLabel>
-                            <Input type="number" inputProps={{ min: 0, max: (Number(item.underprocessing_value)) }} style={{ marginTop: "10px", width: "150px" }} value={penalty}
+                            <Input type="number" inputProps={{ min: 0, max: (Number(item.underprocessing_value)) }} style={{ width: "100%" }} value={penalty}
                                 onChange={(e) => { setPenalty(e.target.value) }}
                                 onWheel={(e) => { e.target.blur(); }}
                             />
-                        </FormControl> : null
-                }
+                        </FormControl>
+                    }
+                </div>
+            </div>
 
-                <FormControl style={{ marginTop: "10px" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+                <FormControl variant="standard">
                     <InputLabel>Final Remarks</InputLabel>
-                    <Input type="text" style={{ marginTop: "10px", width: "150px" }} value={finalRemarks}
+                    <Input type="text" style={{ width: "150px" }} value={finalRemarks}
                         onChange={(e) => { setFinalRemarks(e.target.value) }}
                     />
                 </FormControl>
 
-
                 <CustomButton
-                    buttonProps={{ variant: "contained", color: "primary", style: { marginTop: "10px", height: "25px", width: "35px", fontSize: "12px" } }}
+                    buttonProps={{ variant: "contained", color: "primary", style: { height: "25px", width: "35px", fontSize: "12px" } }}
                     isInputValid={Number(quantity) > 0 && Number(quantity) <= Number(item.quantity) &&
                         Number(deduction) <= (Number(item.price) - Number(item.deduction_from_manager)) &&
                         (actions[actionIndex].name !== "forfeit" || (Number(penalty) <= Number(item.underprocessing_value) && Number(penalty) > 0)) &&
@@ -155,9 +152,8 @@ const AcceptForm = ({ group, item, reloadSubmissionsData, manager, actionDate })
                 >
                     Done
                 </CustomButton>
-
-            </FormGroup >
-        </>
+            </div>
+        </FormGroup>
     )
 }
 
