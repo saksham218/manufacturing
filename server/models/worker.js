@@ -194,7 +194,7 @@ const workerSchema = new mongoose.Schema({
         default: []
     }
 
-});
+}, { optimisticConcurrency: true });
 
 const Worker = mongoose.model('Worker', workerSchema);
 export default Worker;

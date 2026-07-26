@@ -96,7 +96,7 @@ const proprietorSchema = new mongoose.Schema({
         }],
         default: []
     }
-});
+}, { optimisticConcurrency: true });
 
 const Proprietor = mongoose.model("Proprietor", proprietorSchema);
 

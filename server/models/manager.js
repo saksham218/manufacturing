@@ -358,7 +358,7 @@ const managerSchema = new mongoose.Schema({
         default: []
     }
 
-});
+}, { optimisticConcurrency: true });
 
 const Manager = mongoose.model('Manager', managerSchema);
 export default Manager;
