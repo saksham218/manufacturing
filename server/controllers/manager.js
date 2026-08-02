@@ -242,7 +242,7 @@ export const issueOnHoldItemsToManager = async (req, res) => {
                 { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker: worker._id, manager: manager._id, hold_date: holdDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
                 ON_HOLD_KEYS, Number(quantity), issueDateObj, dateObj
             );
-            if (!removalSuccess) throw new BusinessError(400, `${quantity} of ${design_number} submitted to proprietor on ${submit_to_proprietor_date}, not on hold at proprietor: ${proprietor_id}`);
+            if (!removalSuccess) throw new BusinessError(400, `${quantity} of ${design_number} submitted to proprietor on ${submit_to_proprietor_date}, not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}`);
 
             const new_hold_info = {
                 is_hold: true,
