@@ -33,7 +33,9 @@ const managerSchema = new mongoose.Schema({
             issue_date: Date,
             price: Number,
             hold_info: Hold_Info,
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -66,7 +68,9 @@ const managerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -286,7 +290,9 @@ const managerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -323,7 +329,9 @@ const managerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -353,7 +361,9 @@ const managerSchema = new mongoose.Schema({
                 type: Boolean,
                 default: false
             },
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     }

@@ -210,11 +210,14 @@ export const depopulateHoldInfo = async (hold_info) => {
     return hold_info;
 }
 
-// adds to transient_list and transient_log (if provided) (not to any history)
-export const addToTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, push_to_list_log, keys, quantity, event_date, record_date) => {
-
+const addToTransientRaw = (
+    transient_list, transient_log,
+    addition_history, addition_event_date_key,
+    removal_history, removal_event_date_key,
+    descriptor, keys, quantity, event_date, record_date
+) => {
     const hashGenerator = (obj) => hashObject(obj, keys);
-    const newHash = hashGenerator(push_to_list_log);
+    const newHash = hashGenerator(descriptor);
 
     let list_event_date;
 
@@ -248,7 +251,7 @@ export const addToTransient = (transient_list, transient_log, addition_history, 
         log_index = i;
 
         if (shouldInsert) {
-            transient_log.splice(log_index, 0, { ...push_to_list_log, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
+            transient_log.splice(log_index, 0, { ...descriptor, quantity: prevQuantity + Number(quantity), record_date: record_date, event_date: event_date });
         }
 
         // propagate quantity forward and capture the latest event_date for this hash in the log
@@ -295,7 +298,7 @@ export const addToTransient = (transient_list, transient_log, addition_history, 
 
     const list_index = transient_list.findIndex(item => hashGenerator(item) === newHash);
     if (list_index === -1) {
-        transient_list.push({ ...push_to_list_log, quantity: Number(quantity), record_date: record_date, event_date: list_event_date });
+        transient_list.push({ ...descriptor, quantity: Number(quantity), record_date: record_date, event_date: list_event_date });
     } else {
         transient_list[list_index].quantity += Number(quantity);
         transient_list[list_index].record_date = record_date;
@@ -303,6 +306,20 @@ export const addToTransient = (transient_list, transient_log, addition_history, 
             transient_list[list_index].event_date = list_event_date;
         }
     }
+};
+
+// adds to transient_list and transient_log (if provided) (not to any history)
+export const addToTransient = (entity, entity_type, entity_id, list_name, descriptor, quantity, event_date, record_date, audit = null) => {
+    const transient_list = entity[list_name];
+    const transient_log = entity[list_name + '_log'] || null;
+    const keys = TRANSIENT_KEYS_MAP[list_name];
+    const { addition_history, addition_event_date_key, removal_history, removal_event_date_key } =
+        TRANSIENT_TO_HISTORY_MAP[`${entity_type}.${list_name}`](entity);
+    addToTransientRaw(transient_list, transient_log,
+        addition_history, addition_event_date_key,
+        removal_history, removal_event_date_key,
+        descriptor, keys, quantity, event_date, record_date);
+    if (audit) audit.addTransientAddition({ entity_type, entity_id, transient_list: list_name, quantity });
 }
 
 // calculates using transient_list and transient_log or addition_history/removal_history
@@ -400,15 +417,18 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
     return result;
 }
 
-// validates and removes from transient_list and transient_log (if provided) (not from any history)
-export const validateAndRemoveFromTransient = (transient_list, transient_log, addition_history, addition_event_date_key, removal_history, removal_event_date_key, push_to_log, keys, quantity, event_date, record_date) => {
-
+const validateAndRemoveFromTransientRaw = (
+    transient_list, transient_log,
+    addition_history, addition_event_date_key,
+    removal_history, removal_event_date_key,
+    descriptor, keys, quantity, event_date, record_date
+) => {
     if (!transient_log && !(addition_history && addition_event_date_key && removal_history && removal_event_date_key)) {
         throw new Error("Invalid state: neither transient_log nor addition_history/removal_history provided");
     }
 
     const hashGenerator = (obj) => hashObject(obj, keys);
-    const newHash = hashGenerator(push_to_log);
+    const newHash = hashGenerator(descriptor);
 
     const list_index = transient_list.findIndex(item => hashGenerator(item) === newHash && quantity <= item.quantity);
     if (list_index === -1) {
@@ -457,7 +477,7 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
             log_on_or_before_event_date.record_date = record_date;
         } else {
             i = insert_index + 1;
-            transient_log.splice(i, 0, { ...push_to_log, quantity: log_on_or_before_event_date.quantity - Number(quantity), record_date: record_date, event_date: event_date });
+            transient_log.splice(i, 0, { ...descriptor, quantity: log_on_or_before_event_date.quantity - Number(quantity), record_date: record_date, event_date: event_date });
         }
 
         for (let j = i + 1; j < transient_log.length; j++) {
@@ -534,5 +554,99 @@ export const validateAndRemoveFromTransient = (transient_list, transient_log, ad
         }
     }
     return true;
+};
+
+// validates and removes from transient_list and transient_log (if provided) (not from any history)
+export const validateAndRemoveFromTransient = (entity, entity_type, entity_id, list_name, descriptor, quantity, event_date, record_date, audit = null) => {
+    const transient_list = entity[list_name];
+    const transient_log = entity[list_name + '_log'] || null;
+    const keys = TRANSIENT_KEYS_MAP[list_name];
+    const { addition_history, addition_event_date_key, removal_history, removal_event_date_key } =
+        TRANSIENT_TO_HISTORY_MAP[`${entity_type}.${list_name}`](entity);
+    const success = validateAndRemoveFromTransientRaw(transient_list, transient_log,
+        addition_history, addition_event_date_key,
+        removal_history, removal_event_date_key,
+        descriptor, keys, quantity, event_date, record_date);
+    if (success && audit) audit.addTransientRemoval({ entity_type, entity_id, transient_list: list_name, quantity });
+    return success;
 }
+
+export const pushHistory = (entity, entity_type, entity_id, history, subdoc, audit = null) => {
+    entity[history].push(subdoc);
+    if (audit) audit.recordHistoryAddition({ entity_type, entity_id, history, entity });
+};
+
+export const TRANSIENT_KEYS_MAP = {
+    "due_forward": DUE_FORWARD_KEYS,
+    "due_backward": DUE_BACKWARD_KEYS,
+    "total_due": TOTAL_DUE_KEYS,
+    "submissions": SUBMISSIONS_KEYS,
+    "due_items": DUE_ITEMS_KEYS,
+    "held_by_manager": HELD_BY_MANAGER_KEYS,
+    "on_hold": ON_HOLD_KEYS,
+};
+
+export const TRANSIENT_TO_HISTORY_MAP = {
+
+    "manager.due_forward": () => ({
+        addition_history: null,
+        addition_event_date_key: null,
+        removal_history: null,
+        removal_event_date_key: null,
+    }),
+
+    "manager.due_backward": () => ({
+        addition_history: null,
+        addition_event_date_key: null,
+        removal_history: null,
+        removal_event_date_key: null,
+    }),
+
+    "manager.total_due": () => ({
+        addition_history: null,
+        addition_event_date_key: null,
+        removal_history: null,
+        removal_event_date_key: null,
+    }),
+
+    "proprietor.on_hold": () => ({
+        addition_history: null,
+        addition_event_date_key: null,
+        removal_history: null,
+        removal_event_date_key: null,
+    }),
+
+    "manager.submissions": (entity) => ({
+        addition_history: entity.submit_history.map(sh => ({
+            ...sh._doc,
+            submit_to_proprietor_date: sh.submit_date,
+        })),
+        addition_event_date_key: "submit_to_proprietor_date",
+        removal_history: [
+            ...entity.accepted_history.map(ah  => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
+            ...entity.on_hold_history.map(oh   => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
+            ...entity.forfeited_history.map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
+        ],
+        removal_event_date_key: "action_date",
+    }),
+
+    "worker.due_items": (entity) => ({
+        addition_history:        entity.issue_history,
+        addition_event_date_key: "issue_date",
+        removal_history:         entity.submit_history.filter(sh => !sh.is_adhoc),
+        removal_event_date_key:  "submit_date",
+    }),
+
+    "worker.held_by_manager": (entity) => ({
+        addition_history:        entity.submit_history.filter(sh => sh.to_hold),
+        addition_event_date_key: "submit_date",
+        removal_history: [
+            ...entity.accepted_history.filter(ah  => ah.was_to_hold).map(ah  => ({ ...ah._doc, action_date: ah.accept_date })),
+            ...entity.on_hold_history.filter(oh   => oh.was_to_hold).map(oh  => ({ ...oh._doc, action_date: oh.hold_date })),
+            ...entity.forfeited_history.filter(fh => fh.was_to_hold).map(fh => ({ ...fh._doc, action_date: fh.forfeiture_date })),
+        ],
+        removal_event_date_key: "action_date",
+    }),
+};
+
 

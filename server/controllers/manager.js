@@ -5,9 +5,10 @@ import Manager from "../models/manager.js";
 import Worker from "../models/worker.js";
 import Proprietor from "../models/proprietor.js";
 import Item from "../models/item.js";
-import { addToTransient, validateAndRemoveFromTransient, depopulateHoldInfo, DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, HELD_BY_MANAGER_KEYS, ON_HOLD_KEYS, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, SUBMISSIONS_KEYS, TOTAL_DUE_KEYS } from "../utils/utils.js";
+import { addToTransient, validateAndRemoveFromTransient, depopulateHoldInfo, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, pushHistory, SUBMISSIONS_KEYS } from "../utils/utils.js";
 import { runInTransaction, runWithOptimisticLock } from "../utils/transaction.js";
 import { BusinessError } from "../utils/errors.js";
+import { createAudit } from "../utils/audit.js";
 
 export const addManager = async (req, res) => {
     console.log(req.body);
@@ -152,12 +153,14 @@ export const issueToManager = async (req, res) => {
     const proprietor_id = req.proprietor.proprietor_id;
 
     try {
-        const result = await runWithOptimisticLock(async () => {
-            const manager = await Manager.findOne({ manager_id }).populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' });
+        const result = await runInTransaction(async (session) => {
+            const manager = await Manager.findOne({ manager_id })
+                .populate({ path: 'proprietor', model: 'Proprietor', select: 'proprietor_id' })
+                .session(session);
             if (!manager) throw new BusinessError(404, "Manager doesn't exist");
             if (proprietor_id !== manager.proprietor.proprietor_id) throw new BusinessError(403, "Access Denied");
 
-            const item = await Item.findOne({ design_number, proprietor: manager.proprietor });
+            const item = await Item.findOne({ design_number, proprietor: manager.proprietor }).session(session);
             if (!item) throw new BusinessError(404, "Item doesn't exist");
 
             if (Number(quantity) <= 0) throw new BusinessError(400, "Quantity should be positive");
@@ -166,21 +169,30 @@ export const issueToManager = async (req, res) => {
             const dateObj = new Date();
             const issueDateObj = new Date(issue_date);
 
-            manager.issue_history.push({ item: item._id, quantity, underprocessing_value, general_price, remarks_from_proprietor: remarks, issue_date: issueDateObj, record_date: dateObj });
+            const audit = createAudit({
+                action_type: "issueToManager",
+                actor_type: "proprietor",
+                actor_id: proprietor_id,
+                description: "Issue to Manager",
+                fields: { ...req.body, item_id: item._id, manager_id },
+                event_date: issueDateObj,
+                record_date: dateObj,
+            });
 
-            addToTransient(
-                manager.total_due, manager.total_due_log, null, null, null, null,
+            pushHistory(manager, "manager", manager_id, "issue_history",
+                { item: item._id, quantity, underprocessing_value, general_price, remarks_from_proprietor: remarks, issue_date: issueDateObj, record_date: dateObj },
+                audit);
+
+            addToTransient(manager, "manager", manager_id, "total_due",
                 { item: item._id, price: null, underprocessing_value, remarks_from_proprietor: remarks, is_adhoc: false, hold_info: null },
-                TOTAL_DUE_KEYS, quantity, issueDateObj, dateObj
-            );
+                quantity, issueDateObj, dateObj, audit);
 
-            addToTransient(
-                manager.due_forward, manager.due_forward_log, null, null, null, null,
+            addToTransient(manager, "manager", manager_id, "due_forward",
                 { item: item._id, price: null, underprocessing_value, remarks_from_proprietor: remarks, hold_info: null },
-                DUE_FORWARD_KEYS, quantity, issueDateObj, dateObj
-            );
+                quantity, issueDateObj, dateObj, audit);
 
-            await manager.save();
+            await audit.save(session);
+            await manager.save({ session });
             return manager;
         });
         return res.status(200).json({ result });
@@ -237,10 +249,20 @@ export const issueOnHoldItemsToManager = async (req, res) => {
             const issueDateObj = new Date(issue_date);
             const dateObj = new Date();
 
+            const audit = createAudit({
+                action_type: "issueOnHoldItemsToManager",
+                actor_type: "proprietor",
+                actor_id: proprietor_id,
+                description: "Issue On-Hold Items to Manager",
+                fields: { ...req.body, item_id: item._id, new_manager_id, hold_info: preparedHoldInfo, manager_object_id: manager._id, worker_object_id: worker._id },
+                event_date: issueDateObj,
+                record_date: dateObj,
+            });
+
             const removalSuccess = validateAndRemoveFromTransient(
-                proprietor.on_hold, proprietor.on_hold_log, undefined, undefined, undefined, undefined,
+                proprietor, "proprietor", proprietor_id, "on_hold",
                 { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks, is_adhoc, worker: worker._id, manager: manager._id, hold_date: holdDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
-                ON_HOLD_KEYS, Number(quantity), issueDateObj, dateObj
+                Number(quantity), issueDateObj, dateObj, audit
             );
             if (!removalSuccess) throw new BusinessError(400, `${quantity} of ${design_number} submitted to proprietor on ${submit_to_proprietor_date}, not on hold at proprietor: ${proprietor_id}, with price: ${price}, partial payment: ${partial_payment}, underprocessing value: ${underprocessing_value}, remarks from proprietor: ${remarks_from_proprietor}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, holding remarks: ${holding_remarks} and is_adhoc: ${is_adhoc}, put on hold by: ${put_on_hold_by}, manager: ${manager_id}, worker: ${worker_id}`);
 
@@ -262,20 +284,19 @@ export const issueOnHoldItemsToManager = async (req, res) => {
                 prev_hold_info: preparedHoldInfo
             };
 
-            newManager.issue_history.push({ item: item._id, quantity, price: Number(new_price), underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info, issue_date: issueDateObj, record_date: dateObj });
+            pushHistory(newManager, "manager", new_manager_id, "issue_history",
+                { item: item._id, quantity, price: Number(new_price), underprocessing_value: new_underprocessing_value, remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info, issue_date: issueDateObj, record_date: dateObj },
+                audit);
 
-            addToTransient(
-                newManager.total_due, newManager.total_due_log, null, null, null, null,
+            addToTransient(newManager, "manager", new_manager_id, "total_due",
                 { item: item._id, price: Number(new_price), underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, is_adhoc: false, hold_info: new_hold_info },
-                TOTAL_DUE_KEYS, quantity, issueDateObj, dateObj
-            );
+                quantity, issueDateObj, dateObj, audit);
 
-            addToTransient(
-                newManager.due_forward, newManager.due_forward_log, null, null, null, null,
+            addToTransient(newManager, "manager", new_manager_id, "due_forward",
                 { item: item._id, price: Number(new_price), underprocessing_value: Number(new_underprocessing_value), remarks_from_proprietor: new_remarks_from_proprietor, hold_info: new_hold_info },
-                DUE_FORWARD_KEYS, quantity, issueDateObj, dateObj
-            );
+                quantity, issueDateObj, dateObj, audit);
 
+            await audit.save(session);
             await newManager.save({ session });
             await proprietor.save({ session });
             return newManager;
@@ -296,51 +317,52 @@ export const submitToProprietor = async (req, res) => {
     if (!req.manager || req.manager.manager_id !== manager_id) return res.status(403).json({ message: "Access Denied" });
 
     try {
-        const result = await runWithOptimisticLock(async () => {
-            const manager = await Manager.findOne({ manager_id });
+        const result = await runInTransaction(async (session) => {
+            const manager = await Manager.findOne({ manager_id }).session(session);
             if (!manager) throw new BusinessError(404, "Manager doesn't exist");
 
-            const worker = await Worker.findOne({ worker_id, manager: manager._id });
+            const worker = await Worker.findOne({ worker_id, manager: manager._id }).session(session);
             if (!worker) throw new BusinessError(404, "Worker doesn't exist");
 
-            const item = await Item.findOne({ design_number, proprietor: manager.proprietor });
+            const item = await Item.findOne({ design_number, proprietor: manager.proprietor }).session(session);
             if (!item) throw new BusinessError(404, "Item doesn't exist");
 
             const dateObj = new Date();
             const submitDateObj = new Date(submit_date);
             const preparedHoldInfo = await depopulateHoldInfo(hold_info);
 
+            const audit = createAudit({
+                action_type: "submitToProprietor",
+                actor_type: "manager",
+                actor_id: manager_id,
+                description: "Submit to Proprietor",
+                fields: { ...req.body, item_id: item._id, manager_id, hold_info: preparedHoldInfo, worker_object_id: worker._id },
+                event_date: submitDateObj,
+                record_date: dateObj,
+            });
+
             const removalSuccess = validateAndRemoveFromTransient(
-                manager.due_backward, manager.due_backward_log, undefined, undefined, undefined, undefined,
+                manager, "manager", manager_id, "due_backward",
                 { worker: worker._id, item: item._id, price: Number(price), deduction_from_manager: Number(deduction_from_manager), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, to_hold, hold_info: preparedHoldInfo },
-                DUE_BACKWARD_KEYS, Number(quantity), submitDateObj, dateObj
+                Number(quantity), submitDateObj, dateObj, audit
             );
             if (!removalSuccess) throw new BusinessError(404, `${quantity} of ${design_number} with is_adhoc: ${is_adhoc}, to_hold: ${to_hold}, price: ${price}, deduction_from_manager: ${deduction_from_manager}, remarks_from_manager: ${remarks_from_manager}, remarks_from_proprietor: ${remarks_from_proprietor}, underprocessing_value: ${underprocessing_value} not due backward at manager: ${manager_id} for worker: ${worker_id}`);
 
-            const proprietorActionManagerHistory = [
-                ...manager.accepted_history.map(ah => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
-                ...manager.on_hold_history.map(oh => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
-                ...manager.forfeited_history.map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
-            ];
-
-            const submissionAdditionHistory = manager.submit_history.map(sh => ({ ...sh._doc, submit_to_proprietor_date: sh.submit_date }));
-
             addToTransient(
-                manager.submissions, null,
-                submissionAdditionHistory, 'submit_to_proprietor_date',
-                proprietorActionManagerHistory, 'action_date',
+                manager, "manager", manager_id, "submissions",
                 { worker: worker._id, item: item._id, submit_to_proprietor_date: submitDateObj, price: Number(price), deduction_from_manager: Number(deduction_from_manager), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, to_hold, hold_info: preparedHoldInfo },
-                SUBMISSIONS_KEYS, Number(quantity), submitDateObj, dateObj
+                Number(quantity), submitDateObj, dateObj, audit
             );
 
-            manager.submit_history.push({
+            pushHistory(manager, "manager", manager_id, "submit_history", {
                 submit_date: submitDateObj, item: item._id, quantity: Number(quantity), price: Number(price),
                 underprocessing_value: Number(underprocessing_value), remarks_from_proprietor,
                 deduction_from_manager: Number(deduction_from_manager), remarks_from_manager,
                 is_adhoc, to_hold, hold_info: preparedHoldInfo, worker: worker._id, record_date: dateObj
-            });
+            }, audit);
 
-            await manager.save();
+            await audit.save(session);
+            await manager.save({ session });
             return manager;
         });
         return res.status(200).json({ result });
@@ -509,43 +531,35 @@ export const acceptFromManager = async (req, res) => {
             const dateObj = new Date();
             const preparedHoldInfo = await depopulateHoldInfo(hold_info);
 
+            const audit = createAudit({
+                action_type: "acceptFromManager",
+                actor_type: "proprietor",
+                actor_id: proprietor_id,
+                description: `Accept from Manager (${action})`,
+                fields: { ...req.body, item_id: item._id, manager_id, hold_info: preparedHoldInfo, manager_object_id: manager._id, worker_object_id: worker._id },
+                event_date: actionDateObj,
+                record_date: dateObj,
+            });
+
             const totalDueRemoved = validateAndRemoveFromTransient(
-                manager.total_due, manager.total_due_log, undefined, undefined, undefined, undefined,
+                manager, "manager", manager_id, "total_due",
                 { item: item._id, price: (is_adhoc || (preparedHoldInfo && preparedHoldInfo.is_hold)) ? Number(price) : null, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, is_adhoc, hold_info: preparedHoldInfo },
-                TOTAL_DUE_KEYS, Number(quantity), actionDateObj, dateObj
+                Number(quantity), actionDateObj, dateObj, audit
             );
             if (!totalDueRemoved) throw new BusinessError(404, `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} with underprocessing value: ${underprocessing_value} and remarks from proprietor: ${remarks_from_proprietor} not due at manager: ${manager_id}`);
 
-            const proprietorActionManagerHistory = [
-                ...manager.accepted_history.map(ah => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
-                ...manager.on_hold_history.map(oh => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
-                ...manager.forfeited_history.map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
-            ];
-            const submissionAdditionHistory = manager.submit_history.map(sh => ({ ...sh._doc, submit_to_proprietor_date: sh.submit_date }));
-
             const submissionRemoved = validateAndRemoveFromTransient(
-                manager.submissions, undefined,
-                submissionAdditionHistory, 'submit_date',
-                proprietorActionManagerHistory, 'action_date',
+                manager, "manager", manager_id, "submissions",
                 { worker: worker._id, item: item._id, submit_to_proprietor_date: submitToProprietorDateObj, price: Number(price), deduction_from_manager: Number(deduction_from_manager), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, to_hold, hold_info: preparedHoldInfo },
-                SUBMISSIONS_KEYS, Number(quantity), actionDateObj, dateObj
+                Number(quantity), actionDateObj, dateObj, audit
             );
             if (!submissionRemoved) throw new BusinessError(404, `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not submitted to proprietor by manager: ${manager_id} on ${submit_to_proprietor_date}, made by worker: ${worker_id} with price: ${price}, deduction from manager: ${deduction_from_manager}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}`);
 
             if (to_hold) {
-                const proprietorActionWorkerWithHoldHistory = [
-                    ...worker.accepted_history.filter(ah => ah.was_to_hold).map(ah => ({ ...ah._doc, to_hold: ah.was_to_hold, action_date: ah.accept_date })),
-                    ...worker.on_hold_history.filter(oh => oh.was_to_hold).map(oh => ({ ...oh._doc, to_hold: oh.was_to_hold, action_date: oh.hold_date })),
-                    ...worker.forfeited_history.filter(fh => fh.was_to_hold).map(fh => ({ ...fh._doc, to_hold: fh.was_to_hold, action_date: fh.forfeiture_date })),
-                ];
-                const workerSubmitWithHoldHistory = worker.submit_history.filter(sh => sh.to_hold);
-
                 const heldByManagerRemoved = validateAndRemoveFromTransient(
-                    worker.held_by_manager, undefined,
-                    workerSubmitWithHoldHistory, 'submit_date',
-                    proprietorActionWorkerWithHoldHistory, 'action_date',
+                    worker, "worker", worker_id, "held_by_manager",
                     { item: item._id, price: Number(price), underprocessing_value: Number(underprocessing_value), remarks_from_manager, remarks_from_proprietor, is_adhoc, hold_info: preparedHoldInfo },
-                    HELD_BY_MANAGER_KEYS, Number(quantity), actionDateObj, dateObj
+                    Number(quantity), actionDateObj, dateObj, audit
                 );
                 if (!heldByManagerRemoved) throw new BusinessError(404, `${quantity} of ${design_number} and is_adhoc: ${is_adhoc} not held by manager: ${manager_id} for worker: ${worker_id}, with price: ${price}, remarks from manager: ${remarks_from_manager}, remarks from proprietor: ${remarks_from_proprietor} and underprocessing value: ${underprocessing_value}`);
             }
@@ -554,29 +568,44 @@ export const acceptFromManager = async (req, res) => {
                 if (Number(deduction) > (Number(price) - Number(deduction_from_manager))) throw new BusinessError(400, "Deduction can't be more than the price (remaining after deduction_from_manager)");
                 if (Number(deduction) !== 0 && final_remarks === "") throw new BusinessError(400, "Final remarks are required if deduction is made by proprietor");
 
+                let managerDueDelta, workerDueDelta;
                 if (to_hold) {
-                    worker.due_amount += (Number(quantity) * (Number(price) - Number(deduction)));
-                    manager.due_amount += (1.1 * (Number(price) - Number(deduction)) * Number(quantity));
+                    workerDueDelta = Number(quantity) * (Number(price) - Number(deduction));
+                    managerDueDelta = 1.1 * (Number(price) - Number(deduction)) * Number(quantity);
                 } else {
-                    worker.due_amount -= (Number(quantity) * Number(deduction));
-                    manager.due_amount += (1.1 * (Number(price) - Number(deduction) - Number(deduction_from_manager)) * Number(quantity));
+                    workerDueDelta = -(Number(quantity) * Number(deduction));
+                    managerDueDelta = 1.1 * (Number(price) - Number(deduction) - Number(deduction_from_manager)) * Number(quantity);
                 }
+                worker.due_amount += workerDueDelta;
+                manager.due_amount += managerDueDelta;
+                audit.recordOtherChange({ entity_type: "manager", entity_id: manager_id, field: "due_amount", delta: managerDueDelta });
+                audit.recordOtherChange({ entity_type: "worker", entity_id: worker_id, field: "due_amount", delta: workerDueDelta });
 
-                manager.accepted_history.push({ worker: worker._id, accept_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
-                worker.accepted_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, submit_to_proprietor_date: submitToProprietorDateObj, accept_date: actionDateObj, record_date: dateObj });
+                pushHistory(manager, "manager", manager_id, "accepted_history",
+                    { worker: worker._id, accept_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj },
+                    audit);
+                pushHistory(worker, "worker", worker_id, "accepted_history",
+                    { item: item._id, quantity: Number(quantity), price: Number(price), deduction_from_proprietor: Number(deduction), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, submit_to_proprietor_date: submitToProprietorDateObj, accept_date: actionDateObj, record_date: dateObj },
+                    audit);
 
             } else if (action === "forfeit") {
                 if (final_remarks === "") throw new BusinessError(400, "Final remarks are required if forfeiture is made by proprietor");
 
-                if (to_hold) {
-                    worker.due_amount -= (Number(quantity) * Number(penalty));
-                } else {
-                    worker.due_amount -= (Number(quantity) * (Number(penalty) + (Number(price) - Number(deduction_from_manager))));
-                }
-                manager.due_amount -= (Number(penalty) * Number(quantity));
+                const managerDueDelta = -(Number(penalty) * Number(quantity));
+                const workerDueDelta = to_hold
+                    ? -(Number(quantity) * Number(penalty))
+                    : -(Number(quantity) * (Number(penalty) + (Number(price) - Number(deduction_from_manager))));
+                worker.due_amount += workerDueDelta;
+                manager.due_amount += managerDueDelta;
+                audit.recordOtherChange({ entity_type: "manager", entity_id: manager_id, field: "due_amount", delta: managerDueDelta });
+                audit.recordOtherChange({ entity_type: "worker", entity_id: worker_id, field: "due_amount", delta: workerDueDelta });
 
-                manager.forfeited_history.push({ worker: worker._id, forfeiture_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), penalty: Number(penalty), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
-                worker.forfeited_history.push({ item: item._id, price: Number(price), quantity: Number(quantity), penalty: Number(penalty), underprocessing_value: Number(underprocessing_value), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, remarks_from_proprietor, submit_to_proprietor_date: submitToProprietorDateObj, forfeiture_date: actionDateObj, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
+                pushHistory(manager, "manager", manager_id, "forfeited_history",
+                    { worker: worker._id, forfeiture_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), penalty: Number(penalty), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj },
+                    audit);
+                pushHistory(worker, "worker", worker_id, "forfeited_history",
+                    { item: item._id, price: Number(price), quantity: Number(quantity), penalty: Number(penalty), underprocessing_value: Number(underprocessing_value), deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, remarks_from_proprietor, submit_to_proprietor_date: submitToProprietorDateObj, forfeiture_date: actionDateObj, final_remarks_from_proprietor: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj },
+                    audit);
 
             } else if (action === "hold") {
                 if (Number(partial_payment) < 0 || Number(partial_payment) > (Number(price) - Number(deduction_from_manager))) throw new BusinessError(400, "Partial payment should be non-negative and less than or equal to price minus deduction from manager");
@@ -584,23 +613,28 @@ export const acceptFromManager = async (req, res) => {
 
                 const put_on_hold_by = to_hold ? "manager" : "proprietor";
 
-                if (to_hold) {
-                    worker.due_amount += (Number(partial_payment) * Number(quantity));
-                } else {
-                    worker.due_amount -= (((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
-                }
-                manager.due_amount += (1.1 * Number(partial_payment) * Number(quantity));
+                const managerDueDelta = 1.1 * Number(partial_payment) * Number(quantity);
+                const workerDueDelta = to_hold
+                    ? Number(partial_payment) * Number(quantity)
+                    : -(((Number(price) - Number(deduction_from_manager)) - Number(partial_payment)) * Number(quantity));
+                worker.due_amount += workerDueDelta;
+                manager.due_amount += managerDueDelta;
+                audit.recordOtherChange({ entity_type: "manager", entity_id: manager_id, field: "due_amount", delta: managerDueDelta });
+                audit.recordOtherChange({ entity_type: "worker", entity_id: worker_id, field: "due_amount", delta: workerDueDelta });
 
-                addToTransient(
-                    proprietor.on_hold, proprietor.on_hold_log, null, null, null, null,
+                addToTransient(proprietor, "proprietor", proprietor_id, "on_hold",
                     { item: item._id, price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, put_on_hold_by, holding_remarks: final_remarks, is_adhoc, worker: worker._id, manager: manager._id, hold_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, hold_info: preparedHoldInfo },
-                    ON_HOLD_KEYS, Number(quantity), actionDateObj, dateObj
-                );
+                    Number(quantity), actionDateObj, dateObj, audit);
 
-                manager.on_hold_history.push({ worker: worker._id, hold_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
-                worker.on_hold_history.push({ item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, submit_to_proprietor_date: submitToProprietorDateObj, hold_date: actionDateObj, put_on_hold_by, holding_remarks: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj });
+                pushHistory(manager, "manager", manager_id, "on_hold_history",
+                    { worker: worker._id, hold_date: actionDateObj, submit_to_proprietor_date: submitToProprietorDateObj, item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, holding_remarks: final_remarks, put_on_hold_by, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj },
+                    audit);
+                pushHistory(worker, "worker", worker_id, "on_hold_history",
+                    { item: item._id, quantity: Number(quantity), price: Number(price), partial_payment: Number(partial_payment), underprocessing_value: Number(underprocessing_value), remarks_from_proprietor, deduction_from_manager: Number(deduction_from_manager), remarks_from_manager, submit_to_proprietor_date: submitToProprietorDateObj, hold_date: actionDateObj, put_on_hold_by, holding_remarks: final_remarks, is_adhoc, hold_info: preparedHoldInfo, was_to_hold: to_hold, record_date: dateObj },
+                    audit);
             }
 
+            await audit.save(session);
             await manager.save({ session });
             await worker.save({ session });
             await proprietor.save({ session });
