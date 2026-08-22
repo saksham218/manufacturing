@@ -14,6 +14,7 @@ const actionSchema = new mongoose.Schema({
 
     action_details: {
         description: String,
+        event_date_label: String,
         fields: Object
     },
 

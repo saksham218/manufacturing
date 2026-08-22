@@ -13,10 +13,10 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
 
         case "issueToManager": {
             const base = {
-                item: fields.item_id,
+                item: fields.item,
                 price: null,
                 underprocessing_value: fields.underprocessing_value,
-                remarks_from_proprietor: fields.remarks,
+                remarks_from_proprietor: fields.remarks_from_proprietor,
                 hold_info: null,
             };
             if (transient_list === "total_due") return { ...base, is_adhoc: false };
@@ -26,17 +26,17 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
 
         case "issueToWorker": {
             if (transient_list === "due_items") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: fields.price,
                 underprocessing_value: fields.underprocessing_value,
-                remarks_from_proprietor: fields.remarks,
+                remarks_from_proprietor: fields.remarks_from_proprietor,
                 hold_info: fields.hold_info,
             };
             if (transient_list === "due_forward") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: fields.is_price_from_df ? Number(fields.price) : null,
                 underprocessing_value: Number(fields.underprocessing_value),
-                remarks_from_proprietor: fields.remarks,
+                remarks_from_proprietor: fields.remarks_from_proprietor,
                 hold_info: fields.hold_info,
             };
             break;
@@ -44,19 +44,19 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
 
         case "submitFromWorker": {
             if (transient_list === "due_backward") return {
-                worker: fields.worker_object_id,
-                item: fields.item_id,
+                worker: fields.worker,
+                item: fields.item,
                 price: fields.price,
-                deduction_from_manager: Number(fields.deduction),
+                deduction_from_manager: Number(fields.deduction_from_manager),
                 underprocessing_value: fields.underprocessing_value,
-                remarks_from_manager: fields.remarks,
+                remarks_from_manager: fields.remarks_from_manager,
                 remarks_from_proprietor: fields.remarks_from_proprietor,
                 is_adhoc: !!fields.is_adhoc,
                 to_hold: !!fields.to_hold,
                 hold_info: fields.hold_info,
             };
             if (transient_list === "total_due") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: Number(fields.price),
                 underprocessing_value: Number(fields.underprocessing_value),
                 remarks_from_proprietor: fields.remarks_from_proprietor,
@@ -64,16 +64,16 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
                 hold_info: fields.hold_info,
             };
             if (transient_list === "held_by_manager") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: Number(fields.price),
                 underprocessing_value: Number(fields.underprocessing_value),
-                remarks_from_manager: fields.remarks,
+                remarks_from_manager: fields.remarks_from_manager,
                 remarks_from_proprietor: fields.remarks_from_proprietor,
                 is_adhoc: !!fields.is_adhoc,
                 hold_info: fields.hold_info,
             };
             if (transient_list === "due_items") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: fields.price,
                 underprocessing_value: fields.underprocessing_value,
                 remarks_from_proprietor: fields.remarks_from_proprietor,
@@ -84,8 +84,8 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
 
         case "submitToProprietor": {
             const base = {
-                worker: fields.worker_object_id,
-                item: fields.item_id,
+                worker: fields.worker,
+                item: fields.item,
                 price: Number(fields.price),
                 deduction_from_manager: Number(fields.deduction_from_manager),
                 underprocessing_value: Number(fields.underprocessing_value),
@@ -97,7 +97,7 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
             };
             if (transient_list === "submissions") return {
                 ...base,
-                submit_to_proprietor_date: new Date(fields.submit_date),
+                submit_to_proprietor_date: new Date(fields.submit_to_proprietor_date),
             };
             if (transient_list === "due_backward") return base;
             break;
@@ -106,7 +106,7 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
         case "acceptFromManager": {
             const hold_info = fields.hold_info;
             if (transient_list === "total_due") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: (fields.is_adhoc || (hold_info && hold_info.is_hold)) ? Number(fields.price) : null,
                 underprocessing_value: Number(fields.underprocessing_value),
                 remarks_from_proprietor: fields.remarks_from_proprietor,
@@ -114,8 +114,8 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
                 hold_info,
             };
             if (transient_list === "submissions") return {
-                worker: fields.worker_object_id,
-                item: fields.item_id,
+                worker: fields.worker,
+                item: fields.item,
                 submit_to_proprietor_date: new Date(fields.submit_to_proprietor_date),
                 price: Number(fields.price),
                 deduction_from_manager: Number(fields.deduction_from_manager),
@@ -127,7 +127,7 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
                 hold_info,
             };
             if (transient_list === "held_by_manager") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: Number(fields.price),
                 underprocessing_value: Number(fields.underprocessing_value),
                 remarks_from_manager: fields.remarks_from_manager,
@@ -138,7 +138,7 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
             if (transient_list === "on_hold") {
                 const put_on_hold_by = fields.to_hold ? "manager" : "proprietor";
                 return {
-                    item: fields.item_id,
+                    item: fields.item,
                     price: Number(fields.price),
                     partial_payment: Number(fields.partial_payment),
                     underprocessing_value: Number(fields.underprocessing_value),
@@ -146,11 +146,11 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
                     deduction_from_manager: Number(fields.deduction_from_manager),
                     remarks_from_manager: fields.remarks_from_manager,
                     put_on_hold_by,
-                    holding_remarks: fields.final_remarks,
+                    holding_remarks: fields.final_remarks_from_proprietor,
                     is_adhoc: fields.is_adhoc,
-                    worker: fields.worker_object_id,
-                    manager: fields.manager_object_id,
-                    hold_date: new Date(fields.action_date),
+                    worker: fields.worker,
+                    manager: fields.manager,
+                    hold_date: new Date(fields.hold_date),
                     submit_to_proprietor_date: new Date(fields.submit_to_proprietor_date),
                     hold_info,
                 };
@@ -162,31 +162,31 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
             const hold_info = fields.hold_info;
             const new_hold_info = {
                 is_hold: true,
-                price: Number(fields.price),
+                price: Number(fields.old_price),
                 partial_payment: Number(fields.partial_payment),
-                underprocessing_value: Number(fields.underprocessing_value),
-                remarks_from_proprietor: fields.remarks_from_proprietor,
+                underprocessing_value: Number(fields.old_underprocessing_value),
+                remarks_from_proprietor: fields.old_remarks_from_proprietor,
                 deduction_from_manager: Number(fields.deduction_from_manager),
                 remarks_from_manager: fields.remarks_from_manager,
                 is_adhoc: fields.is_adhoc,
                 hold_date: new Date(fields.hold_date),
                 holding_remarks: fields.holding_remarks,
                 put_on_hold_by: fields.put_on_hold_by,
-                manager: fields.manager_object_id,
-                worker: fields.worker_object_id,
+                manager: fields.old_manager,
+                worker: fields.worker,
                 submit_to_proprietor_date: new Date(fields.submit_to_proprietor_date),
                 prev_hold_info: hold_info,
             };
 
             if (transient_list === "due_forward") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: Number(fields.new_price),
                 underprocessing_value: Number(fields.new_underprocessing_value),
                 remarks_from_proprietor: fields.new_remarks_from_proprietor,
                 hold_info: new_hold_info,
             };
             if (transient_list === "total_due") return {
-                item: fields.item_id,
+                item: fields.item,
                 price: Number(fields.new_price),
                 underprocessing_value: Number(fields.new_underprocessing_value),
                 remarks_from_proprietor: fields.new_remarks_from_proprietor,
@@ -194,18 +194,18 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
                 hold_info: new_hold_info,
             };
             if (transient_list === "on_hold") return {
-                item: fields.item_id,
-                price: Number(fields.price),
+                item: fields.item,
+                price: Number(fields.old_price),
                 partial_payment: Number(fields.partial_payment),
-                underprocessing_value: Number(fields.underprocessing_value),
-                remarks_from_proprietor: fields.remarks_from_proprietor,
+                underprocessing_value: Number(fields.old_underprocessing_value),
+                remarks_from_proprietor: fields.old_remarks_from_proprietor,
                 deduction_from_manager: Number(fields.deduction_from_manager),
                 remarks_from_manager: fields.remarks_from_manager,
                 put_on_hold_by: fields.put_on_hold_by,
                 holding_remarks: fields.holding_remarks,
                 is_adhoc: fields.is_adhoc,
-                worker: fields.worker_object_id,
-                manager: fields.manager_object_id,
+                worker: fields.worker,
+                manager: fields.old_manager,
                 hold_date: new Date(fields.hold_date),
                 submit_to_proprietor_date: new Date(fields.submit_to_proprietor_date),
                 hold_info,
@@ -217,7 +217,7 @@ export const buildDescriptor = (action_type, transient_list, fields) => {
 };
 
 // Incremental audit builder — create once, record operations as they happen, then save.
-export const createAudit = ({ action_type, actor_type, actor_id, description, fields, event_date, record_date }) => {
+export const createAudit = ({ action_type, actor_type, actor_id, description, event_date_label, fields, event_date, record_date }) => {
     const transient_additions = [];
     const transient_removals = [];
     const history_additions = [];
@@ -241,7 +241,7 @@ export const createAudit = ({ action_type, actor_type, actor_id, description, fi
         async save(session) {
             const action = new Action({
                 action_type, actor_type, actor_id,
-                action_details: { description, fields },
+                action_details: { description, event_date_label, fields },
                 event_date,
                 record_date,
                 transient_additions, transient_removals,
