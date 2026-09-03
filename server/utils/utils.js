@@ -389,10 +389,12 @@ export const getRemovalQuantitiesFromTransient = (transient_list, transient_log,
                     transient_list_map.get(eventHash).quantity = Math.min(transient_list_map.get(eventHash).quantity, transient_list_map.get(eventHash).current_quantity);
                 }
 
-                if (mode === "addition") {
-                    transient_list_map.get(eventHash).current_quantity += event.quantity;
-                } else {
-                    transient_list_map.get(eventHash).current_quantity -= event.quantity;
+                if (!event.undone) {
+                    if (mode === "addition") {
+                        transient_list_map.get(eventHash).current_quantity += event.quantity;
+                    } else {
+                        transient_list_map.get(eventHash).current_quantity -= event.quantity;
+                    }
                 }
                 transient_list_map.get(eventHash).prev_history_event_date = history_event_date;
             }
@@ -525,10 +527,12 @@ const validateAndRemoveFromTransientRaw = (
                     }
                 }
 
-                if (mode === "addition") {
-                    current_quantity += Number(event.quantity);
-                } else {
-                    current_quantity -= Number(event.quantity);
+                if (!event.undone) {
+                    if (mode === "addition") {
+                        current_quantity += Number(event.quantity);
+                    } else {
+                        current_quantity -= Number(event.quantity);
+                    }
                 }
                 prev_history_event_date = history_event_date;
             }

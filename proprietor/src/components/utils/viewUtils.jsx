@@ -5,7 +5,7 @@ export const computeContent = (item, key, forSearch) => {
     if (key === 'worker') {
         return `${item[key].worker_id}-${item[key].name}`
     }
-    else if (key === 'manager') {
+    else if (key === 'manager' || key === 'old_manager' || key === 'new_manager') {
         return `${item[key].manager_id}-${item[key].name}`
     }
     else if (key === 'item') {
