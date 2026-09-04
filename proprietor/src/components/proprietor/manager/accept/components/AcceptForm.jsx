@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 
 import { acceptFromManager } from '../../../../../api'
 import CustomButton from '../../../../layouts/CustomButton'
+import { useApp } from '../../../../AppContext'
 
 const actions = [
     {
@@ -22,6 +23,7 @@ const actions = [
 
 const AcceptForm = ({ item, reloadSubmissionsData, manager, actionDate }) => {
 
+    const { onMutation } = useApp()
     const [quantity, setQuantity] = useState("")
     const [deduction, setDeduction] = useState("")
     const [finalRemarks, setFinalRemarks] = useState("")
@@ -61,7 +63,8 @@ const AcceptForm = ({ item, reloadSubmissionsData, manager, actionDate }) => {
         setFinalRemarks("")
         setPartialPayment("")
         setActionIndex(0)
-        reloadSubmissionsData();
+        reloadSubmissionsData()
+        onMutation()
 
     }
 

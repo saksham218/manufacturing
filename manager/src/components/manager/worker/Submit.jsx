@@ -9,6 +9,7 @@ import { getItemsForSubmitFromWorker, getItems, submitFromWorker, getPricesForSu
 import { useWorker } from './workerContext/WorkerContext'
 import HoldInfo from '../../layouts/HoldInfo'
 import CustomButton from '../../layouts/CustomButton'
+import { useApp } from '../../AppContext'
 
 const getItemsData = async (proprietor_id, worker_id, isAdhoc, submit_date) => {
     try {
@@ -50,6 +51,7 @@ const getPrices = async (worker_id, design_number) => {
 const Submit = ({ manager }) => {
 
     const { worker } = useWorker()
+    const { onMutation } = useApp()
     console.log(worker)
     const [submitDate, setSubmitDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
@@ -74,7 +76,7 @@ const Submit = ({ manager }) => {
 
         let isMounted = true;
 
-        if (worker) {
+        if (worker?.worker_id) {
             console.log("get items")
             console.log(manager)
             setItems([])
@@ -96,7 +98,7 @@ const Submit = ({ manager }) => {
         }
 
         return () => { isMounted = false }
-    }, [worker, isAdhoc, submitDate])
+    }, [worker?.worker_id, isAdhoc, submitDate])
 
     useEffect(() => {
 
@@ -196,6 +198,7 @@ const Submit = ({ manager }) => {
         setItems(itemsData);
         setItemIndex("");
         setCurrentWorkerPrice("");
+        onMutation()
 
     }
 

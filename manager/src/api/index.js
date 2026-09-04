@@ -48,3 +48,6 @@ export const raiseExpenseRequest = (expense, manager_id) => service.post(`/manag
 export const getManager = (manager_id) => service.get(`/manager/${manager_id}/getmanager`)
 export const getWorkerDetails = (worker_id) => service.get(`/worker/${worker_id}/workerdetails`)
 export const getItems = (proprietor_id) => service.get(`/item/${proprietor_id}/getitems`)
+export const getActions = (filters) => service.post('/actions', filters)
+export const getActionDetail = (action_id) => service.get(`/actions/${action_id}`)
+export const undoAction = (action_id) => service.post(`/actions/${action_id}/undo`)

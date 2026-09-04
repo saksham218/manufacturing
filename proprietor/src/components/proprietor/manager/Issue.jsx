@@ -9,6 +9,7 @@ import { getItems, getOnHoldItems, issueOnHoldItemsToManager, issueToManager } f
 import { useManager } from './managerContext/ManagerContext'
 import HoldInfo from '../../layouts/HoldInfo'
 import CustomButton from '../../layouts/CustomButton'
+import { useApp } from '../../AppContext'
 
 
 const getItemsData = async (proprietor_id) => {
@@ -47,6 +48,7 @@ const getIssueItemsData = async (issueHoldItems, proprietor_id, issue_date) => {
 const Issue = ({ proprietor }) => {
 
     const { manager } = useManager()
+    const { onMutation } = useApp()
     const [issue, setIssue] = useState({})
     const [items, setItems] = useState([])
 
@@ -204,6 +206,7 @@ const Issue = ({ proprietor }) => {
         getIssueItemsData(issueHoldItems, proprietor.proprietor_id, issueDate).then((itemsData) => {
             setItems(itemsData)
         })
+        onMutation()
 
     }
 

@@ -9,6 +9,7 @@ import { getItemsForIssue, issueToWorker, getPriceForIssue } from '../../../api'
 import { useWorker } from './workerContext/WorkerContext'
 import HoldInfo from '../../layouts/HoldInfo'
 import CustomButton from '../../layouts/CustomButton'
+import { useApp } from '../../AppContext'
 
 const getPrice = async (worker_id, design_number, priceFromDF) => {
     if (Number(priceFromDF) > 0) {
@@ -46,6 +47,7 @@ const getItemsData = async (manager_id, issue_date) => {
 const Issue = ({ manager }) => {
 
     const { worker } = useWorker()
+    const { onMutation } = useApp()
     console.log(worker)
     const [issueDate, setIssueDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
@@ -133,6 +135,7 @@ const Issue = ({ manager }) => {
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
         setItemIndex("");
         setMax(0)
+        onMutation()
 
     }
 

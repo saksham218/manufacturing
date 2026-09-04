@@ -48,5 +48,8 @@ export const addCustomPrice = (customPrice, worker_id) => service.post(`/worker/
 export const getSubmissions = (manager_id, accept_date) => service.post(`/manager/${manager_id}/getsubmissions`, { accept_date })
 export const acceptFromManager = (accepted, manager_id) => service.post(`/manager/${manager_id}/acceptfrommanager`, accepted)
 export const getOnHoldItems = (proprietor_id, issue_date) => service.get(`/proprietor/${proprietor_id}/getonholditems`, { params: { issue_date } })
+export const getActions = (filters) => service.post('/actions', filters)
+export const getActionDetail = (action_id) => service.get(`/actions/${action_id}`)
+export const undoAction = (action_id) => service.post(`/actions/${action_id}/undo`)
 
 

@@ -50,7 +50,9 @@ const workerSchema = new mongoose.Schema({
             remarks_from_proprietor: String,
             issue_date: Date,
             hold_info: Hold_Info,
-            record_date: Date
+            record_date: Date,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -73,7 +75,9 @@ const workerSchema = new mongoose.Schema({
             },
             hold_info: Hold_Info,
             record_date: Date,
-            to_hold: Boolean
+            to_hold: Boolean,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -112,7 +116,9 @@ const workerSchema = new mongoose.Schema({
             is_adhoc: {
                 type: Boolean,
                 default: false
-            }
+            },
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -138,7 +144,9 @@ const workerSchema = new mongoose.Schema({
             },
             hold_info: Hold_Info,
             record_date: Date,
-            was_to_hold: Boolean
+            was_to_hold: Boolean,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
@@ -168,7 +176,9 @@ const workerSchema = new mongoose.Schema({
             },
             hold_info: Hold_Info,
             record_date: Date,
-            was_to_hold: Boolean
+            was_to_hold: Boolean,
+            undone: { type: Boolean, default: false },
+            undo_date: Date
         }],
         default: []
     },
