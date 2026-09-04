@@ -5,9 +5,11 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { getActions } from '../../api'
 import ActionCard from './ActionCard'
 import ActionDetailModal from './ActionDetailModal'
+import { useApp } from '../AppContext'
 import './ActionsDrawer.css'
 
 const ActionsDrawer = ({ onActionUndone }) => {
+    const { actionsVersion, onMutation } = useApp()
     const [open, setOpen] = useState(false)
     const [actions, setActions] = useState([])
     const [loading, setLoading] = useState(false)
@@ -20,7 +22,7 @@ const ActionsDrawer = ({ onActionUndone }) => {
             .then(res => setActions(res.data))
             .catch(console.error)
             .finally(() => setLoading(false))
-    }, [open])
+    }, [open, actionsVersion])
 
     if (!open) {
         return (
@@ -86,6 +88,7 @@ const ActionsDrawer = ({ onActionUndone }) => {
                     setActions(prev => prev.map(a =>
                         a.action_id === action_id ? { ...a, undone: true, undo_date: new Date() } : a
                     ))
+                    onMutation()
                     if (onActionUndone) onActionUndone()
                 }}
             />

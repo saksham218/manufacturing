@@ -9,6 +9,7 @@ import Manager from './manager/Manager'
 import Item from './items/Item'
 import { ManagerProvider } from './manager/managerContext/ManagerContext'
 import ActionsDrawer from '../layouts/ActionsDrawer'
+import { AppProvider } from '../AppContext'
 
 
 const Proprietor = () => {
@@ -18,30 +19,33 @@ const Proprietor = () => {
         const stored = localStorage.getItem('proprietor')
         return stored ? JSON.parse(stored) : null
     })
+    const [refreshKey, setRefreshKey] = useState(0)
 
     if (!proprietor) {
         return <Navigate to="/login" />
     }
     console.log(match)
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <Header proprietor={proprietor} />
-            <Navbar match={match} />
-            <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                <Box sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
-                    <Routes>
-                        <Route path="/" element={<Navigate to={`${match.pathnameBase}/manager`} />} />
-                        <Route path={`/manager/*`} element={
-                            <ManagerProvider>
-                                <Manager proprietor={proprietor} />
-                            </ManagerProvider>
-                        } />
-                        <Route path={`/item/*`} element={<Item proprietor={proprietor} />} />
-                    </Routes>
+        <AppProvider>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                <Header proprietor={proprietor} />
+                <Navbar match={match} />
+                <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+                    <Box key={refreshKey} sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
+                        <Routes>
+                            <Route path="/" element={<Navigate to={`${match.pathnameBase}/manager`} />} />
+                            <Route path={`/manager/*`} element={
+                                <ManagerProvider>
+                                    <Manager proprietor={proprietor} />
+                                </ManagerProvider>
+                            } />
+                            <Route path={`/item/*`} element={<Item proprietor={proprietor} />} />
+                        </Routes>
+                    </Box>
+                    <ActionsDrawer onActionUndone={() => setRefreshKey(k => k + 1)} />
                 </Box>
-                <ActionsDrawer onActionUndone={() => { }} />
             </Box>
-        </Box>
+        </AppProvider>
     )
 }
 

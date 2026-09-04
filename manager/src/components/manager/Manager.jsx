@@ -9,6 +9,7 @@ import Worker from './worker/Worker'
 import View from './View'
 import { WorkerProvider } from './worker/workerContext/WorkerContext'
 import ActionsDrawer from '../layouts/ActionsDrawer'
+import { AppProvider } from '../AppContext'
 
 const Manager = () => {
 
@@ -17,6 +18,7 @@ const Manager = () => {
         const stored = localStorage.getItem('manager')
         return stored ? JSON.parse(stored) : null
     })
+    const [refreshKey, setRefreshKey] = useState(0)
 
     console.log(manager)
 
@@ -25,25 +27,27 @@ const Manager = () => {
     }
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <Header manager={manager} />
-            <Navbar match={match} />
-            <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                <Box sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
-                    <Routes>
-                        <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
-                        <Route path={`/view`} element={<View manager={manager} />} />
-                        <Route path={`/worker/*`} element={
-                            <WorkerProvider>
-                                <Worker manager={manager} />
-                            </WorkerProvider>
-                        } />
-                        <Route path={`/proprietor/*`} element={<Proprietor manager={manager} />} />
-                    </Routes>
+        <AppProvider>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                <Header manager={manager} />
+                <Navbar match={match} />
+                <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+                    <Box key={refreshKey} sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
+                        <Routes>
+                            <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
+                            <Route path={`/view`} element={<View manager={manager} />} />
+                            <Route path={`/worker/*`} element={
+                                <WorkerProvider>
+                                    <Worker manager={manager} />
+                                </WorkerProvider>
+                            } />
+                            <Route path={`/proprietor/*`} element={<Proprietor manager={manager} />} />
+                        </Routes>
+                    </Box>
+                    <ActionsDrawer onActionUndone={() => setRefreshKey(k => k + 1)} />
                 </Box>
-                <ActionsDrawer onActionUndone={() => { }} />
             </Box>
-        </Box>
+        </AppProvider>
     )
 }
 

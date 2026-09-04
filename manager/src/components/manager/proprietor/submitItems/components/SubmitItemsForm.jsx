@@ -3,10 +3,12 @@ import { Input } from '@mui/material'
 import CustomButton from '../../../../layouts/CustomButton'
 import { submitToProprietor } from '../../../../../api'
 import dayjs from 'dayjs'
+import { useApp } from '../../../../AppContext'
 
 const SubmitItemsForm = ({ item, reloadDueBackward, manager, submitDate }) => {
 
     const [submitQuantity, setSubmitQuantity] = useState("")
+    const { onMutation } = useApp()
 
     const onSubmit = async () => {
 
@@ -31,6 +33,7 @@ const SubmitItemsForm = ({ item, reloadDueBackward, manager, submitDate }) => {
         console.log(res.data)
         setSubmitQuantity("")
         reloadDueBackward()
+        onMutation()
 
     }
 
