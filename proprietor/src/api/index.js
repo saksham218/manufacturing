@@ -27,6 +27,7 @@ service.interceptors.response.use((response) => {
         localStorage.removeItem('proprietor_token')
         localStorage.removeItem('proprietor')
         window.location.href = '/login'
+        return new Promise(() => {})
     }
     return Promise.reject(error)
 })

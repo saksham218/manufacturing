@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { Select, MenuItem, Typography, Box, CircularProgress } from '@mui/material'
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs'
 
 import { getManager } from '../../api'
 import GroupedTable from '../layouts/GroupedTable'
@@ -20,48 +17,21 @@ const getManagerData = async (manager_id) => {
 }
 
 const View = ({ manager }) => {
-
-    const today = new Date()
-    const todayString = (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear()
-
-    const [range, setRange] = useState({ start: todayString, end: todayString })
-    const [total, setTotal] = useState(0)
-
     const details = Object.keys(managerDetailsViewConfig)
-    console.log(details)
     const [detail, setDetail] = useState(details[0])
 
     const [managerDetails, setManagerDetails] = useState({})
     const [data, setData] = useState([])
-
     const [viewConfig, setViewConfig] = useState({})
-
     const [loading, setLoading] = useState(false)
 
-
-    const setDisplayData = (r, d, mD) => {
+    const setDisplayData = (d, mD) => {
         const viewConfigData = managerDetailsViewConfig[d]
-        var displayData = mD[d];
-        if (displayData && viewConfigData.is_dated) {
-            const start = dayjs(r.start, 'DD/MM/YYYY')
-            const end = dayjs(r.end, 'DD/MM/YYYY')
-            displayData = displayData.filter((dt) => {
-                const dateObj = new Date(dt.date)
-                const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
-                const date = dayjs(dateString, 'DD/MM/YYYY');
-                return (!date.isBefore(start) && !date.isAfter(end));
-            });
-        }
-
+        const displayData = mD[d]
         console.log(displayData)
         setData(displayData)
         setViewConfig(viewConfigData)
     }
-
-    // const onDateChange = () => {
-    //     console.log(range)
-    //     setDisplayData();
-    // }
 
     useEffect(() => {
         console.log("get manager")
@@ -71,16 +41,11 @@ const View = ({ manager }) => {
             setLoading(false)
             setManagerDetails(managerData)
         });
-
     }, [manager])
 
-
-
     useEffect(() => {
-        setDisplayData(range, detail, managerDetails);
-    }, [range, detail, managerDetails])
-
-
+        setDisplayData(detail, managerDetails);
+    }, [detail, managerDetails])
 
     return (
         loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "50px" }} /> :
@@ -94,26 +59,8 @@ const View = ({ manager }) => {
                     <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails.due_amount}</Typography>
                 </Box>
                 <Box style={{ padding: "10px" }}>
-
-                    {viewConfig.is_dated ?
-                        <Box style={{ display: "flex" }}>
-                            <Box >
-                                <Typography>From:</Typography>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.start, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, start: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                                </LocalizationProvider>
-                            </Box>
-                            <Box style={{ paddingLeft: "10px" }}>
-                                <Typography>To:</Typography>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.end, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, end: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                                </LocalizationProvider>
-                            </Box>
-                        </Box> : null}
-                    <Typography>Total: {total}</Typography>
-
                     {(data && data.length > 0)
-                        ? <GroupedTable data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
+                        ? <GroupedTable key={detail} data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
                         : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
                 </Box>
             </div>)

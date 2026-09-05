@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider } from '@mui/material'
-import { computeContent } from '../utils/viewUtils'
+import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
+import DateRangeFilterPopover from './DateRangeFilterPopover'
 
 function buildRows(data, groupKeys) {
     if (!groupKeys.length) {
@@ -34,28 +35,37 @@ function buildRows(data, groupKeys) {
     return rows
 }
 
+const initColumnFilters = (keys) =>
+    Object.fromEntries(keys.map((k) => [k, isDateColumn(k) ? { start: '', end: '' } : '']))
+
 const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents }) => {
     const [keyword, setKeyword] = useState('')
     const [selected, setSelected] = useState(null)
+    const [columnFilters, setColumnFilters] = useState(() => initColumnFilters([...groupKeys, ...columns]))
 
     useEffect(() => {
         setSelected(null)
-    }, [data, groupKeys])
+        setColumnFilters(initColumnFilters([...groupKeys, ...columns]))
+    }, [data, groupKeys, columns])
 
     const filteredData = useMemo(() => {
-        if (!keyword.trim()) return data || []
+        const allKeys = [...groupKeys, ...columns]
+        const afterColumnFilters = applyColumnFilters(data, columnFilters, allKeys)
+        if (!keyword.trim()) return afterColumnFilters
         const searchTerm = keyword.toLowerCase()
-        return (data || []).filter((item) =>
-            [...groupKeys, ...columns].some((key) => {
+        return afterColumnFilters.filter((item) =>
+            allKeys.some((key) => {
                 const content = computeContent(item, key, true)
                 return content && String(content).toLowerCase().includes(searchTerm)
             })
         )
-    }, [data, keyword, groupKeys, columns])
+    }, [data, keyword, columnFilters, groupKeys, columns])
 
     const rows = useMemo(() => buildRows(filteredData, groupKeys), [filteredData, groupKeys])
 
     const totalCols = groupKeys.length + columns.length + (additionalComponents?.length || 0)
+
+    const headerCellSx = { backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1', verticalAlign: 'top' }
 
     return (
         <Box sx={{ paddingTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -71,18 +81,34 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                 <Table stickyHeader sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
                         <TableRow>
-                            {groupKeys.map((k) => (
-                                <TableCell key={k} sx={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1' }}>
-                                    {k.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                </TableCell>
-                            ))}
-                            {columns.map((c) => (
-                                <TableCell key={c} sx={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1' }}>
-                                    {c.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                </TableCell>
-                            ))}
+                            {[...groupKeys, ...columns].map((key) => {
+                                const filter = columnFilters[key] ?? (isDateColumn(key) ? { start: '', end: '' } : '')
+                                return (
+                                    <TableCell key={key} sx={headerCellSx}>
+                                        {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                        {isDateColumn(key)
+                                            ? <Box sx={{ display: 'block', mt: 0.5 }}>
+                                                <DateRangeFilterPopover
+                                                    value={filter}
+                                                    onChange={(v) => setColumnFilters({ ...columnFilters, [key]: v })}
+                                                />
+                                              </Box>
+                                            : <TextField
+                                                size="small"
+                                                value={filter}
+                                                onChange={(e) => setColumnFilters({ ...columnFilters, [key]: e.target.value })}
+                                                placeholder="Filter..."
+                                                sx={{
+                                                    display: 'block', mt: 0.5,
+                                                    '& .MuiOutlinedInput-root': { backgroundColor: 'white' },
+                                                }}
+                                            />
+                                        }
+                                    </TableCell>
+                                )
+                            })}
                             {additionalComponents?.map((comp) => (
-                                <TableCell key={comp.label} sx={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1' }}>
+                                <TableCell key={comp.label} sx={headerCellSx}>
                                     {comp.label.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
                                 </TableCell>
                             ))}
