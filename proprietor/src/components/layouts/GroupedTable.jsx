@@ -62,9 +62,16 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
 
     useEffect(() => {
         setSelected(null)
+    }, [data])
+
+    const keysSignatureRef = useRef(null)
+    useEffect(() => {
+        const signature = JSON.stringify([groupKeys, columns])
+        if (signature === keysSignatureRef.current) return
+        keysSignatureRef.current = signature
         setColumnFilters(initColumnFilters([...groupKeys, ...columns]))
         setSortConfig({ key: null, direction: 'asc' })
-    }, [data, groupKeys, columns])
+    }, [groupKeys, columns])
 
     const filteredData = useMemo(() => {
         const allKeys = [...groupKeys, ...columns]
