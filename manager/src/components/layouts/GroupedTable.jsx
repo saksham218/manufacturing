@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider } from '@mui/material'
+import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel } from '@mui/material'
 import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
 import DateRangeFilterPopover from './DateRangeFilterPopover'
 
@@ -42,10 +42,20 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
     const [keyword, setKeyword] = useState('')
     const [selected, setSelected] = useState(null)
     const [columnFilters, setColumnFilters] = useState(() => initColumnFilters([...groupKeys, ...columns]))
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+
+    const handleHeaderClick = (key) => {
+        setSortConfig((prev) =>
+            prev.key === key
+                ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                : { key, direction: 'asc' }
+        )
+    }
 
     useEffect(() => {
         setSelected(null)
         setColumnFilters(initColumnFilters([...groupKeys, ...columns]))
+        setSortConfig({ key: null, direction: 'asc' })
     }, [data, groupKeys, columns])
 
     const filteredData = useMemo(() => {
@@ -61,7 +71,34 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
         )
     }, [data, keyword, columnFilters, groupKeys, columns])
 
-    const rows = useMemo(() => buildRows(filteredData, groupKeys), [filteredData, groupKeys])
+    const sortedData = useMemo(() => {
+        if (!sortConfig.key) return filteredData
+        const key = sortConfig.key
+        return [...filteredData].sort((a, b) => {
+            let aVal, bVal
+            if (isDateColumn(key)) {
+                aVal = new Date(a[key]).getTime()
+                bVal = new Date(b[key]).getTime()
+            } else {
+                aVal = computeContent(a, key, true) ?? ''
+                bVal = computeContent(b, key, true) ?? ''
+                const aNum = parseFloat(aVal)
+                const bNum = parseFloat(bVal)
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    aVal = aNum
+                    bVal = bNum
+                } else {
+                    aVal = String(aVal).toLowerCase()
+                    bVal = String(bVal).toLowerCase()
+                }
+            }
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
+            return 0
+        })
+    }, [filteredData, sortConfig])
+
+    const rows = useMemo(() => buildRows(sortedData, groupKeys), [sortedData, groupKeys])
 
     const totalCols = groupKeys.length + columns.length + (additionalComponents?.length || 0)
 
@@ -85,7 +122,14 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                 const filter = columnFilters[key] ?? (isDateColumn(key) ? { start: '', end: '' } : '')
                                 return (
                                     <TableCell key={key} sx={headerCellSx}>
-                                        {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                        <TableSortLabel
+                                            active={sortConfig.key === key}
+                                            direction={sortConfig.key === key ? sortConfig.direction : 'asc'}
+                                            onClick={() => handleHeaderClick(key)}
+                                            sx={{ color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
+                                        >
+                                            {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                        </TableSortLabel>
                                         {isDateColumn(key)
                                             ? <Box sx={{ display: 'block', mt: 0.5 }}>
                                                 <DateRangeFilterPopover
