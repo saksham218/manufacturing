@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel } from '@mui/material'
 import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
 import DateRangeFilterPopover from './DateRangeFilterPopover'
@@ -43,6 +43,14 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
     const [selected, setSelected] = useState(null)
     const [columnFilters, setColumnFilters] = useState(() => initColumnFilters([...groupKeys, ...columns]))
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+    const labelRowRef = useRef(null)
+    const [labelRowHeight, setLabelRowHeight] = useState(0)
+
+    useEffect(() => {
+        if (labelRowRef.current) {
+            setLabelRowHeight(labelRowRef.current.offsetHeight)
+        }
+    }, [columns, groupKeys])
 
     const handleHeaderClick = (key) => {
         setSortConfig((prev) =>
@@ -117,44 +125,48 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
             <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'hidden', width: '100%' }}>
                 <Table stickyHeader sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
+                        <TableRow ref={labelRowRef}>
+                            {[...groupKeys, ...columns].map((key) => (
+                                <TableCell key={key} sx={headerCellSx}>
+                                    <TableSortLabel
+                                        active={sortConfig.key === key}
+                                        direction={sortConfig.key === key ? sortConfig.direction : 'asc'}
+                                        onClick={() => handleHeaderClick(key)}
+                                        sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
+                                    >
+                                        {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                    </TableSortLabel>
+                                </TableCell>
+                            ))}
+                            {additionalComponents?.map((comp) => (
+                                <TableCell key={comp.label} sx={headerCellSx}>
+                                    {comp.label.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                </TableCell>
+                            ))}
+                        </TableRow>
                         <TableRow>
                             {[...groupKeys, ...columns].map((key) => {
                                 const filter = columnFilters[key] ?? (isDateColumn(key) ? { start: '', end: '' } : '')
                                 return (
-                                    <TableCell key={key} sx={headerCellSx}>
-                                        <TableSortLabel
-                                            active={sortConfig.key === key}
-                                            direction={sortConfig.key === key ? sortConfig.direction : 'asc'}
-                                            onClick={() => handleHeaderClick(key)}
-                                            sx={{ color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
-                                        >
-                                            {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                        </TableSortLabel>
+                                    <TableCell key={key} sx={{ backgroundColor: '#1565c0', border: '1px solid #0d47a1', padding: '4px 8px', top: labelRowHeight }}>
                                         {isDateColumn(key)
-                                            ? <Box sx={{ display: 'block', mt: 0.5 }}>
-                                                <DateRangeFilterPopover
-                                                    value={filter}
-                                                    onChange={(v) => setColumnFilters({ ...columnFilters, [key]: v })}
-                                                />
-                                              </Box>
+                                            ? <DateRangeFilterPopover
+                                                value={filter}
+                                                onChange={(v) => setColumnFilters({ ...columnFilters, [key]: v })}
+                                            />
                                             : <TextField
                                                 size="small"
                                                 value={filter}
                                                 onChange={(e) => setColumnFilters({ ...columnFilters, [key]: e.target.value })}
                                                 placeholder="Filter..."
-                                                sx={{
-                                                    display: 'block', mt: 0.5,
-                                                    '& .MuiOutlinedInput-root': { backgroundColor: 'white' },
-                                                }}
+                                                sx={{ width: '100%', '& .MuiOutlinedInput-root': { backgroundColor: 'white' } }}
                                             />
                                         }
                                     </TableCell>
                                 )
                             })}
                             {additionalComponents?.map((comp) => (
-                                <TableCell key={comp.label} sx={headerCellSx}>
-                                    {comp.label.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                </TableCell>
+                                <TableCell key={comp.label} sx={{ backgroundColor: '#1565c0', border: '1px solid #0d47a1', top: labelRowHeight }} />
                             ))}
                         </TableRow>
                     </TableHead>
