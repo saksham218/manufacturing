@@ -1,5 +1,6 @@
 import HoldInfo from "../layouts/HoldInfo"
 import { Chip, Stack } from "@mui/material"
+import dayjs from 'dayjs'
 
 export const computeContent = (item, key, forSearch) => {
     if (key === 'worker') {
@@ -126,4 +127,33 @@ export const searchByKeyword = (data, keyword, keys) => {
     })
 
     return filteredData
+}
+
+export const isDateColumn = (key) => key.includes('date')
+
+export const applyColumnFilters = (data, columnFilters, allKeys) => {
+    if (!data) return []
+    return data.filter((item) =>
+        allKeys.every((key) => {
+            const filter = columnFilters[key]
+            if (!filter) return true
+            if (isDateColumn(key)) {
+                const { start, end } = filter
+                if (!start && !end) return true
+                const dateObj = new Date(item[key])
+                const dateString =
+                    (dateObj.getDate() < 10 ? '0' : '') + dateObj.getDate() + '/' +
+                    (dateObj.getMonth() < 9 ? '0' : '') + (dateObj.getMonth() + 1) + '/' +
+                    dateObj.getFullYear()
+                const date = dayjs(dateString, 'DD/MM/YYYY')
+                if (start && date.isBefore(dayjs(start, 'DD/MM/YYYY'))) return false
+                if (end && date.isAfter(dayjs(end, 'DD/MM/YYYY'))) return false
+                return true
+            } else {
+                if (!filter.trim()) return true
+                const content = computeContent(item, key, true)
+                return content && String(content).toLowerCase().includes(filter.toLowerCase())
+            }
+        })
+    )
 }
