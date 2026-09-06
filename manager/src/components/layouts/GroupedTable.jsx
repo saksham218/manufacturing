@@ -179,7 +179,10 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
 
                             return (
                                 <React.Fragment key={i}>
-                                    <TableRow onClick={() => setSelected(selected === i ? null : i)}>
+                                    <TableRow
+                                        onClick={() => setSelected(selected === i ? null : i)}
+                                        sx={row.leaf.undone ? { opacity: 0.5 } : {}}
+                                    >
                                         {row.groupCells.map((cell, j) =>
                                             cell.isFirst ? (
                                                 <TableCell
@@ -192,7 +195,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                                             (_, k) => i + k
                                                         ).some((k) => selected === k)
                                                             ? 'lightblue'
-                                                            : 'white'
+                                                            : row.leaf.undone ? '#f5f5f5' : 'white'
                                                     }}
                                                 >
                                                     {computeContent(row.leaf, cell.key)}
@@ -202,7 +205,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                         {columns.map((col) => (
                                             <TableCell
                                                 key={col}
-                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : 'white' }}
+                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white' }}
                                             >
                                                 {computeContent(row.leaf, col)}
                                             </TableCell>
@@ -210,7 +213,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                         {additionalComponents?.map((comp) => (
                                             <TableCell
                                                 key={comp.label}
-                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : 'white' }}
+                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white' }}
                                             >
                                                 <comp.component item={row.leaf} {...comp.props} />
                                             </TableCell>

@@ -40,6 +40,7 @@ export const computeContent = (item, key, forSearch) => {
             {item['hold_info']?.is_hold ? <HoldInfo holdInfo={item['hold_info']} size="small" style={{
                 width: '70px'
             }} /> : ""}
+            {!!item['undone'] && <Chip label="Undone" color="error" size="small" style={{ width: '70px' }} />}
         </Stack>)
 
     }
