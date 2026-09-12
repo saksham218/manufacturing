@@ -7,10 +7,12 @@ import dayjs from 'dayjs'
 import { recordPayment, getPayments } from '../../../api'
 import { useManager } from './managerContext/ManagerContext'
 import CustomButton from '../../layouts/CustomButton'
+import { useApp } from '../../AppContext'
 
 const Payment = () => {
 
     const { manager } = useManager()
+    const { actionsVersion } = useApp()
 
     const today = new Date()
     const emptyPayment = {
@@ -53,7 +55,7 @@ const Payment = () => {
         })
 
         return () => { isMounted = false }
-    }, [manager])
+    }, [manager, actionsVersion])
 
 
     const onSubmit = async () => {

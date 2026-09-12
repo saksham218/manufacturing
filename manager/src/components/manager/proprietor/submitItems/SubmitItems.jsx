@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Typography, CircularProgress, Box } from '@mui/material'
+import { Typography, Box } from '@mui/material'
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
@@ -7,40 +7,46 @@ import dayjs from 'dayjs'
 import { getItemsForSubmitToProprietor } from '../../../../api'
 import GroupedTable from '../../../layouts/GroupedTable'
 import SubmitItemsForm from './components/SubmitItemsForm'
+import { useApp } from '../../../AppContext'
+
+const getSubmitItemsData = async (manager_id, submit_date) => {
+    try {
+        const res = await getItemsForSubmitToProprietor(manager_id, dayjs(submit_date, 'DD/MM/YYYY').format('YYYY-MM-DD'))
+        return res.data
+    } catch (err) {
+        console.log(err)
+    }
+}
 
 const SubmitItems = ({ manager }) => {
 
+    const { actionsVersion } = useApp()
     const [submitDate, setSubmitDate] = useState(dayjs().format('DD/MM/YYYY'))
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState([])
 
-    const fetchData = async (manager_id, submit_date) => {
-        setLoading(true)
-        try {
-            const res = await getItemsForSubmitToProprietor(manager_id, dayjs(submit_date, 'DD/MM/YYYY').format('YYYY-MM-DD'))
-            setData(res.data)
-        } catch (err) {
-            console.log(err)
-        }
-        setLoading(false)
-    }
-
     useEffect(() => {
-        fetchData(manager.manager_id, submitDate)
-    }, [manager, submitDate])
+        let isMounted = true
 
-    const reloadDueBackward = () => fetchData(manager.manager_id, submitDate)
+        setLoading(true)
+        getSubmitItemsData(manager.manager_id, submitDate).then((items) => {
+            if (items && isMounted) {
+                setData(items)
+                setLoading(false)
+            }
+        })
+
+        return () => { isMounted = false }
+    }, [manager, submitDate, actionsVersion])
 
     const submitItemsFormComponent = {
         component: SubmitItemsForm,
         props: {
-            reloadDueBackward: reloadDueBackward,
             manager: manager,
             submitDate: submitDate,
         },
         label: "submit"
     }
-
 
     return (
         <div>
@@ -55,12 +61,14 @@ const SubmitItems = ({ manager }) => {
                     />
                 </LocalizationProvider>
             </Box>
-            {loading ? <CircularProgress /> :
-                (data && data.length > 0) ?
-                    <GroupedTable data={data} groupKeys={['worker']} columns={['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'info']} additionalComponents={[submitItemsFormComponent]} />
-                    :
-                    <Typography>No Data for Due Backward</Typography>
-            }
+            <GroupedTable
+                loading={loading}
+                data={data}
+                groupKeys={['worker']}
+                columns={['item', 'quantity', 'price', 'deduction_from_manager', 'remarks_from_manager', 'underprocessing_value', 'remarks_from_proprietor', 'info']}
+                additionalComponents={[submitItemsFormComponent]}
+                noDataMessage="No Data for Due Backward"
+            />
         </div>
     )
 }

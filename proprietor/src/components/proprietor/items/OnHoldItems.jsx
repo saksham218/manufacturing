@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import { Typography, CircularProgress } from '@mui/material'
+import { useEffect, useState } from 'react'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -8,6 +7,7 @@ import dayjs from 'dayjs'
 import GroupedTable from '../../layouts/GroupedTable'
 import { getOnHoldItems } from '../../../api'
 import { proprietorDetailsViewConfig } from '../../constants/ViewConstants'
+import { useApp } from '../../AppContext'
 
 const getOnHoldItemsData = async (proprietor_id, issue_date) => {
     try {
@@ -23,6 +23,7 @@ const getOnHoldItemsData = async (proprietor_id, issue_date) => {
 
 const OnHoldItems = ({ proprietor }) => {
 
+    const { actionsVersion } = useApp()
     const [data, setData] = useState([])
     const [loading, setLoading] = useState(false)
     const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
@@ -36,7 +37,7 @@ const OnHoldItems = ({ proprietor }) => {
             setData(onHoldItemsData)
         });
 
-    }, [proprietor, date])
+    }, [proprietor, date, actionsVersion])
 
     return (
         <div>
@@ -49,9 +50,13 @@ const OnHoldItems = ({ proprietor }) => {
                     slotProps={{ textField: { style: { marginBottom: "15px", marginTop: "10px" } } }}
                 />
             </LocalizationProvider>
-            {loading ? <CircularProgress style={{ margin: "150px" }} /> : (
-                (data && data.length > 0) ? <GroupedTable data={data} groupKeys={[]} columns={proprietorDetailsViewConfig['on_hold'].keys} /> : <Typography>No Items on Hold</Typography>
-            )}
+            <GroupedTable
+                loading={loading}
+                data={data}
+                groupKeys={[]}
+                columns={proprietorDetailsViewConfig['on_hold'].keys}
+                noDataMessage="No Items on Hold"
+            />
         </div>
     )
 }

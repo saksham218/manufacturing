@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Select, MenuItem, Typography, Box, CircularProgress } from '@mui/material'
+import { Select, MenuItem, Typography, Box } from '@mui/material'
 
 import { getWorkerDetails } from '../../../api'
 import GroupedTable from '../../layouts/GroupedTable'
 import { useWorker } from './workerContext/WorkerContext'
-import { workerDetailsViewConfig } from '../../constants/ViewConstants';
+import { workerDetailsViewConfig } from '../../constants/ViewConstants'
+import { useApp } from '../../AppContext'
 
 const getWorkerData = async (worker_id) => {
     try {
@@ -20,6 +21,7 @@ const getWorkerData = async (worker_id) => {
 const ViewWorker = () => {
 
     const { worker } = useWorker()
+    const { actionsVersion } = useApp()
 
     const details = Object.keys(workerDetailsViewConfig)
     const [detail, setDetail] = useState(details[0])
@@ -43,7 +45,7 @@ const ViewWorker = () => {
             });
         }
         return () => { isMounted = false }
-    }, [worker])
+    }, [worker, actionsVersion])
 
     useEffect(() => {
         let isMounted = true;
@@ -57,22 +59,26 @@ const ViewWorker = () => {
     }, [detail, workerDetails])
 
     return (
-        loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
-            (<div style={{ paddingTop: "10px" }}>
-                <Box style={{ display: 'flex' }}>
-                    <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
-                        {details.map((d) => (
-                            <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
-                        ))}
-                    </Select>
-                    <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails.due_amount}</Typography>
-                </Box>
-                <Box style={{ padding: "10px" }}>
-                    {(data && data.length > 0)
-                        ? <GroupedTable key={detail} data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
-                        : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
-                </Box>
-            </div>)
+        <div style={{ paddingTop: "10px" }}>
+            <Box style={{ display: 'flex', alignItems: 'center' }}>
+                <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
+                    {details.map((d) => (
+                        <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
+                    ))}
+                </Select>
+                <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails.due_amount}</Typography>
+            </Box>
+            <Box style={{ padding: "10px" }}>
+                <GroupedTable
+                    loading={loading}
+                    key={detail}
+                    data={data}
+                    groupKeys={viewConfig.grouping_keys || []}
+                    columns={viewConfig.keys}
+                    noDataMessage={`No Data for ${detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
+                />
+            </Box>
+        </div>
     )
 }
 

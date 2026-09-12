@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Select, MenuItem, Typography, Box, CircularProgress } from '@mui/material'
+import { Select, MenuItem, Typography, Box } from '@mui/material'
 
 import { getManager } from '../../../api'
 import GroupedTable from '../../layouts/GroupedTable'
 import { useManager } from './managerContext/ManagerContext'
 import { managerDetailsViewConfig } from '../../constants/ViewConstants'
+import { useApp } from '../../AppContext'
 
 const getManagerData = async (manager_id) => {
     try {
@@ -20,6 +21,7 @@ const getManagerData = async (manager_id) => {
 const ViewManager = () => {
 
     const { manager } = useManager()
+    const { actionsVersion } = useApp()
 
     const details = Object.keys(managerDetailsViewConfig)
     const [detail, setDetail] = useState(details[0])
@@ -51,29 +53,33 @@ const ViewManager = () => {
             })
         }
         return () => { isMounted = false }
-    }, [manager])
+    }, [manager, actionsVersion])
 
     useEffect(() => {
         setDisplayData(detail, managerDetails);
     }, [detail, managerDetails])
 
     return (
-        loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
-            (<div style={{ paddingTop: "10px" }}>
-                <Box style={{ display: 'flex' }}>
-                    <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
-                        {details.map((d) => (
-                            <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
-                        ))}
-                    </Select>
-                    <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails?.due_amount}</Typography>
-                </Box>
-                <Box style={{ padding: "10px" }}>
-                    {(data && data.length > 0)
-                        ? <GroupedTable key={detail} data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
-                        : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
-                </Box>
-            </div>)
+        <div style={{ paddingTop: "10px" }}>
+            <Box style={{ display: 'flex', alignItems: 'center' }}>
+                <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); }}>
+                    {details.map((d) => (
+                        <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
+                    ))}
+                </Select>
+                <Typography style={{ padding: "10px" }}>Due Amount: {managerDetails?.due_amount}</Typography>
+            </Box>
+            <Box style={{ padding: "10px" }}>
+                <GroupedTable
+                    loading={loading}
+                    key={detail}
+                    data={data}
+                    groupKeys={viewConfig.grouping_keys || []}
+                    columns={viewConfig.keys}
+                    noDataMessage={`No Data for ${detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
+                />
+            </Box>
+        </div>
     )
 }
 
