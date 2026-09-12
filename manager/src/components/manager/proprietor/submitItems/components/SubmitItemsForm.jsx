@@ -5,7 +5,7 @@ import { submitToProprietor } from '../../../../../api'
 import dayjs from 'dayjs'
 import { useApp } from '../../../../AppContext'
 
-const SubmitItemsForm = ({ item, reloadDueBackward, manager, submitDate }) => {
+const SubmitItemsForm = ({ item, manager, submitDate }) => {
 
     const [submitQuantity, setSubmitQuantity] = useState("")
     const { onMutation } = useApp()
@@ -32,7 +32,6 @@ const SubmitItemsForm = ({ item, reloadDueBackward, manager, submitDate }) => {
 
         console.log(res.data)
         setSubmitQuantity("")
-        reloadDueBackward()
         onMutation()
 
     }

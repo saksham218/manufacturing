@@ -18,8 +18,6 @@ const Manager = () => {
         const stored = localStorage.getItem('manager')
         return stored ? JSON.parse(stored) : null
     })
-    const [refreshKey, setRefreshKey] = useState(0)
-
     console.log(manager)
 
     if (!manager) {
@@ -32,7 +30,7 @@ const Manager = () => {
                 <Header manager={manager} />
                 <Navbar match={match} />
                 <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                    <Box key={refreshKey} sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
+                    <Box sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
                         <Routes>
                             <Route path="/" element={<Navigate to={`${match.pathnameBase}/view`} />} />
                             <Route path={`/view`} element={<View manager={manager} />} />
@@ -44,7 +42,7 @@ const Manager = () => {
                             <Route path={`/proprietor/*`} element={<Proprietor manager={manager} />} />
                         </Routes>
                     </Box>
-                    <ActionsDrawer onActionUndone={() => setRefreshKey(k => k + 1)} />
+                    <ActionsDrawer />
                 </Box>
             </Box>
         </AppProvider>

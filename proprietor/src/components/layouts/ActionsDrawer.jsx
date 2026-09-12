@@ -8,7 +8,7 @@ import ActionDetailModal from './ActionDetailModal'
 import { useApp } from '../AppContext'
 import './ActionsDrawer.css'
 
-const ActionsDrawer = ({ onActionUndone }) => {
+const ActionsDrawer = () => {
     const { actionsVersion, onMutation } = useApp()
     const [open, setOpen] = useState(false)
     const [actions, setActions] = useState([])
@@ -89,7 +89,6 @@ const ActionsDrawer = ({ onActionUndone }) => {
                         a.action_id === action_id ? { ...a, undone: true, undo_date: new Date() } : a
                     ))
                     onMutation()
-                    if (onActionUndone) onActionUndone()
                 }}
             />
         </>

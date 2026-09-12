@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Button, Typography, Box, CircularProgress, TextField, Autocomplete } from '@mui/material'
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs'
+import { FormGroup, Select, MenuItem, InputLabel, Input, FormControl, Typography, Box, CircularProgress, TextField, Autocomplete } from '@mui/material'
 
 import { getItems, getWorkers, getWorkerDetails, addCustomPrice } from '../../../api'
 import GroupedTable from '../../layouts/GroupedTable'
 import { useManager } from './managerContext/ManagerContext'
-import { workerDetailsViewConfig } from '../../constants/ViewConstants';
+import { workerDetailsViewConfig } from '../../constants/ViewConstants'
+import { useApp } from '../../AppContext'
 import CustomButton from '../../layouts/CustomButton'
 
 const getWorkersData = async (manager_id) => {
@@ -47,19 +45,13 @@ const getWorkerData = async (worker_id) => {
 const Worker = ({ proprietor }) => {
 
     const { manager } = useManager()
+    const { actionsVersion } = useApp()
     console.log(manager)
-
-    const today = new Date()
-    const todayString = (today.getDate() < 10 ? "0" + today.getDate() : today.getDate()) + "/" + ((today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : (today.getMonth() + 1)) + "/" + today.getFullYear()
-
-    const [range, setRange] = useState({ start: todayString, end: todayString })
-    const [total, setTotal] = useState(0)
 
     const [workers, setWorkers] = useState([])
     const [worker, setWorker] = useState({ worker_id: "" })
     const [workerDetails, setWorkerDetails] = useState({})
     const [data, setData] = useState([])
-
 
     const [items, setItems] = useState([])
     const [price, setPrice] = useState("")
@@ -76,25 +68,10 @@ const Worker = ({ proprietor }) => {
     const [workersLoading, setWorkersLoading] = useState(false)
 
 
-    const setDisplayData = (chosenRange, chosenDetail, workerInfo) => {
+    const setDisplayData = (chosenDetail, workerInfo) => {
         const viewConfigData = workerDetailsViewConfig[chosenDetail]
-        var displayData = workerInfo ? workerInfo[chosenDetail] : null
-        if (displayData && viewConfigData.is_dated) {
-            const start = dayjs(chosenRange.start, 'DD/MM/YYYY')
-            const end = dayjs(chosenRange.end, 'DD/MM/YYYY')
-            console.log("start: ", start)
-            console.log("end:", end)
-            displayData = displayData.filter((d) => {
-                const dateObj = new Date(d.date)
-                const dateString = ((dateObj.getDate() < 10) ? ("0" + dateObj.getDate()) : dateObj.getDate()) + "/" + ((dateObj.getMonth() < 9) ? ("0" + (dateObj.getMonth() + 1)) : (dateObj.getMonth() + 1)) + "/" + (dateObj.getFullYear())
-                const date = dayjs(dateString, 'DD/MM/YYYY');
-                console.log("date: ", date)
-                return (!date.isBefore(start) && !date.isAfter(end));
-            });
-        }
-        console.log(displayData)
+        const displayData = workerInfo ? workerInfo[chosenDetail] : null
         setData(displayData)
-        console.log(viewConfigData)
         setViewConfig(viewConfigData)
     }
 
@@ -103,11 +80,8 @@ const Worker = ({ proprietor }) => {
         console.log(manager)
         setItemsLoading(true)
         getItemsData(proprietor.proprietor_id).then((itemsData) => {
-            //delay
-            // setTimeout(() => {
             setItems(itemsData)
             setItemsLoading(false)
-            // }, 10000)
         });
     }, [])
 
@@ -129,7 +103,6 @@ const Worker = ({ proprietor }) => {
                 setWorkers(workersData)
                 setWorkersLoading(false)
             }
-            // setWorkers(data)
         })
 
         return () => { isMounted = false }
@@ -138,8 +111,8 @@ const Worker = ({ proprietor }) => {
 
 
     useEffect(() => {
-        setDisplayData(range, detail, workerDetails);
-    }, [range, detail, workerDetails])
+        setDisplayData(detail, workerDetails);
+    }, [detail, workerDetails])
 
     useEffect(() => {
         let isMounted = true;
@@ -157,7 +130,7 @@ const Worker = ({ proprietor }) => {
         }
 
         return () => { isMounted = false }
-    }, [worker])
+    }, [worker, actionsVersion])
 
     const onWorkerSelect = async (event, value) => {
         console.log(value)
@@ -180,7 +153,6 @@ const Worker = ({ proprietor }) => {
         setDetailsLoading(false)
         setCustomPrice({ design_number: "", price: "" })
         setPrice("")
-
 
     }
 
@@ -248,40 +220,25 @@ const Worker = ({ proprietor }) => {
                         )}
                     </Box>
                     <Box style={{ paddingTop: '20px' }}>
-                        {detailsLoading ? <CircularProgress /> : (
-                            <>
-                                <Typography>Worker Details:</Typography>
-                                <Box style={{ display: 'flex' }}>
-                                    <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); console.log(workerDetails[detail]) }}>
-                                        {details.map((d) => (
-                                            <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
-                                        ))}
-                                    </Select>
-                                    <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails?.due_amount}</Typography>
-                                </Box>
-                                <Box style={{ padding: "10px" }}>
-                                    {viewConfig.is_dated ?
-                                        <Box style={{ display: "flex" }}>
-                                            <Box >
-                                                <Typography>From:</Typography>
-                                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.start, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, start: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                                                </LocalizationProvider>
-                                            </Box>
-                                            <Box style={{ paddingLeft: "10px" }}>
-                                                <Typography>To:</Typography>
-                                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                    <DatePicker format='DD/MM/YYYY' value={dayjs(range.end, 'DD/MM/YYYY')} onChange={(d) => { console.log(d); setRange({ ...range, end: d.format('DD/MM/YYYY') }); console.log(range); }} />
-                                                </LocalizationProvider>
-                                            </Box>
-                                        </Box> : null}
-                                    <Typography style={{ paddingTop: "40px", paddingLeft: "20px" }}>Total: {total}</Typography>
-                                    {(data && data.length > 0)
-                                        ? <GroupedTable data={data} groupKeys={viewConfig.grouping_keys || []} columns={viewConfig.keys} />
-                                        : <Typography>No Data for {detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Typography>}
-                                </Box>
-                            </>
-                        )}
+                        <Typography>Worker Details:</Typography>
+                        <Box style={{ display: 'flex', alignItems: 'center' }}>
+                            <Select value={detail} onChange={(e) => { setDetail(e.target.value); console.log(detail); console.log(workerDetails[detail]) }}>
+                                {details.map((d) => (
+                                    <MenuItem value={d}>{d.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</MenuItem>
+                                ))}
+                            </Select>
+                            <Typography style={{ padding: "10px" }}>Due Amount: {workerDetails?.due_amount}</Typography>
+                            {detailsLoading && <CircularProgress size={20} style={{ marginLeft: '10px' }} />}
+                        </Box>
+                        <Box style={{ padding: "10px" }}>
+                            <GroupedTable
+                                loading={detailsLoading}
+                                data={data}
+                                groupKeys={viewConfig.grouping_keys || []}
+                                columns={viewConfig.keys}
+                                noDataMessage={`No Data for ${detail.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
+                            />
+                        </Box>
                     </Box>
                 </Box>
             )}

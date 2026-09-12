@@ -51,7 +51,7 @@ const getPrices = async (worker_id, design_number) => {
 const Submit = ({ manager }) => {
 
     const { worker } = useWorker()
-    const { onMutation } = useApp()
+    const { onMutation, actionsVersion } = useApp()
     console.log(worker)
     const [submitDate, setSubmitDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [submission, setSubmission] = useState({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "" })
@@ -98,7 +98,7 @@ const Submit = ({ manager }) => {
         }
 
         return () => { isMounted = false }
-    }, [worker?.worker_id, isAdhoc, submitDate])
+    }, [worker?.worker_id, isAdhoc, submitDate, actionsVersion])
 
     useEffect(() => {
 
@@ -194,8 +194,6 @@ const Submit = ({ manager }) => {
         console.log(res.data)
 
         setSubmission({ design_number: "", quantity: "", price: "", deduction: "", remarks_from_proprietor: "", remarks: "", underprocessing_value: "", is_adhoc: isAdhoc, to_hold: toHold })
-        const itemsData = await getItemsData(manager.proprietor_id, worker.worker_id, isAdhoc, submitDate);
-        setItems(itemsData);
         setItemIndex("");
         setCurrentWorkerPrice("");
         onMutation()

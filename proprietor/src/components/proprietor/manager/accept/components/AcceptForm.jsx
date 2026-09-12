@@ -21,7 +21,7 @@ const actions = [
     }
 ]
 
-const AcceptForm = ({ item, reloadSubmissionsData, manager, actionDate }) => {
+const AcceptForm = ({ item, manager, actionDate }) => {
 
     const { onMutation } = useApp()
     const [quantity, setQuantity] = useState("")
@@ -63,7 +63,6 @@ const AcceptForm = ({ item, reloadSubmissionsData, manager, actionDate }) => {
         setFinalRemarks("")
         setPartialPayment("")
         setActionIndex(0)
-        reloadSubmissionsData()
         onMutation()
 
     }

@@ -19,8 +19,6 @@ const Proprietor = () => {
         const stored = localStorage.getItem('proprietor')
         return stored ? JSON.parse(stored) : null
     })
-    const [refreshKey, setRefreshKey] = useState(0)
-
     if (!proprietor) {
         return <Navigate to="/login" />
     }
@@ -31,7 +29,7 @@ const Proprietor = () => {
                 <Header proprietor={proprietor} />
                 <Navbar match={match} />
                 <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                    <Box key={refreshKey} sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
+                    <Box sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
                         <Routes>
                             <Route path="/" element={<Navigate to={`${match.pathnameBase}/manager`} />} />
                             <Route path={`/manager/*`} element={
@@ -42,7 +40,7 @@ const Proprietor = () => {
                             <Route path={`/item/*`} element={<Item proprietor={proprietor} />} />
                         </Routes>
                     </Box>
-                    <ActionsDrawer onActionUndone={() => setRefreshKey(k => k + 1)} />
+                    <ActionsDrawer />
                 </Box>
             </Box>
         </AppProvider>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel } from '@mui/material'
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel, CircularProgress, Typography } from '@mui/material'
 import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
 import DateRangeFilterPopover from './DateRangeFilterPopover'
 
@@ -38,7 +38,8 @@ function buildRows(data, groupKeys) {
 const initColumnFilters = (keys) =>
     Object.fromEntries(keys.map((k) => [k, isDateColumn(k) ? { start: '', end: '' } : '']))
 
-const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents }) => {
+const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents, loading = false, noDataMessage = 'No data' }) => {
+    const safeData = data || []
     const [keyword, setKeyword] = useState('')
     const [selected, setSelected] = useState(null)
     const [columnFilters, setColumnFilters] = useState(() => initColumnFilters([...groupKeys, ...columns]))
@@ -46,11 +47,14 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
     const labelRowRef = useRef(null)
     const [labelRowHeight, setLabelRowHeight] = useState(0)
 
-    useEffect(() => {
-        if (labelRowRef.current) {
-            setLabelRowHeight(labelRowRef.current.offsetHeight)
-        }
-    }, [columns, groupKeys])
+    useLayoutEffect(() => {
+        if (!labelRowRef.current) return
+        const observer = new ResizeObserver(() => {
+            if (labelRowRef.current) setLabelRowHeight(labelRowRef.current.offsetHeight)
+        })
+        observer.observe(labelRowRef.current)
+        return () => observer.disconnect()
+    }, [])
 
     const handleHeaderClick = (key) => {
         setSortConfig((prev) =>
@@ -75,7 +79,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
 
     const filteredData = useMemo(() => {
         const allKeys = [...groupKeys, ...columns]
-        const afterColumnFilters = applyColumnFilters(data, columnFilters, allKeys)
+        const afterColumnFilters = applyColumnFilters(safeData, columnFilters, allKeys)
         if (!keyword.trim()) return afterColumnFilters
         const searchTerm = keyword.toLowerCase()
         return afterColumnFilters.filter((item) =>
@@ -84,7 +88,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                 return content && String(content).toLowerCase().includes(searchTerm)
             })
         )
-    }, [data, keyword, columnFilters, groupKeys, columns])
+    }, [safeData, keyword, columnFilters, groupKeys, columns])
 
     const sortedData = useMemo(() => {
         if (!sortConfig.key) return filteredData
@@ -121,6 +125,9 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
 
     return (
         <Box sx={{ paddingTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {loading && <CircularProgress style={{ margin: 'auto' }} />}
+            <Box sx={{ display: loading ? 'none' : 'flex', flexDirection: 'column', gap: 2 }}>
+            {safeData.length === 0 ? <Typography>{noDataMessage}</Typography> : <>
             <TextField
                 label="Search"
                 variant="outlined"
@@ -129,7 +136,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                 onChange={(e) => setKeyword(e.target.value)}
                 sx={{ width: 300 }}
             />
-            <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'hidden', width: '100%' }}>
+            <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'auto', width: '100%' }}>
                 <Table stickyHeader sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
                         <TableRow ref={labelRowRef}>
@@ -188,7 +195,6 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                 <React.Fragment key={i}>
                                     <TableRow
                                         onClick={() => setSelected(selected === i ? null : i)}
-                                        sx={row.leaf.undone ? { opacity: 0.5 } : {}}
                                     >
                                         {row.groupCells.map((cell, j) =>
                                             cell.isFirst ? (
@@ -202,7 +208,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                                             (_, k) => i + k
                                                         ).some((k) => selected === k)
                                                             ? 'lightblue'
-                                                            : row.leaf.undone ? '#f5f5f5' : 'white'
+                                                            : 'white'
                                                     }}
                                                 >
                                                     {computeContent(row.leaf, cell.key)}
@@ -212,7 +218,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                         {columns.map((col) => (
                                             <TableCell
                                                 key={col}
-                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white' }}
+                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white', opacity: row.leaf.undone ? 0.5 : 1 }}
                                             >
                                                 {computeContent(row.leaf, col)}
                                             </TableCell>
@@ -220,7 +226,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                         {additionalComponents?.map((comp) => (
                                             <TableCell
                                                 key={comp.label}
-                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white' }}
+                                                sx={{ border: '1px solid #bdbdbd', backgroundColor: selected === i ? 'lightblue' : row.leaf.undone ? '#f5f5f5' : 'white', opacity: row.leaf.undone ? 0.5 : 1 }}
                                             >
                                                 <comp.component item={row.leaf} {...comp.props} />
                                             </TableCell>
@@ -239,6 +245,8 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                     </TableBody>
                 </Table>
             </TableContainer>
+            </>}
+            </Box>
         </Box>
     )
 }

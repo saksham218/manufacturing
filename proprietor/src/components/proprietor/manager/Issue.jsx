@@ -48,7 +48,7 @@ const getIssueItemsData = async (issueHoldItems, proprietor_id, issue_date) => {
 const Issue = ({ proprietor }) => {
 
     const { manager } = useManager()
-    const { onMutation } = useApp()
+    const { onMutation, actionsVersion } = useApp()
     const [issue, setIssue] = useState({})
     const [items, setItems] = useState([])
 
@@ -121,7 +121,7 @@ const Issue = ({ proprietor }) => {
         return () => {
             isMounted = false;
         }
-    }, [proprietor, issueHoldItems])
+    }, [proprietor, issueHoldItems, actionsVersion])
 
     useEffect(() => {
         if (!issueHoldItems) return;
@@ -138,7 +138,7 @@ const Issue = ({ proprietor }) => {
         return () => {
             isMounted = false;
         }
-    }, [issueDate])
+    }, [issueDate, actionsVersion])
 
     useEffect(() => {
         setEmptyIssue();
@@ -203,9 +203,6 @@ const Issue = ({ proprietor }) => {
         console.log(res.data)
 
         resetIssue();
-        getIssueItemsData(issueHoldItems, proprietor.proprietor_id, issueDate).then((itemsData) => {
-            setItems(itemsData)
-        })
         onMutation()
 
     }

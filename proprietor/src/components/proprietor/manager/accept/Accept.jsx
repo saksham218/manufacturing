@@ -1,14 +1,13 @@
-import React, { useState } from 'react'
-import { Typography, CircularProgress, Box } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Typography, Box } from '@mui/material'
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs'
-
-import { useEffect } from 'react'
 import { getSubmissions } from '../../../../api'
 import { useManager } from '../managerContext/ManagerContext'
 import AcceptForm from './components/AcceptForm'
 import GroupedTable from '../../../layouts/GroupedTable'
+import { useApp } from '../../../AppContext'
 
 const getSubmissionsData = async (manager_id, accept_date) => {
     try {
@@ -25,6 +24,7 @@ const getSubmissionsData = async (manager_id, accept_date) => {
 const Accept = () => {
 
     const { manager } = useManager()
+    const { actionsVersion } = useApp()
     const [loading, setLoading] = useState(false)
     const [actionDate, setActionDate] = useState(dayjs().format('DD/MM/YYYY'))
     const [data, setData] = useState([])
@@ -45,17 +45,11 @@ const Accept = () => {
         });
 
         return () => { isMounted = false }
-    }, [manager, actionDate])
-
-    const reloadSubmissionsData = async () => {
-        const submissionsData = await getSubmissionsData(manager.manager_id, dayjs(actionDate, 'DD/MM/YYYY').format('YYYY-MM-DD'))
-        setData(submissionsData)
-    }
+    }, [manager, actionDate, actionsVersion])
 
     const acceptFormComponent = {
         component: AcceptForm,
         props: {
-            reloadSubmissionsData: reloadSubmissionsData,
             manager: manager,
             actionDate: actionDate
         },
@@ -75,14 +69,14 @@ const Accept = () => {
                     />
                 </LocalizationProvider>
             </Box>
-            {
-                loading ? <CircularProgress style={{ marginTop: "50px", marginLeft: "200px" }} /> :
-                    ((data && data.length > 0) ?
-                        <GroupedTable data={data} groupKeys={[]} columns={["worker", "submit_to_proprietor_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info",]} additionalComponents={[acceptFormComponent]} />
-                        :
-                        <Typography>No Data for Submissions</Typography>
-                    )
-            }
+            <GroupedTable
+                loading={loading}
+                data={data}
+                groupKeys={[]}
+                columns={["worker", "submit_to_proprietor_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]}
+                additionalComponents={[acceptFormComponent]}
+                noDataMessage="No Data for Submissions"
+            />
         </div>
     )
 }

@@ -47,7 +47,7 @@ const getItemsData = async (manager_id, issue_date) => {
 const Issue = ({ manager }) => {
 
     const { worker } = useWorker()
-    const { onMutation } = useApp()
+    const { onMutation, actionsVersion } = useApp()
     console.log(worker)
     const [issueDate, setIssueDate] = useState(dayjs().format('YYYY-MM-DD'))
     const [issue, setIssue] = useState({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
@@ -79,7 +79,7 @@ const Issue = ({ manager }) => {
         });
 
         return () => { isMounted = false }
-    }, [manager, issueDate])
+    }, [manager, issueDate, actionsVersion])
 
     useEffect(() => {
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" })
@@ -130,8 +130,6 @@ const Issue = ({ manager }) => {
         const res = await issueToWorker({ ...issue, issue_date: issueDate }, worker.worker_id)
         console.log(res.data)
 
-        const itemsData = await getItemsData(manager.manager_id, issueDate);
-        setItems(itemsData);
         setIssue({ design_number: "", quantity: "", price: "", underprocessing_value: "", remarks: "" });
         setItemIndex("");
         setMax(0)
