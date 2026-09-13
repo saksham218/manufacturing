@@ -21,8 +21,8 @@ export const managerDetailsViewConfig = {
     },
     "due_backward": {
         "is_dated": false,
-        "grouping_keys": [],
-        "keys": ["worker", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
+        "grouping_keys": ["worker"],
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "due_backward_log": {
         "is_dated": false,
@@ -66,8 +66,8 @@ export const managerDetailsViewConfig = {
     },
     "submit_history": {
         "is_dated": true,
-        "grouping_keys": [],
-        "keys": ["worker", "submit_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info", "record_date"]
+        "grouping_keys": ["worker", "submit_date"],
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info", "record_date"]
     },
     "items": {
         "is_dated": false,
