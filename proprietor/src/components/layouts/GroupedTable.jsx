@@ -126,8 +126,8 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
     return (
         <Box sx={{ paddingTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {loading && <CircularProgress style={{ margin: 'auto' }} />}
-            <Box sx={{ display: loading ? 'none' : 'flex', flexDirection: 'column', gap: 2 }}>
-            {safeData.length === 0 ? <Typography>{noDataMessage}</Typography> : <>
+            {!loading && safeData.length === 0 && <Typography>{noDataMessage}</Typography>}
+            {safeData.length > 0 && <>
             <TextField
                 label="Search"
                 variant="outlined"
@@ -246,7 +246,6 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                 </Table>
             </TableContainer>
             </>}
-            </Box>
         </Box>
     )
 }
