@@ -1,4 +1,20 @@
-export const managerDetailsViewConfig = {
+const DEV_MODE = process.env.REACT_APP_DEV_MODE === 'true'
+const TRANSIENT_DEV_KEYS = ['event_date', 'record_date']
+
+function applyDevMode(config) {
+    return Object.fromEntries(
+        Object.entries(config)
+            .filter(([, v]) => DEV_MODE || !v.dev_only)
+            .map(([k, v]) => [k, {
+                ...v,
+                keys: (!v.is_dated && !DEV_MODE)
+                    ? v.keys.filter(key => !TRANSIENT_DEV_KEYS.includes(key))
+                    : v.keys
+            }])
+    )
+}
+
+const rawManagerDetailsViewConfig = {
     "issue_history": {
         "is_dated": true,
         "grouping_keys": [],
@@ -16,23 +32,25 @@ export const managerDetailsViewConfig = {
     },
     "due_forward_log": {
         "is_dated": false,
+        "dev_only": true,
         "grouping_keys": [],
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "due_backward": {
         "is_dated": false,
-        "grouping_keys": [],
-        "keys": ["worker", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
+        "grouping_keys": ["worker"],
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "due_backward_log": {
         "is_dated": false,
+        "dev_only": true,
         "grouping_keys": [],
         "keys": ["worker", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "submissions": {
         "is_dated": false,
-        "grouping_keys": [],
-        "keys": ["worker", "submit_to_proprietor_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
+        "grouping_keys": ["worker", "submit_to_proprietor_date"],
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
     "total_due": {
         "is_dated": false,
@@ -41,6 +59,7 @@ export const managerDetailsViewConfig = {
     },
     "total_due_log": {
         "is_dated": false,
+        "dev_only": true,
         "grouping_keys": [],
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "event_date", "info", "record_date"]
     },
@@ -66,12 +85,12 @@ export const managerDetailsViewConfig = {
     },
     "submit_history": {
         "is_dated": true,
-        "grouping_keys": [],
-        "keys": ["worker", "submit_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info", "record_date"]
+        "grouping_keys": ["worker", "submit_date"],
+        "keys": ["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info", "record_date"]
     }
 }
 
-export const workerDetailsViewConfig = {
+const rawWorkerDetailsViewConfig = {
     "due_items": {
         "is_dated": false,
         "grouping_keys": [],
@@ -113,6 +132,9 @@ export const workerDetailsViewConfig = {
         "keys": ["item", "quantity", "price", "underprocessing_value", "remarks_from_proprietor", "remarks_from_manager", "event_date", "info", "record_date"]
     }
 }
+
+export const managerDetailsViewConfig = applyDevMode(rawManagerDetailsViewConfig)
+export const workerDetailsViewConfig = applyDevMode(rawWorkerDetailsViewConfig)
 
 export const holdInfoViewConfig = {
     "hold_info": {

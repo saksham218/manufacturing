@@ -72,8 +72,8 @@ const Accept = () => {
             <GroupedTable
                 loading={loading}
                 data={data}
-                groupKeys={[]}
-                columns={["worker", "submit_to_proprietor_date", "item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]}
+                groupKeys={["worker", "submit_to_proprietor_date"]}
+                columns={["item", "quantity", "price", "deduction_from_manager", "remarks_from_manager", "underprocessing_value", "remarks_from_proprietor", "info"]}
                 additionalComponents={[acceptFormComponent]}
                 noDataMessage="No Data for Submissions"
             />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel, CircularProgress, Typography } from '@mui/material'
 import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
 import DateRangeFilterPopover from './DateRangeFilterPopover'
@@ -44,18 +44,6 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
     const [selected, setSelected] = useState(null)
     const [columnFilters, setColumnFilters] = useState(() => initColumnFilters([...groupKeys, ...columns]))
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
-    const labelRowRef = useRef(null)
-    const [labelRowHeight, setLabelRowHeight] = useState(0)
-
-    useLayoutEffect(() => {
-        if (!labelRowRef.current) return
-        const observer = new ResizeObserver(() => {
-            if (labelRowRef.current) setLabelRowHeight(labelRowRef.current.offsetHeight)
-        })
-        observer.observe(labelRowRef.current)
-        return () => observer.disconnect()
-    }, [])
-
     const handleHeaderClick = (key) => {
         setSortConfig((prev) =>
             prev.key === key
@@ -121,7 +109,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
 
     const totalCols = groupKeys.length + columns.length + (additionalComponents?.length || 0)
 
-    const headerCellSx = { backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1', verticalAlign: 'top' }
+    const headerCellSx = { backgroundColor: '#1565c0', color: '#fff', fontWeight: 700, letterSpacing: '0.05em', border: '1px solid #0d47a1', verticalAlign: 'bottom', position: 'sticky', top: 0, zIndex: 2 }
 
     return (
         <Box sx={{ paddingTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -137,32 +125,21 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                 sx={{ width: 300 }}
             />
             <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'auto', width: '100%' }}>
-                <Table stickyHeader sx={{ borderCollapse: 'collapse' }}>
+                <Table sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
-                        <TableRow ref={labelRowRef}>
-                            {[...groupKeys, ...columns].map((key) => (
-                                <TableCell key={key} sx={headerCellSx}>
-                                    <TableSortLabel
-                                        active={sortConfig.key === key}
-                                        direction={sortConfig.key === key ? sortConfig.direction : 'asc'}
-                                        onClick={() => handleHeaderClick(key)}
-                                        sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
-                                    >
-                                        {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                    </TableSortLabel>
-                                </TableCell>
-                            ))}
-                            {additionalComponents?.map((comp) => (
-                                <TableCell key={comp.label} sx={headerCellSx}>
-                                    {comp.label.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
-                                </TableCell>
-                            ))}
-                        </TableRow>
                         <TableRow>
                             {[...groupKeys, ...columns].map((key) => {
                                 const filter = columnFilters[key] ?? (isDateColumn(key) ? { start: '', end: '' } : '')
                                 return (
-                                    <TableCell key={key} sx={{ backgroundColor: '#1565c0', border: '1px solid #0d47a1', padding: '4px 8px', top: labelRowHeight }}>
+                                    <TableCell key={key} sx={headerCellSx}>
+                                        <TableSortLabel
+                                            active={sortConfig.key === key}
+                                            direction={sortConfig.key === key ? sortConfig.direction : 'asc'}
+                                            onClick={() => handleHeaderClick(key)}
+                                            sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
+                                        >
+                                            {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                        </TableSortLabel>
                                         {isDateColumn(key)
                                             ? <DateRangeFilterPopover
                                                 value={filter}
@@ -180,7 +157,9 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                 )
                             })}
                             {additionalComponents?.map((comp) => (
-                                <TableCell key={comp.label} sx={{ backgroundColor: '#1565c0', border: '1px solid #0d47a1', top: labelRowHeight }} />
+                                <TableCell key={comp.label} sx={headerCellSx}>
+                                    {comp.label.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                </TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
