@@ -4,7 +4,7 @@ import { Input, InputLabel, FormControl, FormGroup, Table, TableHead, TableRow, 
 import { createItem, getItems } from '../../../api/index.js'
 import CustomButton from '../../layouts/CustomButton'
 import ViewTable from '../../layouts/ViewTable.jsx'
-import { managerDetailsViewConfig } from '../../constants/ViewConstants.js'
+import { proprietorDetailsViewConfig } from '../../constants/ViewConstants.js'
 
 const CreateItem = ({ proprietor }) => {
 
@@ -99,7 +99,7 @@ const CreateItem = ({ proprietor }) => {
             </TableContainer> */}
             <Box style={{ width: "1000px" }}>
                 {loading ? <CircularProgress style={{ margin: "150px" }} /> :
-                    ((items && items.length > 0) ? <ViewTable data={items} keys={managerDetailsViewConfig['items'].keys} /> : <Typography>No Data for Items</Typography>)}
+                    ((items && items.length > 0) ? <ViewTable data={items} keys={proprietorDetailsViewConfig['items'].keys} /> : <Typography>No Data for Items</Typography>)}
             </Box>
         </div>
     )
