@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-// const baseURL = process.env.REACT_APP_BASE_URL
-const baseURL = 'http://localhost:5001'
+const baseURL = process.env.REACT_APP_BASE_URL
+// const baseURL = 'http://localhost:5001'
 
 const service = axios.create({
     baseURL: baseURL
@@ -27,7 +27,7 @@ service.interceptors.response.use((response) => {
         localStorage.removeItem('proprietor_token')
         localStorage.removeItem('proprietor')
         window.location.href = '/login'
-        return new Promise(() => {})
+        return new Promise(() => { })
     }
     return Promise.reject(error)
 })
