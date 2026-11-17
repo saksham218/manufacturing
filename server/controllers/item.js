@@ -4,6 +4,7 @@ import Manager from '../models/manager.js'
 import Worker from '../models/worker.js'
 import { DUE_BACKWARD_KEYS, DUE_FORWARD_KEYS, DUE_ITEMS_KEYS, getRemovalQuantitiesFromTransient, managerPopulatePaths, prepare, workerPopulatePaths } from '../utils/utils.js'
 
+import mongoCache from '../cache/mongocache.js';
 import _ from 'lodash';
 
 export const getItems = async (req, res) => {
@@ -27,9 +28,10 @@ export const getItems = async (req, res) => {
         }
 
 
-        const items = await Item.find({ proprietor: proprietor._id }, { _id: 0, proprietor: 0, __v: 0 })
+        const items = await Item.find({ proprietor: proprietor._id }, { _id: 0, proprietor: 0, __v: 0 }).lean()
 
-        return res.status(200).json(items)
+        // Items created before last_updated_date existed fall back to their created_date
+        return res.status(200).json(items.map(item => ({ ...item, last_updated_date: item.last_updated_date ?? item.created_date })))
     }
     catch (err) {
         console.log(err)
@@ -54,7 +56,8 @@ export const createItem = async (req, res) => {
 
         if (oldItem) return res.status(400).json({ message: "Item already exists for this proprietor" })
 
-        const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, created_on: Date.now() })
+        const dateObj = new Date()
+        const newItem = new Item({ design_number, description, price, underprocessing_value, proprietor: proprietor._id, created_date: dateObj, last_updated_date: dateObj })
 
 
         await newItem.save()
@@ -62,6 +65,44 @@ export const createItem = async (req, res) => {
         res.status(201).json(newItem)
     }
     catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+export const updateItem = async (req, res) => {
+    console.log(req.body)
+    const { design_number, description, price, underprocessing_value } = req.body
+    const proprietor_id = req.params.proprietor_id
+    console.log("update item proprietor_id: ", proprietor_id)
+
+    if (!req.proprietor || req.proprietor.proprietor_id !== proprietor_id) return res.status(403).json({ message: "Access Denied" })
+
+    if (typeof description !== "string" || description.trim() === "") return res.status(400).json({ message: "Description is required" })
+    if (!(Number(price) > 0)) return res.status(400).json({ message: "Price should be positive" })
+    if (!(Number(underprocessing_value) > 0)) return res.status(400).json({ message: "Underprocessing value should be positive" })
+
+    try {
+        const proprietor = await Proprietor.findOne({ proprietor_id: proprietor_id })
+        if (!proprietor) return res.status(404).json({ message: "Proprietor doesn't exist" })
+
+        const item = await Item.findOne({ design_number: design_number, proprietor: proprietor._id })
+        if (!item) return res.status(404).json({ message: "Item doesn't exist" })
+
+        if (item.description === description.trim() && item.price === Number(price) && item.underprocessing_value === Number(underprocessing_value)) return res.status(400).json({ message: "Nothing to update" })
+
+        item.description = description.trim()
+        item.price = Number(price)
+        item.underprocessing_value = Number(underprocessing_value)
+        item.last_updated_date = new Date()
+        await item.save()
+
+        mongoCache.invalidate('item', item._id.toString())
+
+        const { _id, proprietor: _p, __v, ...result } = item.toObject()
+        res.status(200).json(result)
+    }
+    catch (err) {
+        console.log(err)
         res.status(500).json({ message: err.message })
     }
 }

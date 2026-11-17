@@ -164,7 +164,7 @@ export const issueToManager = async (req, res) => {
             if (!item) throw new BusinessError(404, "Item doesn't exist");
 
             if (Number(quantity) <= 0) throw new BusinessError(400, "Quantity should be positive");
-            if (item.price !== Number(general_price)) throw new BusinessError(400, "General price doesn't match");
+            if (item.price !== Number(general_price)) throw new BusinessError(400, "General price doesn't match, it may have been updated. Please refresh and try again");
 
             const dateObj = new Date();
             const issueDateObj = new Date(issue_date);

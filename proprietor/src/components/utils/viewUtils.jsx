@@ -2,6 +2,13 @@ import HoldInfo from "../layouts/HoldInfo"
 import { Chip, Stack } from "@mui/material"
 import dayjs from 'dayjs'
 
+const COLUMN_LABELS = {
+    general_price: 'General Price (at issue)',
+}
+
+export const computeLabel = (key) =>
+    COLUMN_LABELS[key] ?? key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
+
 export const computeContent = (item, key, forSearch) => {
     if (key === 'worker') {
         return `${item[key].worker_id}-${item[key].name}`
