@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Table, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box } from '@mui/material'
 
-import { computeContent, searchByKeyword } from '../utils/viewUtils'
+import { computeContent, computeLabel, searchByKeyword } from '../utils/viewUtils'
 
 const ViewTable = ({ data, keys }) => {
     const [keyword, setKeyword] = useState('')
@@ -40,7 +40,7 @@ const ViewTable = ({ data, keys }) => {
                     <TableRow>
                         {keys.map((key) => (
 
-                            <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                            <TableCell>{computeLabel(key)}</TableCell>
                         ))}
                     </TableRow>
                 </TableHead>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, TextField, Box, Divider, TableSortLabel, CircularProgress, Typography } from '@mui/material'
-import { computeContent, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
+import { computeContent, computeLabel, isDateColumn, applyColumnFilters } from '../utils/viewUtils'
 import DateRangeFilterPopover from './DateRangeFilterPopover'
 
 function buildRows(data, groupKeys) {
@@ -138,7 +138,7 @@ const GroupedTable = ({ data, groupKeys = [], columns = [], additionalComponents
                                             onClick={() => handleHeaderClick(key)}
                                             sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: 'inherit', '&.Mui-active': { color: 'inherit' }, '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
                                         >
-                                            {key.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')}
+                                            {computeLabel(key)}
                                         </TableSortLabel>
                                         {isDateColumn(key)
                                             ? <DateRangeFilterPopover

@@ -11,6 +11,7 @@ const itemSchema = new mongoose.Schema({
         required: true
     },
     created_date: { type: Date, required: true, default: Date.now },
+    last_updated_date: { type: Date },
 });
 
 const Item = mongoose.model("Item", itemSchema);

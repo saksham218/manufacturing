@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Table, TableHead, TableRow, TableCell, Paper, TableBody, Divider, TextField, Box } from '@mui/material'
 
-import { computeContent, computeKey, searchNestedByKeyword } from '../utils/viewUtils'
+import { computeContent, computeLabel, computeKey, searchNestedByKeyword } from '../utils/viewUtils'
 
 const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => {
     console.log(data)
@@ -43,12 +43,12 @@ const ViewNestedTable = ({ data, groupingKeys, keys, additionalComponents }) => 
                     <TableRow>
                         {
                             groupingKeys?.map((key) => (
-                                <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                                <TableCell>{computeLabel(key)}</TableCell>
                             ))
                         }
                         {
                             keys?.map((key) => (
-                                <TableCell>{key.split('_').map((p) => (p.charAt(0).toUpperCase() + p.slice(1))).join(' ')}</TableCell>
+                                <TableCell>{computeLabel(key)}</TableCell>
                             ))
                         }
                         {

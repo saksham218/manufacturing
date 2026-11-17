@@ -76,6 +76,12 @@ class MongoCache {
     return null;
   }
 
+  // Drop a cached entry so the next get() refetches it from the DB.
+  invalidate(sectionKey, cacheKey) {
+    if (!this.initialized) return;
+    this.cache.get(sectionKey)?.delete(cacheKey);
+  }
+
 }
 
 const mongoCache = new MongoCache();

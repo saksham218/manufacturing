@@ -36,6 +36,7 @@ export const createProprietor = (newProprietor) => service.post('/proprietor/new
 export const loginProprietor = (proprietor) => service.post('/proprietor/login', proprietor)
 export const getItems = (proprietor_id) => service.get(`/item/${proprietor_id}/getitems`)
 export const createItem = (newItem, proprietor_id) => service.post(`/item/${proprietor_id}/newitem`, newItem)
+export const updateItem = (item, proprietor_id) => service.post(`/item/${proprietor_id}/updateitem`, item)
 export const addManager = (newManager, proprietor_id) => service.post(`/manager/${proprietor_id}/addmanager`, newManager)
 export const getManager = (manager_id) => service.get(`/manager/${manager_id}/getmanager`)
 export const getManagers = (proprietor_id) => service.get(`/manager/${proprietor_id}/getmanagers`)

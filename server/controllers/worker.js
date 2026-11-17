@@ -116,7 +116,7 @@ export const issueToWorker = async (req, res) => {
                 if (priceIndex !== -1) {
                     if (price !== worker.custom_prices[priceIndex].price) throw new BusinessError(400, "Price doesn't match");
                 } else {
-                    if (price !== item.price) throw new BusinessError(400, "Price doesn't match");
+                    if (price !== item.price) throw new BusinessError(400, "Price doesn't match, the general price may have been updated. Please refresh and try again");
                 }
             }
 
