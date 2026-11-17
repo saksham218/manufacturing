@@ -65,7 +65,7 @@ export const recordPayment = async (req, res) => {
             const [day, month, year] = date.split('/').map(Number);
             const dateObj = new Date(year, month - 1, day);
             worker.due_amount -= amount;
-            worker.payment_history.push({ amount, date: dateObj, remarks });
+            worker.payment_history.push({ amount, payment_date: dateObj, remarks, record_date: new Date() });
             await worker.save();
             return worker;
         });
