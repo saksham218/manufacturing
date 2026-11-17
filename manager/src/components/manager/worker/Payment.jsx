@@ -113,7 +113,7 @@ const Payment = () => {
 
                                     {payments.map((p) => {
 
-                                        const d = new Date(p.date);
+                                        const d = new Date(p.payment_date ?? p.date);
 
                                         return (
                                             <TableRow>
